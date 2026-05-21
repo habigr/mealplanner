@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#0f1f3d"/>
 <link rel="manifest" id="pwaManifest"/>
 <link rel="apple-touch-icon" id="appleTouchIcon"/>
-<title>Meal Planner</title>
+<title>Meal Planner v11B</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -188,7 +188,6 @@ main{background:var(--panel);border:1px solid var(--border);border-radius:var(--
 .meal-label{font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
 .meal-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
 
-function getMealIcon(meal){var icons={Breakfast:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',Lunch:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="8"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="2" y1="12" x2="4" y2="12"/></svg>',Dinner:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>',Snack:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',Drinks:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M8 22h8M12 11v11M3 2h18l-3 9H6L3 2z"/></svg>',Dessert:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'};return icons[meal]||icons.Breakfast;}
 /* ===== PLANNER ===== */
 .day-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
 .day-card{background:var(--panel-warm);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:box-shadow .2s,transform .2s;}
@@ -313,6 +312,18 @@ body.shopping-mode #grocery .two-col{display:none!important;}
 .active-store-check{-webkit-appearance:none;appearance:none;width:17px;height:17px;min-width:17px;border:2px solid var(--border);border-radius:4px;cursor:pointer;position:relative;transition:all .15s;flex-shrink:0;}
 .active-store-check:checked{background:var(--theme-accent);border-color:var(--theme-accent);}
 .active-store-check:checked::after{content:'';position:absolute;left:3px;top:0;width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(40deg);}
+
+/* ===== DATA ADMIN ===== */
+function renderAdminTripDataList(){
+  var el=safeEl('adminTripDataList');if(!el)return;var all=getAllTrips(),codes=Object.keys(all);
+  if(!codes.length){el.innerHTML='<div class="rules-empty">No trips saved on this device.</div>';return;}
+  el.innerHTML=codes.map(function(code){var ev=all[code]||{};return'<div class="active-store-row" style="justify-content:space-between;align-items:flex-start;margin-bottom:8px;"><div><strong>'+escHtml(ev.name||ev.location||code)+'</strong><div style="font-family:monospace;font-size:11px;color:var(--muted);">'+escHtml(code)+'</div><div style="font-size:11px;color:var(--muted);">'+escHtml((ev.startDate||'')+(ev.endDate?' – '+ev.endDate:''))+'</div></div><div class="actions"><button class="secondary" type="button" onclick="duplicateTripTemplate(\''+escAttr(code)+'\')">Duplicate</button><button class="secondary" type="button" onclick="removeLocalTripOnly(\''+escAttr(code)+'\')">Local only</button><button class="danger" type="button" onclick="deleteTripEverywhere(\''+escAttr(code)+'\')">Delete</button></div></div>';}).join('');
+}
+
+async function duplicateTripTemplate(code){var all=getAllTrips(),src=all[code];if(!src){showToast('Trip not found.','error');return;}var name=await promptAction({title:'Duplicate Trip',message:'Name the new trip:',defaultValue:(src.name||src.location||'Trip')+' Copy'});if(!name)return;var ev=normalizeEvent(JSON.parse(JSON.stringify(src)));ev.id=makeId();ev.code=generateTripCode(name,ev.startDate||new Date().toISOString().slice(0,10));ev.name=name;ev.auditLog={};ev.groceryMeta={};ev.dishes=(ev.dishes||[]).map(function(d){d.id=makeId();return normalizeDish(d);});ev.recipeBank=(ev.recipeBank||[]).map(function(r){r.id=makeId();return normalizeDish(r);});saveToLocal(ev);recordDeviceTrip(ev.code);if(db)fbWriteTrip(ev);renderAdminTripDataList();renderLanding();showToast('Trip duplicated as '+ev.code+'.','success');}
+
+async function removeLocalTripOnly(code){if(!await confirmAction({title:'Remove Local Copy',message:'Remove this trip from this device only?',confirmLabel:'Remove'}))return;var all=getAllTrips();delete all[code];setAllTrips(all);setDeviceTrips(getDeviceTrips().filter(function(c){return c!==code;}));renderAdminTripDataList();renderLanding();showToast('Local copy removed.','success');}
+async function deleteTripEverywhere(code){if(!await confirmAction({title:'Delete Permanently',message:'This removes the trip from Firebase and this device. This cannot be undone.',confirmLabel:'Delete permanently',danger:true}))return;if(db){try{await db.ref('trips/'+code).remove();}catch(e){showToast('Firebase delete failed; removed locally only.','error');}}var all=getAllTrips();delete all[code];setAllTrips(all);setDeviceTrips(getDeviceTrips().filter(function(c){return c!==code;}));if(currentCode===code)goToLanding();renderAdminTripDataList();renderLanding();showToast('Trip deleted.','success');}
 
 /* ===== RECIPE BANK ===== */
 .recipe-search-wrap{position:relative;margin-bottom:16px;}
@@ -443,12 +454,68 @@ body.shopping-mode #grocery .two-col{display:none!important;}
 .ingredient-row.dragging{opacity:.5;border-style:dashed;border-color:var(--theme-accent);}
 .remove-ingredient{width:24px;height:24px;padding:0;border-radius:6px;color:var(--muted);background:transparent;border:1px solid transparent;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:none;}
 .remove-ingredient:hover{color:var(--danger);background:var(--danger-soft);border-color:#fecaca;transform:none;box-shadow:none;}
+
+/* v11 compact recipe editor */
+#ingredientSection{padding:12px;margin-bottom:10px;}
+#ingredientSection .detail-card-header{margin-bottom:8px;}
+.ingredient-list-editor{max-height:210px;overflow:auto;padding-right:2px;}
+.ingredient-row{padding:5px 6px;grid-template-columns:16px 64px 76px 1fr 26px;gap:5px;}
+.ingredient-row input{padding:4px 7px;font-size:12px;}
+#pasteRecipeText{min-height:88px!important;}
+#bulkIngredients{min-height:82px!important;}
+@media(min-width:1100px){.day-grid{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}}
+@media(max-width:768px){.ingredient-list-editor{max-height:180px;}.ingredient-row{grid-template-columns:16px 1fr 1fr 26px;}.ingredient-row .ing-item{grid-column:2/-1;}}
+
 /* event fields in dish modal */
 .event-fields{background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);border:1.5px solid #bae6fd;border-radius:var(--r);padding:16px;margin-bottom:12px;}
 .event-toggle-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--theme-accent-soft);border:1.5px solid var(--theme-border);border-radius:var(--r-sm);cursor:pointer;margin-bottom:16px;transition:background .15s;}
 .event-toggle-row:hover{background:var(--tw);}
 .event-toggle-check{width:20px;height:20px;min-width:20px;accent-color:var(--theme-accent);cursor:pointer;}
 .event-toggle-label{font-size:14px;font-weight:700;color:var(--theme-accent-dark);cursor:pointer;}
+
+
+/* ===== SMART PASTE PREVIEW ===== */
+.parse-preview{display:none;margin-top:10px;border:1.5px solid var(--theme-border);background:#fff;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm);}
+.parse-preview.visible{display:block;}
+.parse-preview-head{padding:12px 14px;background:var(--theme-accent-soft);border-bottom:1px solid var(--theme-border);}
+.parse-preview-title{font-size:13.5px;font-weight:800;color:var(--theme-accent-dark);margin-bottom:3px;}
+.parse-preview-sub{font-size:11.5px;color:var(--muted);line-height:1.4;}
+.parse-preview-body{padding:12px 14px;}
+.parse-preview-section{margin-top:10px;}
+.parse-preview-section:first-child{margin-top:0;}
+.parse-preview-label{font-size:9.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.parse-preview-list{display:grid;gap:5px;max-height:180px;overflow:auto;border:1px solid var(--border-light);background:var(--panel-warm);border-radius:var(--r-sm);padding:7px;}
+.parse-preview-line{font-size:12.5px;color:var(--text-secondary);background:var(--panel);border:1px solid var(--border-light);border-radius:7px;padding:5px 8px;line-height:1.35;}
+.parse-preview-rejected{max-height:110px;}
+.parse-preview-rejected .parse-preview-line{color:var(--muted);text-decoration:line-through;background:#fafafa;}
+.parse-preview-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.parse-preview-empty{font-size:12px;color:var(--muted);padding:8px;border:1px dashed var(--border);border-radius:var(--r-sm);background:var(--panel-soft);}
+
+
+/* ===== V11E POLISH ===== */
+body.dark-mode{--panel:#111827;--panel-soft:#1f2937;--panel-warm:#172033;--bg:#0b1220;--text:#f8fafc;--text-secondary:#e5e7eb;--muted:#9ca3af;--border:#334155;--border-light:#253044;--shadow-sm:0 1px 4px rgba(0,0,0,.35);--shadow:0 8px 32px rgba(0,0,0,.38);--shadow-lg:0 18px 60px rgba(0,0,0,.5);}
+body.dark-mode header::before{background:linear-gradient(110deg,rgba(15,23,42,.94) 0%,rgba(15,23,42,.72) 30%,rgba(15,23,42,.16) 100%);} 
+body.dark-mode #currentTripChip,body.dark-mode .theme-preview-title{color:#f8fafc;}
+body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#0f172a;color:#f8fafc;border-color:#334155;}
+body.dark-mode .readonly-field{background:#111827;color:#9ca3af;}
+body.dark-mode .hdr-btn,body.dark-mode .back-btn{background:rgba(15,23,42,.82);color:#e5e7eb;border-color:rgba(255,255,255,.14);} 
+body.dark-mode .theme-preview-overlay{background:linear-gradient(110deg,rgba(15,23,42,.94) 0%,rgba(15,23,42,.66) 28%,rgba(15,23,42,.12) 100%);} 
+.parse-preview-line{display:flex;align-items:center;gap:8px;justify-content:space-between;}
+.parse-preview-line label{display:flex;align-items:center;gap:8px;margin:0;text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:600;color:inherit;flex:1;min-width:0;}
+.parse-preview-line input[type="checkbox"]{width:16px;height:16px;min-width:16px;padding:0;accent-color:var(--theme-accent);}
+.parse-preview-line input[type="text"]{padding:5px 7px;font-size:12.5px;border-radius:6px;min-width:0;}
+.parse-preview-low .parse-preview-line{background:#fffbeb;border-color:#fcd34d;color:#92400e;text-decoration:none;}
+.parse-preview-rejected .parse-preview-line{color:var(--muted);text-decoration:none;background:#fafafa;}
+body.dark-mode .parse-preview-rejected .parse-preview-line{background:#111827;}
+.parse-preview-line.included{background:#ecfdf3!important;border-color:#86efac!important;color:#166534!important;}
+.parse-include-btn{background:var(--panel);color:var(--theme-accent);border:1px solid var(--theme-border);border-radius:7px;padding:4px 7px;font-size:11px;box-shadow:none;}
+.parse-include-btn:hover{transform:none;box-shadow:none;background:var(--theme-accent-soft);}
+.day-tools{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+.day-tools button{font-size:11px;padding:5px 7px;border-radius:7px;}
+.meal-summary{font-size:10.5px;color:var(--muted);font-weight:700;margin-top:4px;}
+.veg-leaf{display:inline-flex;align-items:center;justify-content:center;margin-left:5px;color:#16a34a;font-size:12px;vertical-align:middle;}
+body.dark-mode .parse-preview{background:var(--panel);}
+body.dark-mode .parse-preview-low .parse-preview-line{background:#422006;border-color:#92400e;color:#fde68a;}
 
 /* ===== TOAST ===== */
 #toastContainer{position:fixed;bottom:max(24px,calc(var(--nav-h) + var(--safe-b) + 10px));left:50%;transform:translateX(-50%);z-index:400;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;padding:0 16px;max-width:100%;}
@@ -465,6 +532,65 @@ body.shopping-mode #grocery .two-col{display:none!important;}
 .dialog p{margin:0 0 18px;color:var(--text-secondary);font-size:14px;line-height:1.5;}
 .dialog input{margin-bottom:14px;}
 .dialog-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+
+
+/* ===== V11A RESPONSIVE + GROCERY POLISH ===== */
+html,body{width:100%;max-width:100%;overflow-x:hidden;}
+#appScreen,.app-wrap,main,.page{max-width:100%;}
+.app-wrap{width:100%;}
+.day-grid{width:100%;align-items:start;}
+@media(min-width:1200px){.day-grid{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}.day-card{min-width:0;}}
+@media(min-width:769px) and (max-width:1199px){.day-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.app-wrap{padding-left:18px;padding-right:18px;}.top-nav-inner{padding-left:18px;padding-right:18px;}.header-row{padding-left:18px;padding-right:18px;}}
+@media(min-width:980px) and (max-width:1199px){.day-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+.grocery-topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.grocery-progress-card{display:flex;align-items:center;gap:10px;background:var(--panel-warm);border:1px solid var(--border-light);border-radius:var(--r-sm);padding:9px 12px;color:var(--text-secondary);font-size:12.5px;font-weight:700;min-width:220px;}
+.grocery-progress-card .shopping-progress-bar{margin:0;max-width:150px;}
+.segmented-control{display:inline-flex;align-items:center;padding:3px;background:var(--panel-soft);border:1px solid var(--border-light);border-radius:999px;gap:2px;}
+.segmented-control button{background:transparent;color:var(--muted);border-radius:999px;padding:7px 11px;font-size:12px;box-shadow:none;border:none;}
+.segmented-control button:hover{transform:none;box-shadow:none;background:var(--panel);color:var(--text-secondary);}
+.segmented-control button.active{background:var(--theme-accent);color:#fff;}
+.grocery-item-sub{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;}
+.grocery-tag{display:inline-flex;align-items:center;border-radius:999px;background:var(--theme-accent-soft);color:var(--theme-accent-dark);font-size:9.5px;font-weight:800;padding:2px 6px;line-height:1.2;}
+.grocery-tag.dept{background:var(--panel-soft);color:var(--muted);border:1px solid var(--border-light);}
+.grocery-dishes{font-size:12px;color:var(--text-secondary);line-height:1.35;max-width:260px;}
+.grocery-status-select{min-width:96px!important;width:auto!important;padding:6px 8px!important;font-size:12px!important;}
+.grocery-normal-progress{margin-bottom:12px;}
+.grocery-table th.got-col,.grocery-table td.got-col{text-align:center;width:74px;white-space:nowrap;}
+.manual-badge{display:inline-flex;margin-left:6px;font-size:8.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:#64748b;color:#fff;padding:1px 5px;border-radius:4px;vertical-align:middle;}
+@media(max-width:768px){
+  body{position:relative;}
+  header,.bottom-nav{max-width:100vw;overflow:hidden;}
+  .toolbar{align-items:flex-start;}
+  .toolbar .actions{width:100%;display:grid;grid-template-columns:1fr 1fr;}
+  .toolbar .actions button{width:100%;padding:10px 8px;font-size:12px;}
+  .grocery-topline{display:block;}
+  .grocery-progress-card{width:100%;margin-bottom:10px;}
+  .segmented-control{width:100%;display:grid;grid-template-columns:repeat(4,1fr);border-radius:var(--r-sm);}
+  .segmented-control button{padding:8px 4px;font-size:11px;}
+  .grocery-table-wrap{overflow-x:visible;}
+  .grocery-table{display:block;border:none;}
+  .grocery-table thead{display:none;}
+  .grocery-table tbody{display:block;}
+  .grocery-table tr{display:grid;grid-template-columns:1fr auto 46px;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--border-light);border-radius:var(--r-sm);padding:10px;margin-bottom:8px;}
+  .grocery-table td{display:block;border:0!important;padding:0!important;background:transparent!important;}
+  .grocery-table .mobile-hide{display:none!important;}
+  .grocery-table td.got-col{width:auto;text-align:right;}
+  .grocery-item-name{font-size:14px;line-height:1.25;}
+  .grocery-qty{font-size:13px;}
+  .grocery-status-select{display:none;}
+  .grocery-section-row{display:none!important;}
+  .grocery-table tr.bought{opacity:.5;}
+}
+@media print{
+  header,.top-nav,.bottom-nav,.toolbar,.grocery-controls,#assignStoresContainer,.grocery-hint,.app-admin-panel,.drawer-backdrop,.admin-drawer{display:none!important;}
+  body{background:#fff;color:#000;}
+  .app-wrap,main,.page{padding:0!important;margin:0!important;border:0!important;box-shadow:none!important;}
+  .page{display:none!important;}.page#grocery{display:block!important;}
+  .grocery-table{border-collapse:collapse;width:100%;font-size:11pt;}
+  .grocery-table th,.grocery-table td{border-bottom:1px solid #ddd!important;padding:6px 8px!important;}
+  .grocery-check,.grocery-status-select{display:none!important;}
+}
 
 /* ===== RESPONSIVE ===== */
 @media(max-width:768px){
@@ -495,6 +621,33 @@ body.shopping-mode #grocery .two-col{display:none!important;}
   .audit-drawer{width:100vw;}
 }
 @media(min-width:769px){#toastContainer{bottom:24px;}}
+
+/* ===== v11F refinements ===== */
+.grocery-mode-toggle{display:inline-flex;background:var(--panel-soft);border:1.5px solid var(--border);border-radius:999px;padding:3px;gap:2px;flex-wrap:nowrap;}
+.grocery-mode-btn{background:transparent;color:var(--muted);border-radius:999px;padding:8px 12px;font-size:12px;box-shadow:none;border:none;}
+.grocery-mode-btn:hover{transform:none;box-shadow:none;background:var(--panel);} 
+.grocery-mode-btn.active{background:var(--theme-accent);color:#fff;}
+.grocery-search-row{display:flex;gap:8px;align-items:center;margin-bottom:12px;}
+.grocery-search-row input{max-width:360px;}
+.assign-stores-wrap{max-height:62vh;overflow:auto;}
+.assign-stores-table thead th{position:sticky;top:0;z-index:4;}
+.assign-stores-table th:first-child{z-index:5;}
+.shopping-item-dept{font-size:10.5px;color:var(--muted);font-style:italic;margin-left:auto;white-space:nowrap;}
+.shopping-item-titleline{display:flex;gap:8px;align-items:baseline;}
+.save-confirm-box{font-size:13px;line-height:1.55;}
+.save-confirm-users{margin-top:8px;padding:8px 10px;border:1px solid var(--border-light);background:var(--panel-soft);border-radius:var(--r-sm);}
+.ingredient-row{grid-template-columns:18px 70px 70px 74px 1fr 28px;}
+.ingredient-row .ing-original,.ingredient-row .ing-adjusted{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+.ingredient-row-labels{display:grid;grid-template-columns:18px 70px 70px 74px 1fr 28px;gap:6px;margin:4px 0 6px;padding:0 8px;}
+.ingredient-row-labels span{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.parse-preview-tools{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px;}
+.parse-preview-tools button{font-size:11px;padding:6px 9px;}
+.parse-title-input{margin-top:8px;font-weight:700;}
+.modal-dirty-note{font-size:11px;color:#d97706;font-weight:800;margin-left:8px;}
+.grocery-dept-select{font-size:11px;padding:4px 6px;min-width:105px;}
+@media(max-width:768px){.grocery-mode-toggle{width:100%;display:grid;grid-template-columns:repeat(3,1fr);border-radius:var(--r-sm);} .grocery-mode-btn{border-radius:8px;padding:9px 6px;} .grocery-search-row{flex-direction:column;align-items:stretch;} .ingredient-row{grid-template-columns:18px 1fr 1fr 28px;} .ingredient-row .ing-unit{grid-column:2/3}.ingredient-row .ing-item{grid-column:2/-1}.ingredient-row-labels{display:none}.shopping-item-titleline{align-items:flex-start}.shopping-item-dept{font-size:10px;}}
+@media print{header,.top-nav,.bottom-nav,.grocery-controls,.toolbar .actions,#assignStoresContainer,.grocery-hint,.two-col{display:none!important;} body{background:#fff}.app-wrap,main,.page{padding:0!important;margin:0!important;border:0!important;box-shadow:none!important}.grocery-table-wrap{display:block!important}}
+
 </style>
 </head>
 <body>
@@ -616,6 +769,7 @@ body.shopping-mode #grocery .two-col{display:none!important;}
           <h2>Meal Plan</h2>
           <div class="actions">
             <button class="secondary" type="button" onclick="addCustomDay()">Add Day</button>
+            <button class="secondary" type="button" onclick="quickAddDish()">Quick Add</button>
             <button type="button" onclick="openDishModal()">+ Add Dish</button>
           </div>
         </div>
@@ -628,26 +782,37 @@ body.shopping-mode #grocery .two-col{display:none!important;}
         <div class="toolbar">
           <h2>Grocery List</h2>
           <div class="actions">
-            <button id="shoppingModeBtn" class="shopping-toggle" type="button" onclick="toggleShoppingMode()">🛒 Shop</button>
-            <button id="assignStoresModeBtn" class="shopping-toggle" type="button" onclick="toggleAssignStoresMode()" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);">🏪 Assign</button>
-            <button class="secondary" type="button" onclick="buildGroceryList()">Refresh</button>
+            <div class="grocery-mode-toggle" role="tablist" aria-label="Grocery mode">
+              <button id="modeListBtn" class="grocery-mode-btn active" type="button" onclick="setGroceryMode('list')">List</button>
+              <button id="modeAssignBtn" class="grocery-mode-btn" type="button" onclick="setGroceryMode('assign')">Assign Stores</button>
+              <button id="modeShopBtn" class="grocery-mode-btn" type="button" onclick="setGroceryMode('shop')">Shop</button>
+            </div>
+            <button class="secondary" type="button" onclick="addManualGroceryItem()">+ Manual Item</button>
             <button class="secondary" type="button" onclick="copyGroceryList()">Copy</button>
           </div>
         </div>
         <div id="assignStoresContainer">
           <div class="assign-stores-header">
-            <p>Check which store(s) each item comes from.</p>
-            <button class="secondary" type="button" onclick="toggleAssignStoresMode()">✕ Done</button>
+            <p>Check which store(s) each item comes from. Header stays visible while you scroll.</p>
+            <div class="actions"><button class="secondary" type="button" onclick="bulkAssignVisibleItems()">Bulk Assign Visible</button><button class="secondary" type="button" onclick="setGroceryMode('list')">✕ Done</button></div>
           </div>
           <div class="assign-stores-wrap"><div id="assignStoresGrid"></div></div>
         </div>
-        <div class="grocery-controls">
-          <button class="secondary" type="button" onclick="setGrocerySort('store')">By Store</button>
-          <button class="secondary" type="button" onclick="setGrocerySort('department')">By Dept</button>
-          <button class="secondary" type="button" onclick="setGrocerySort('alpha')">A–Z</button>
-          <button class="secondary" type="button" onclick="toggleNeededOnly()">Not Bought</button>
-          <button class="secondary" type="button" onclick="clearGroceryFilters()">Clear</button>
+        <div class="grocery-topline">
+          <div id="groceryProgress" class="grocery-progress-card grocery-normal-progress"></div>
+          <div class="segmented-control" id="grocerySortControl">
+            <button type="button" data-sort="store" onclick="setGrocerySort('store')">Store</button>
+            <button type="button" data-sort="department" onclick="setGrocerySort('department')">Dept</button>
+            <button type="button" data-sort="alpha" onclick="setGrocerySort('alpha')">A–Z</button>
+            <button type="button" id="neededOnlyBtn" onclick="toggleNeededOnly()">Needed</button>
+          </div>
         </div>
+        <div class="grocery-controls">
+          <button class="secondary" type="button" onclick="buildGroceryList()">Refresh</button>
+          <button class="secondary" type="button" onclick="clearGroceryFilters()">Clear Filters</button>
+          <button class="secondary" type="button" onclick="shareGroceryList()">Share Text</button>
+        </div>
+        <div class="grocery-search-row"><input id="grocerySearch" placeholder="Search ingredients or dishes…" oninput="buildGroceryList()" /></div>
         <div class="grocery-hint">Use <strong>Assign</strong> to set which stores items come from, then <strong>Shop</strong> for in-store mode.</div>
         <div class="two-col" style="margin-bottom:14px;">
           <div class="field"><label for="groceryDepartmentFilter">Department</label><select id="groceryDepartmentFilter" onchange="buildGroceryList()"></select></div>
@@ -761,6 +926,7 @@ body.shopping-mode #grocery .two-col{display:none!important;}
 
   <div class="section-title">Advanced</div>
   <button class="secondary" type="button" style="width:100%;margin-bottom:8px;" onclick="toggleAppAdmin(true)">Open App Admin</button>
+  <button class="secondary" type="button" style="width:100%;margin-bottom:8px;" onclick="toggleDarkMode()" id="darkModeButton">Dark Mode</button>
   <button class="secondary" type="button" style="width:100%;" onclick="saveCurrentTrip()">Save Trip Now</button>
 </aside>
 
@@ -782,6 +948,7 @@ body.shopping-mode #grocery .two-col{display:none!important;}
     <button class="app-admin-tab active" type="button" data-admin-tab="stores" onclick="switchAppAdminTab('stores')">Stores &amp; Rules</button>
     <button class="app-admin-tab" type="button" data-admin-tab="themes" onclick="switchAppAdminTab('themes')">Themes &amp; Photos</button>
     <button class="app-admin-tab" type="button" data-admin-tab="ai" onclick="switchAppAdminTab('ai')">✦ AI &amp; API</button>
+    <button class="app-admin-tab" type="button" data-admin-tab="data" onclick="switchAppAdminTab('data')">Data</button>
   </div>
   <div id="adminTabStores" class="app-admin-tab-panel active">
     <div class="admin-card">
@@ -791,6 +958,11 @@ body.shopping-mode #grocery .two-col{display:none!important;}
         <div class="field"><label for="adminDepartments">Departments</label><textarea id="adminDepartments" style="min-height:130px;"></textarea></div>
       </div>
       <button type="button" onclick="saveStoresDepartments()">Save Stores &amp; Departments</button>
+    </div>
+    <div class="admin-card">
+      <h3>Meal Types</h3><p class="card-desc">One per line. These appear on newly generated or custom days.</p>
+      <div class="field"><label for="adminMealTypes">Meal Types</label><textarea id="adminMealTypes" style="min-height:100px;"></textarea></div>
+      <button type="button" onclick="saveMealTypes()">Save Meal Types</button>
     </div>
     <div class="admin-card">
       <h3>Store Auto-Assignment Rules</h3><p class="card-desc">Keyword → store mapping. First match wins.</p>
@@ -822,6 +994,12 @@ body.shopping-mode #grocery .two-col{display:none!important;}
       <h3>Add Image URL</h3><p class="card-desc">Paste a direct image link to add it to the current theme.</p>
       <div class="theme-add-row"><input id="themeAddUrl" placeholder="https://example.com/photo.jpg" /><button type="button" onclick="addThemeImageUrl()">Add</button></div>
       <div id="themeAddStatus" class="small-note" style="margin-top:6px;"></div>
+    </div>
+  </div>
+  <div id="adminTabData" class="app-admin-tab-panel">
+    <div class="admin-card">
+      <h3>Trip Data</h3><p class="card-desc">Permanently delete trips or clean up local copies. Permanent delete removes the trip from Firebase and this device.</p>
+      <div id="adminTripDataList"></div>
     </div>
   </div>
   <div id="adminTabAi" class="app-admin-tab-panel">
@@ -858,7 +1036,7 @@ body.shopping-mode #grocery .two-col{display:none!important;}
 <datalist id="tagSuggestions"></datalist>
 <div id="dishModal" class="modal-backdrop">
   <div class="modal">
-    <h3 id="dishModalTitle">Add Recipe</h3>
+    <h3 id="dishModalTitle">Add Recipe <span id="dishDirtyNote" class="modal-dirty-note" style="display:none;">Unsaved changes</span></h3>
     <p>Add a dish, restaurant visit, or event to your plan.</p>
 
     <!-- Normal dish fields -->
@@ -885,6 +1063,7 @@ body.shopping-mode #grocery .two-col{display:none!important;}
             </div>
             <button type="button" onclick="pasteFullRecipe()">✦ Parse with AI</button>
             <div id="pasteRecipeStatus" class="import-status" style="margin-top:8px;">Paste any recipe text — from any website, cookbook, or message.</div>
+            <div id="parsePreview" class="parse-preview"></div>
           </div>
           <div id="manualEntryPanel" class="entry-panel">
             <div class="field" style="margin-bottom:0;"><label for="bulkIngredients">Paste Ingredients</label>
@@ -898,7 +1077,8 @@ body.shopping-mode #grocery .two-col{display:none!important;}
       <div class="detail-card compact">
         <div class="detail-grid">
           <div class="field"><label for="dishName">Name</label><input id="dishName" placeholder="e.g., Lobster Rolls" /></div>
-  
+          <div class="field"><label for="dishTags">Tags</label><input id="dishTags" list="tagSuggestions" placeholder="vegetarian, grill, seafood" /></div>
+        </div>
         <input id="dishUrl" type="hidden" value="" />
       </div>
       <div class="detail-card compact">
@@ -910,7 +1090,7 @@ body.shopping-mode #grocery .two-col{display:none!important;}
       </div>
       <div id="ingredientSection" class="detail-card">
         <div class="detail-card-header"><strong>Ingredients</strong><span>Final list — drag to reorder</span></div>
-        <div id="ingredientRows" class="ingredient-list-editor"></div>
+        <div class="ingredient-row-labels"><span></span><span>Original</span><span>Adjusted</span><span>Unit</span><span>Ingredient</span><span></span></div><div id="ingredientRows" class="ingredient-list-editor"></div>
         <button class="secondary" type="button" style="margin-top:10px;" onclick="addIngredientRow()">+ Add</button>
       </div>
     </div>
@@ -936,20 +1116,7 @@ body.shopping-mode #grocery .two-col{display:none!important;}
         <input type="checkbox" id="isEventCheck" onchange="toggleEventMode()" style="width:18px;height:18px;accent-color:var(--theme-accent);cursor:pointer;" />
         <span style="font-size:13.5px;font-weight:700;color:var(--text-secondary);flex:1;">Restaurant / Event — going out instead?</span>
       </label>
-      <div id="eventFields" style="display:none;margin-top:10px;">
-        <div class="two-col" id="eventAssignmentFields">
-          <div class="field"><label for="eventDay">Day</label><select id="eventDay"></select></div>
-          <div class="field"><label for="eventMeal">Meal</label><select id="eventMeal"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option><option>Drinks</option><option>Dessert</option></select></div>
-        </div>
-        <div style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #bae6fd;border-radius:var(--r);padding:13px;">
-          <div class="detail-grid">
-            <div class="field"><label for="eventName2">Name / Restaurant</label><input id="eventName2" placeholder="e.g., The Surf Lodge" /></div>
-            <div class="field"><label for="eventTime">Time</label><input id="eventTime" placeholder="e.g., 7:30 PM" /></div>
-          </div>
-          <div class="field"><label for="eventAddress">Address (optional)</label><input id="eventAddress" placeholder="e.g., 183 Edgemere St" /></div>
-          <div class="field" style="margin-bottom:0;"><label for="eventOtherNotes">Notes</label><textarea id="eventOtherNotes" placeholder="Reservation under Smith…" style="min-height:60px;"></textarea></div>
-        </div>
-      </div>
+
     </div>
     <div class="modal-footer">
       <input id="deleteEntryId" type="hidden" value="">
@@ -971,7 +1138,7 @@ catch(e){console.warn('Firebase unavailable:',e);}
 
 /* ===== SYNC ===== */
 var fbSaveTimer=null,tripListenerRef=null,tripListener=null;
-function setSyncStatus(s){var d=safeEl('syncDot');if(!d)return;d.className='sync-dot '+s;d.title={synced:'Synced ✓',syncing:'Syncing…',offline:'Offline — saved locally',error:'Sync error'}[s]||'';}
+function setSyncStatus(s){var d=safeEl('syncDot');if(!d)return;d.className='sync-dot '+s;var t={synced:'Synced ✓',syncing:'Syncing…',offline:'Offline — saved locally',error:'Sync error'}[s]||'';if(s==='synced')t+=' · '+new Date().toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});d.title=t;}
 function fbWriteTrip(ev){if(!db)return Promise.resolve();setSyncStatus('syncing');return db.ref('trips/'+ev.code).set(ev).then(function(){setSyncStatus('synced');}).catch(function(e){setSyncStatus('error');console.warn(e);});}
 function fbWriteGroceryMeta(code,meta){if(!db||!code)return Promise.resolve();setSyncStatus('syncing');return db.ref('trips/'+code+'/groceryMeta').set(meta).then(function(){setSyncStatus('synced');}).catch(function(){setSyncStatus('error');});}
 function scheduleFbSave(){clearTimeout(fbSaveTimer);fbSaveTimer=setTimeout(function(){if(currentEvent&&currentCode)fbWriteTrip(currentEvent);},5000);}
@@ -990,6 +1157,8 @@ function unsubscribeCurrentTrip(){if(tripListenerRef&&tripListener){tripListener
 /* ===== STATE ===== */
 var TRIPS_KEY='mealPlanner.trips.v1',DEVICE_KEY='mealPlanner.deviceTrips.v1',GALLERY_KEY='mealPlanner.themeGallery.v1',API_KEY_STORAGE='mealPlanner.apiKey',USER_KEY='mealPlanner.user.v1';
 var currentEvent=null,currentCode=null,editingDishId=null,addToBankOnly=false,draggedDishId=null,shoppingMode=false,assignStoresMode=false,grocerySortMode='department',groceryNeededOnly=false,appAdminLastTab='stores',themeAdminTab='larchmont',themePreviewIdx=-1,pendingTripCode=null;
+var pendingParsedRecipe=null;
+var dishModalDirty=false,dishModalHydrating=false,lastPresenceUsers=[];
 
 /* ===== USER MANAGEMENT ===== */
 function getUser(){try{return JSON.parse(localStorage.getItem(USER_KEY));}catch(e){return null;}}
@@ -1052,11 +1221,18 @@ function setupPWA(){var icon=generateAppIcon(176);var lc=safeEl('landingIconCanv
 /* ===== PRESENCE ===== */
 var PRESENCE_ID='p-'+Math.random().toString(36).slice(2,8);
 var presencePanelOpen=false;
-function startPresence(){if(!db||!currentCode)return;var u=getUser();if(!u)return;var ref=db.ref('trips/'+currentCode+'/presence/'+PRESENCE_ID);ref.onDisconnect().remove();ref.set({initials:u.initials,name:u.fullName||u.firstName,ts:Date.now()});db.ref('trips/'+currentCode+'/presence').on('value',function(snap){var users=snap.val()||{};renderPresencePanel(Object.values(users));var el=safeEl('onlineUsersDisplay');if(el)renderOnlineUsersList(Object.values(users),el);});}
-function stopPresence(){if(db&&currentCode)db.ref('trips/'+currentCode+'/presence/'+PRESENCE_ID).remove().catch(function(){});if(db&&currentCode)db.ref('trips/'+currentCode+'/presence').off();}
-function renderPresencePanel(users){var u=getUser(),myInitials=u?u.initials:'',list=safeEl('presenceList'),badge=safeEl('presenceBadge');if(!list)return;if(badge){if(users.length>1){badge.textContent=users.length;badge.classList.add('show');}else badge.classList.remove('show');}if(!users.length){list.innerHTML='<div style="font-size:12px;color:var(--muted);">Just you</div>';return;}list.innerHTML=users.map(function(p){var isMe=p.initials===myInitials;return'<div class="presence-user-row"><div class="presence-avatar'+(isMe?' me-av':'')+'">'+escHtml(p.initials)+'</div><span>'+escHtml(p.name||p.initials)+(isMe?' (you)':'')+'</span><div class="presence-online-dot"></div></div>';}).join('');}
-function renderOnlineUsersList(users,el){var u=getUser(),myInitials=u?u.initials:'';if(!users.length){el.innerHTML='';return;}el.innerHTML='<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:6px;">Online Now</div><div style="display:flex;flex-wrap:wrap;gap:5px;">'+users.map(function(p){var isMe=p.initials===myInitials;return'<div style="display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:'+(isMe?'var(--theme-accent-soft)':'var(--panel-soft)')+';border:1px solid '+(isMe?'var(--theme-border)':'var(--border-light)')+';font-size:11px;font-weight:600;color:var(--text-secondary);"><div style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>'+escHtml(p.name||p.initials)+(isMe?' (you)':'')+'</div>';}).join('')+'</div>';}
-function togglePresencePanel(){presencePanelOpen=!presencePanelOpen;var p=safeEl('presencePanel');if(p)p.classList.toggle('visible',presencePanelOpen);}
+function startPresence(){
+  if(!db||!currentCode)return;var u=getUser();if(!u)return;
+  var ref=db.ref('trips/'+currentCode+'/presence/'+PRESENCE_ID);
+  function writePresence(){ref.set({initials:u.initials,name:u.fullName||u.firstName,ts:Date.now()}).catch(function(){});}
+  ref.onDisconnect().remove();writePresence();clearInterval(window.__presenceTick);window.__presenceTick=setInterval(writePresence,25000);
+  db.ref('trips/'+currentCode+'/presence').off();
+  db.ref('trips/'+currentCode+'/presence').on('value',function(snap){var now=Date.now(),users=[];snap.forEach(function(child){var p=child.val()||{};if(!p.ts||now-p.ts<90000)users.push(p);});lastPresenceUsers=users;renderPresencePanel(users);var el=safeEl('onlineUsersDisplay');if(el)renderOnlineUsersList(users,el);});
+}
+function stopPresence(){clearInterval(window.__presenceTick);if(db&&currentCode){db.ref('trips/'+currentCode+'/presence/'+PRESENCE_ID).remove().catch(function(){});db.ref('trips/'+currentCode+'/presence').off();}}
+function renderPresencePanel(users){var u=getUser(),myInitials=u?u.initials:'',list=safeEl('presenceList'),badge=safeEl('presenceBadge');users=users||lastPresenceUsers||[];if(!list)return;if(badge){if(users.length>1){badge.textContent=users.length;badge.classList.add('show');}else badge.classList.remove('show');}if(!users.length){list.innerHTML='<div style="font-size:12px;color:var(--muted);">Just you</div>';return;}list.innerHTML=users.map(function(p){var isMe=p.initials===myInitials;return'<div class="presence-user-row"><div class="presence-avatar'+(isMe?' me-av':'')+'">'+escHtml(p.initials||'?')+'</div><span>'+escHtml(p.name||p.initials||'User')+(isMe?' (you)':'')+'</span><div class="presence-online-dot"></div></div>';}).join('');}
+function renderOnlineUsersList(users,el){var u=getUser(),myInitials=u?u.initials:'';users=users||[];if(!users.length){el.innerHTML='';return;}el.innerHTML='<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:6px;">Online Now</div><div style="display:flex;flex-wrap:wrap;gap:5px;">'+users.map(function(p){var isMe=p.initials===myInitials;return'<div style="display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:'+(isMe?'var(--theme-accent-soft)':'var(--panel-soft)')+';border:1px solid '+(isMe?'var(--theme-border)':'var(--border-light)')+';font-size:11px;font-weight:600;color:var(--text-secondary);"><div style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>'+escHtml(p.name||p.initials)+(isMe?' (you)':'')+'</div>';}).join('')+'</div>';}
+function togglePresencePanel(){presencePanelOpen=!presencePanelOpen;renderPresencePanel(lastPresenceUsers);var p=safeEl('presencePanel');if(p){p.classList.toggle('visible',presencePanelOpen);p.style.zIndex=200;}}
 document.addEventListener('click',function(e){if(presencePanelOpen&&!e.target.closest('.presence-wrap')){presencePanelOpen=false;var p=safeEl('presencePanel');if(p)p.classList.remove('visible');}});
 
 /* ===== LOADING ===== */
@@ -1067,13 +1243,53 @@ function hideLoadingOverlay(){var el=safeEl('loadingOverlay');if(el)el.remove();
 function generateTripCode(loc,date){var l=String(loc||'trip').toLowerCase().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,20)||'trip';var d='';if(date){var dt=new Date(date+'T00:00:00');if(!isNaN(dt.getTime()))d='-'+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0');}return l+d+'-'+Math.random().toString(36).slice(2,4);}
 function getMostRecentDefaults(){var dt=getDeviceTrips(),all=getAllTrips();for(var i=0;i<dt.length;i++){var ev=all[dt[i]];if(ev)return{stores:ev.stores||getDefaultStores(),departments:ev.departments||getDefaultDepts(),storeRules:ev.storeRules||getDefaultRules()};}return{stores:getDefaultStores(),departments:getDefaultDepts(),storeRules:getDefaultRules()};}
 async function createTrip(){var location=getValue('newTripLocation').trim(),start=getValue('newTripStart');if(!location||!start){showToast('Add a location and start date.','error');return;}var code=pendingTripCode||generateTripCode(location,start),defs=getMostRecentDefaults();var ev=normalizeEvent({id:makeId(),code:code,location:location,name:location+(start?' · '+formatDateShort(start):''),theme:'larchmont',startDate:start,endDate:getValue('newTripEnd'),days:[],dishes:[],recipeBank:[],groceryMeta:{},auditLog:{},stores:defs.stores,departments:defs.departments,storeRules:defs.storeRules,activeStores:null});saveToLocal(ev);recordDeviceTrip(code);closeNewTripModal();fbWriteTrip(ev);currentEvent=ev;currentCode=code;window.location.hash='trip='+code;showAppScreen();subscribeToCurrentTrip();startPresence();if(ev.startDate&&ev.endDate){generateDays(true);}else{renderAll();}addAuditEntry('created','created this trip');showToast('Trip created! Code: '+code,'success');}
-async function loadTrip(code){
-  showLoadingOverlay('Loading trip…');
-  if(db){try{var snap=await db.ref('trips/'+code).get();hideLoadingOverlay();if(snap.exists()){var ev=normalizeEvent(snap.val());currentEvent=ev;currentCode=code;saveToLocal(ev);recordDeviceTrip(code);window.location.hash='trip='+code;showAppScreen();renderAll();subscribeToCurrentTrip();startPresence();return;}}catch(e){hideLoadingOverlay();console.warn('FB fetch failed:',e);}}else{hideLoadingOverlay();}
-  var ev=loadFromLocal(code);if(!ev){var msg=safeEl('joinTripMsg');if(msg){msg.style.display='block';msg.style.color='var(--danger)';msg.textContent='Trip "'+code+'" not found.';}showToast('Trip not found.','error');return;}
-  currentEvent=ev;currentCode=code;recordDeviceTrip(code);window.location.hash='trip='+code;showAppScreen();renderAll();subscribeToCurrentTrip();startPresence();
+function openLoadedTrip(ev,code,source){
+  currentEvent=normalizeEvent(ev);
+  currentCode=String(code||currentEvent.code||'').toLowerCase();
+  currentEvent.code=currentCode;
+  saveToLocal(currentEvent);
+  recordDeviceTrip(currentCode);
+  if(window.location.hash!=='#trip='+currentCode)window.location.hash='trip='+currentCode;
+  showAppScreen();
+  renderAll();
+  restoreLastTab();
+  subscribeToCurrentTrip();
+  startPresence();
+  hideLoadingOverlay();
 }
-async function joinTrip(){var code=(getValue('joinTripCode')||'').trim();if(!code){showToast('Enter a trip code.','error');return;}closeJoinTripModal();await loadTrip(code);}
+function fbGetTripWithTimeout(code,ms){
+  if(!db)return Promise.resolve(null);
+  var fetchPromise=db.ref('trips/'+code).get();
+  var timeoutPromise=new Promise(function(resolve){setTimeout(function(){resolve(null);},ms||7000);});
+  return Promise.race([fetchPromise,timeoutPromise]);
+}
+async function loadTrip(code){
+  code=String(code||'').trim().toLowerCase();
+  if(!code){showToast('Missing trip code.','error');return;}
+  showLoadingOverlay('Loading trip…');
+
+  // Prefer the local copy immediately so the app never gets stuck behind a slow Firebase read.
+  var localEv=loadFromLocal(code);
+  if(localEv){
+    openLoadedTrip(localEv,code,'local');
+    // Refresh from Firebase in the background, but don't block the UI.
+    if(db){fbGetTripWithTimeout(code,6000).then(function(snap){
+      try{if(snap&&snap.exists&&snap.exists()){var remote=normalizeEvent(snap.val());saveToLocal(remote);if(currentCode===code){currentEvent=remote;renderAll();}}}catch(e){console.warn('Background Firebase refresh failed:',e);}
+    }).catch(function(e){console.warn('Background Firebase refresh failed:',e);});}
+    return;
+  }
+
+  try{
+    var snap=await fbGetTripWithTimeout(code,8000);
+    if(snap&&snap.exists&&snap.exists()){openLoadedTrip(snap.val(),code,'firebase');return;}
+  }catch(e){console.warn('FB fetch failed:',e);}
+
+  hideLoadingOverlay();
+  var msg=safeEl('joinTripMsg');
+  if(msg){msg.style.display='block';msg.style.color='var(--danger)';msg.textContent='Trip "'+code+'" not found or Firebase did not respond.';}
+  showToast('Trip not found or Firebase timed out.','error');
+}
+async function joinTrip(){var code=(getValue('joinTripCode')||'').trim().toLowerCase();if(!code){showToast('Enter a trip code.','error');return;}closeJoinTripModal();await loadTrip(code);}
 function goToLanding(){autosave();stopPresence();unsubscribeCurrentTrip();currentEvent=null;currentCode=null;window.location.hash='';safeEl('appScreen').classList.remove('visible');safeEl('landingScreen').style.display='flex';renderLanding();}
 function autosave(){
   if(!currentEvent||!currentCode)return;
@@ -1081,7 +1297,7 @@ function autosave(){
   saveToLocal(currentEvent);
   scheduleFbSave();
 }
-async function saveCurrentTrip(){autosave();clearTimeout(fbSaveTimer);setSyncStatus('syncing');try{await fbWriteTrip(currentEvent);showToast('Trip saved.','success');}catch(e){showToast('Saved locally (offline).','');}}
+async function saveCurrentTrip(){autosave();clearTimeout(fbSaveTimer);setSyncStatus('syncing');var synced=false;try{await fbWriteTrip(currentEvent);synced=true;}catch(e){synced=false;}var others=(lastPresenceUsers||[]).filter(function(p){var u=getUser();return !u||p.initials!==u.initials;});var msg=synced?'Saved and synced.':'Saved locally. Sync will retry when online.';if(others.length){msg+=' Active now: '+others.map(function(p){return p.name||p.initials;}).join(', ')+'. They will see updates when synced.';}else{msg+=' No other users are currently active.';}await confirmAction({title:synced?'Saved':'Saved locally',message:msg,confirmLabel:'OK'});}
 async function deleteTripFromDevice(code){var all=getAllTrips(),ev=all[code],name=ev?(ev.name||ev.code||code):code;if(!await confirmAction({title:'Remove Trip',message:'"'+name+'" will be removed from this device. Firebase data stays intact for others.',confirmLabel:'Remove',danger:true}))return;var dt=getDeviceTrips().filter(function(c){return c!==code;});setDeviceTrips(dt);delete all[code];setAllTrips(all);renderLanding();showToast('Removed from this device.','success');}
 function formatDateShort(s){try{var d=new Date(s+'T00:00:00');return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});}catch(e){return s;}}
 
@@ -1133,8 +1349,8 @@ function getDefaultRules(){return[{keywords:'fish, shrimp, salmon, tuna, lobster
 function getDefaultThemeGallery(){return{larchmont:[{url:'https://westchesterwoman.org/wp-content/uploads/2017/08/Larchmont-Manor-Park--300x199.jpg',posX:50,posY:34,active:true}],'fire-island':[{url:'https://www.fireislandnews.com/wp-content/uploads/2024/09/Main-Pic.jpg?quality=51&w=1200',posX:50,posY:56,active:true}],adirondacks:[{url:'https://cdn.lakeplacid.com/s/1920x1080/d/73/f/73994223092e0f99eb3cc3bc106564a1/fp/49x59/t/f5afeb4a/adirondack-mountain-cabin-1920w.webp',posX:50,posY:50,active:true}]};}
 
 /* ===== NORMALIZE ===== */
-function normalizeEvent(e){e=e&&typeof e==='object'?e:{};e.id=e.id||makeId();e.code=e.code||makeId();e.name=e.name||'';e.location=e.location||'';e.theme=e.theme||'larchmont';e.startDate=e.startDate||'';e.endDate=e.endDate||'';e.days=Array.isArray(e.days)?e.days:[];e.dishes=Array.isArray(e.dishes)?e.dishes:[];e.recipeBank=Array.isArray(e.recipeBank)?e.recipeBank:[];e.stores=Array.isArray(e.stores)?e.stores:getDefaultStores();e.departments=Array.isArray(e.departments)?e.departments:getDefaultDepts();e.groceryMeta=e.groceryMeta&&typeof e.groceryMeta==='object'?e.groceryMeta:{};e.auditLog=e.auditLog&&typeof e.auditLog==='object'?e.auditLog:{};e.storeRules=Array.isArray(e.storeRules)?e.storeRules:getDefaultRules();e.activeStores=Array.isArray(e.activeStores)?e.activeStores:null;e.dishes.forEach(normalizeDish);e.recipeBank.forEach(normalizeDish);return e;}
-function normalizeDish(d){d.id=d.id||makeId();d.servings=d.servings||'';d.peopleEating=d.peopleEating||'';d.imageUrl=d.imageUrl||'';d.tags=Array.isArray(d.tags)?d.tags:[];d.ingredients=Array.isArray(d.ingredients)?d.ingredients:[];d.isEvent=!!d.isEvent;d.ingredients=d.ingredients.map(function(i){return{quantity:i.quantity||i.displayedQuantity||'',displayedQuantity:i.displayedQuantity||i.quantity||'',unit:i.unit||'',item:i.item||''};});return d;}
+function normalizeEvent(e){e=e&&typeof e==='object'?e:{};e.id=e.id||makeId();e.code=String(e.code||makeId()).toLowerCase();e.name=e.name||'';e.location=e.location||'';e.theme=e.theme||'larchmont';e.startDate=e.startDate||'';e.endDate=e.endDate||'';e.days=Array.isArray(e.days)?e.days:[];e.dishes=Array.isArray(e.dishes)?e.dishes:[];e.recipeBank=Array.isArray(e.recipeBank)?e.recipeBank:[];e.manualGroceryItems=Array.isArray(e.manualGroceryItems)?e.manualGroceryItems:[];e.stores=Array.isArray(e.stores)?e.stores:getDefaultStores();e.departments=Array.isArray(e.departments)?e.departments:getDefaultDepts();e.groceryMeta=e.groceryMeta&&typeof e.groceryMeta==='object'?e.groceryMeta:{};e.auditLog=e.auditLog&&typeof e.auditLog==='object'?e.auditLog:{};e.storeRules=Array.isArray(e.storeRules)?e.storeRules:getDefaultRules();e.activeStores=Array.isArray(e.activeStores)?e.activeStores:null;e.mealTypes=Array.isArray(e.mealTypes)&&e.mealTypes.length?e.mealTypes:['Breakfast','Lunch','Dinner'];e.dishes.forEach(normalizeDish);e.recipeBank.forEach(normalizeDish);e.manualGroceryItems=e.manualGroceryItems.map(function(i){return{id:i.id||makeId(),item:i.item||'',quantity:i.quantity||'',unit:i.unit||'',department:i.department||'Pantry',store:i.store||'Unassigned'};}).filter(function(i){return i.item;});return e;}
+function normalizeDish(d){d.id=d.id||makeId();d.servings=d.servings||'';d.peopleEating=d.peopleEating||'';d.imageUrl=d.imageUrl||'';d.tags=Array.isArray(d.tags)?d.tags:[];d.ingredients=Array.isArray(d.ingredients)?d.ingredients:[];d.isEvent=!!d.isEvent;d.isVegetarian=!!d.isVegetarian;d.ingredients=d.ingredients.map(function(i){return{quantity:i.quantity||i.displayedQuantity||'',displayedQuantity:i.displayedQuantity||i.quantity||'',unit:i.unit||'',item:i.item||''};});return d;}
 
 /* ===== TOAST + DIALOGS ===== */
 function showToast(msg,type){var c=safeEl('toastContainer');if(!c)return;var t=document.createElement('div');t.className='toast '+(type||'');t.innerHTML='<span>'+(type==='success'?'✓':type==='error'?'⚠':'ℹ')+'</span><span>'+escHtml(msg)+'</span>';t.addEventListener('click',function(){dismissToast(t);});c.appendChild(t);requestAnimationFrame(function(){t.classList.add('show');});setTimeout(function(){dismissToast(t);},3400);}
@@ -1156,7 +1372,8 @@ function syncEventFieldsFromInputs(){if(!currentEvent)return;currentEvent.name=g
 function syncInputsFromEvent(){setValue('eventName',currentEvent.name||'');setValue('startDate',currentEvent.startDate||'');setValue('endDate',currentEvent.endDate||'');setValue('tripTheme',currentEvent.theme||'larchmont');setText('currentTripChip',currentEvent.name||themeDisplayName(currentEvent.theme)||'Untitled Trip');applyTheme(currentEvent.theme||'larchmont');applyThemeGalleryImage(currentEvent.theme||'larchmont');renderActiveStoresList();renderProfileDisplay();var tct=safeEl('drawerTripCodeText');if(tct)tct.textContent=currentCode||'';}
 function applyTheme(theme){document.body.classList.remove('theme-larchmont','theme-fire-island','theme-adirondacks');document.body.classList.add('theme-'+(theme||'larchmont'));}
 function themeDisplayName(t){if(t==='fire-island')return'Fire Island Pines';if(t==='adirondacks')return'Adirondacks Cabin';return'Larchmont, NY';}
-function renderAll(){if(!currentEvent)return;currentEvent=normalizeEvent(currentEvent);syncInputsFromEvent();renderPlanner();renderRecipeBank();renderStoreRules();populateGroceryFilters();populateDishDayOptions();populateIngredientSuggestions();populateTagSuggestions();enableIngredientDropZone();autosave();}
+function renderAll(){if(!currentEvent)return;currentEvent=normalizeEvent(currentEvent);syncInputsFromEvent();renderPlanner();renderRecipeBank();renderStoreRules();populateGroceryFilters();populateDishDayOptions();populateIngredientSuggestions();populateTagSuggestions();enableIngredientDropZone();autosave();updateSortButtons();}
+function restoreLastTab(){try{var t=localStorage.getItem('mealPlanner.lastTab')||'planner';if(t==='shop')navTo('shop');else switchTab(t);}catch(e){switchTab('planner');}}
 
 /* ===== ACTIVE STORES ===== */
 function getActiveStores(){if(!currentEvent.activeStores||!currentEvent.activeStores.length)return currentEvent.stores||getDefaultStores();return currentEvent.activeStores;}
@@ -1184,32 +1401,46 @@ async function deleteStoreRule(i){if(!await confirmAction({message:'Delete this 
 function updateStoreRule(i,f,v){if(currentEvent.storeRules&&currentEvent.storeRules[i]){currentEvent.storeRules[i][f]=v;autosave();}}
 
 /* ===== DAYS ===== */
-async function generateDays(silent){if(!silent)syncEventFieldsFromInputs();if(!currentEvent.startDate||!currentEvent.endDate){if(!silent)showToast('Add start and end dates first.','error');return;}var start=new Date(currentEvent.startDate+'T00:00:00'),end=new Date(currentEvent.endDate+'T00:00:00');if(isNaN(start.getTime())||isNaN(end.getTime())){showToast('Invalid date.','error');return;}if(end<start){showToast('End must be after start.','error');return;}var oldDays=currentEvent.days.slice(),oldIds=oldDays.map(function(d){return d.id;}),byDate=new Map(oldDays.filter(function(d){return d.date;}).map(function(d){return[d.date,d];})),custom=oldDays.filter(function(d){return!d.date;});var newDays=[],cur=new Date(start);while(cur<=end){var y=cur.getFullYear(),m=String(cur.getMonth()+1).padStart(2,'0'),dv=String(cur.getDate()).padStart(2,'0'),date=y+'-'+m+'-'+dv;newDays.push(byDate.get(date)||{id:makeId(),date:date,label:cur.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}),meals:['Breakfast','Lunch','Dinner']});cur.setDate(cur.getDate()+1);}custom.forEach(function(d){newDays.push(d);});var valid=new Set(newDays.map(function(d){return d.id;}));currentEvent.dishes.forEach(function(dish){if(valid.has(dish.dayId))return;var oi=oldIds.indexOf(dish.dayId);if(oi>=0&&oi<newDays.length)dish.dayId=newDays[oi].id;else if(newDays.length)dish.dayId=newDays[0].id;});currentEvent.days=newDays;addAuditEntry('days_created','created '+newDays.length+' days');renderAll();if(!silent){navTo('planner');toggleAdminPanel(false);showToast('Days created.','success');}}
-async function addCustomDay(){var label=await promptAction({title:'Add Custom Day',message:'Name this section:',placeholder:'e.g., Arrival Night'});if(!label)return;currentEvent.days.push({id:makeId(),date:'',label:label,meals:['Breakfast','Lunch','Dinner']});renderAll();showToast('Day added.','success');}
+async function generateDays(silent){if(!silent)syncEventFieldsFromInputs();if(!currentEvent.startDate||!currentEvent.endDate){if(!silent)showToast('Add start and end dates first.','error');return;}var start=new Date(currentEvent.startDate+'T00:00:00'),end=new Date(currentEvent.endDate+'T00:00:00');if(isNaN(start.getTime())||isNaN(end.getTime())){showToast('Invalid date.','error');return;}if(end<start){showToast('End must be after start.','error');return;}var oldDays=currentEvent.days.slice(),oldIds=oldDays.map(function(d){return d.id;}),byDate=new Map(oldDays.filter(function(d){return d.date;}).map(function(d){return[d.date,d];})),custom=oldDays.filter(function(d){return!d.date;});var newDays=[],cur=new Date(start);while(cur<=end){var y=cur.getFullYear(),m=String(cur.getMonth()+1).padStart(2,'0'),dv=String(cur.getDate()).padStart(2,'0'),date=y+'-'+m+'-'+dv;newDays.push(byDate.get(date)||{id:makeId(),date:date,label:cur.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'}),meals:getDefaultMealTypes().slice()});cur.setDate(cur.getDate()+1);}custom.forEach(function(d){newDays.push(d);});var valid=new Set(newDays.map(function(d){return d.id;}));currentEvent.dishes.forEach(function(dish){if(valid.has(dish.dayId))return;var oi=oldIds.indexOf(dish.dayId);if(oi>=0&&oi<newDays.length)dish.dayId=newDays[oi].id;else if(newDays.length)dish.dayId=newDays[0].id;});currentEvent.days=newDays;addAuditEntry('days_created','created '+newDays.length+' days');renderAll();if(!silent){navTo('planner');toggleAdminPanel(false);showToast('Days created.','success');}}
+async function addCustomDay(){var label=await promptAction({title:'Add Custom Day',message:'Name this section:',placeholder:'e.g., Arrival Night'});if(!label)return;currentEvent.days.push({id:makeId(),date:'',label:label,meals:getDefaultMealTypes().slice()});renderAll();showToast('Day added.','success');}
 
 /* ===== NAV + TABS ===== */
-function navTo(tab){if(tab==='shop'){switchTabSilent('grocery');if(!shoppingMode)toggleShoppingMode();else buildGroceryList();updateBottomNav('shop');return;}if(tab==='grocery'&&shoppingMode)toggleShoppingMode();switchTab(tab);updateBottomNav(tab);}
-function switchTab(tab){document.querySelectorAll('.top-tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});document.querySelectorAll('.page').forEach(function(p){p.classList.toggle('active',p.id===tab);});if(tab==='grocery')buildGroceryList();if(tab==='recipes')renderRecipeBank();}
+function navTo(tab){if(tab==='shop'){switchTabSilent('grocery');if(!shoppingMode)toggleShoppingMode();else buildGroceryList();updateBottomNav('shop');return;}if(tab==='grocery'&&(shoppingMode||assignStoresMode))setGroceryMode('list');switchTab(tab);updateBottomNav(tab);}
+function switchTab(tab){try{localStorage.setItem('mealPlanner.lastTab',tab);}catch(e){}document.querySelectorAll('.top-tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});document.querySelectorAll('.page').forEach(function(p){p.classList.toggle('active',p.id===tab);});if(tab==='grocery')buildGroceryList();if(tab==='recipes')renderRecipeBank();updateBottomNav(tab);}
 function switchTabSilent(tab){document.querySelectorAll('.top-tab').forEach(function(b){b.classList.toggle('active',b.dataset.tab===tab);});document.querySelectorAll('.page').forEach(function(p){p.classList.toggle('active',p.id===tab);});}
 function updateBottomNav(active){document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.toggle('active',b.dataset.nav===active);});}
 
-function getMealIcon(meal){var icons={Breakfast:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',Lunch:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="8"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="2" y1="12" x2="4" y2="12"/></svg>',Dinner:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>',Snack:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',Drinks:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M8 22h8M12 11v11M3 2h18l-3 9H6L3 2z"/></svg>',Dessert:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'};return icons[meal]||icons.Breakfast;}
+function getMealIcon(meal){
+  var icons={
+    Breakfast:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M4 10h12v4a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5v-4z"/><path d="M16 11h2a2 2 0 0 1 0 4h-2"/><path d="M7 4v2M11 4v2M15 4v2"/></svg>',
+    Lunch:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M4 12h16"/><path d="M6 12l2-5h8l2 5"/><path d="M7 12l1 5h8l1-5"/><path d="M9 9h6"/></svg>',
+    Dinner:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M6 3v18"/><path d="M4 3v6a2 2 0 0 0 4 0V3"/><path d="M14 3v18"/><path d="M14 3c4 2 4 8 0 10"/></svg>',
+    Snack:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M6 10h12l-1 10H7L6 10z"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M9 14h.01M15 14h.01"/></svg>',
+    Drinks:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M5 3h14l-2 8a5 5 0 0 1-10 0L5 3z"/><path d="M12 16v5"/><path d="M8 21h8"/></svg>',
+    Dessert:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M4 11h16"/><path d="M6 11v7a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-7"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M9 5c0-1 1-2 3-2s3 1 3 2"/></svg>'
+  };
+  return icons[meal]||icons.Breakfast;
+}
 /* ===== PLANNER ===== */
-function renderPlanner(){var grid=safeEl('dayGrid');if(!grid)return;if(!currentEvent.days.length){grid.innerHTML='<div class="empty"><div class="empty-icon">📅</div><h3>No days planned yet</h3><p>Add dates in Event Setup and click Create / Refresh Days.</p></div>';return;}grid.innerHTML=currentEvent.days.map(function(day){return'<div class="day-card"><div class="day-header"><div><div class="day-title">'+escHtml(day.label)+'</div>'+(day.date?'<div class="day-date">'+escHtml(day.date)+'</div>':'')+'</div><button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\')">+</button></div><div class="day-body">'+day.meals.map(function(meal){return renderMealBlock(day,meal);}).join('')+'</div></div>';}).join('');}
+function getDaySummary(day){var ds=currentEvent.dishes.filter(function(d){return d.dayId===day.id;});var dishes=ds.filter(function(d){return !d.isEvent;}).length,events=ds.filter(function(d){return d.isEvent;}).length;var parts=[];if(dishes)parts.push(dishes+' dish'+(dishes!==1?'es':''));if(events)parts.push(events+' event'+(events!==1?'s':''));return parts.join(' · ');}
+function renderPlanner(){var grid=safeEl('dayGrid');if(!grid)return;if(!currentEvent.days.length){grid.innerHTML='<div class="empty"><div class="empty-icon">📅</div><h3>No days planned yet</h3><p>Add dates in Event Setup and click Create / Refresh Days.</p></div>';return;}grid.innerHTML=currentEvent.days.map(function(day,idx){var summary=getDaySummary(day);return'<div class="day-card"><div class="day-header"><div><div class="day-title">'+escHtml(day.label)+'</div>'+(day.date?'<div class="day-date">'+escHtml(day.date)+'</div>':'')+(summary?'<div class="meal-summary">'+escHtml(summary)+'</div>':'')+'</div><div class="day-tools"><button class="ghost" title="Move earlier" onclick="moveDay('+idx+',-1)">↑</button><button class="ghost" title="Move later" onclick="moveDay('+idx+',1)">↓</button><button class="ghost" title="Copy this day" onclick="copyDayMeals(\''+escAttr(day.id)+'\')">Copy</button><button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\')">+</button></div></div><div class="day-body">'+(day.meals||getDefaultMealTypes()).map(function(meal){return renderMealBlock(day,meal);}).join('')+'</div></div>';}).join('');}
 function renderMealBlock(day,meal){var dishes=currentEvent.dishes.filter(function(d){return d.dayId===day.id&&d.meal===meal;});var icon=getMealIcon(meal);return'<div class="meal-block"><div class="meal-head"><div class="meal-label-wrap">'+icon+'<span class="meal-label">'+escHtml(meal)+'</span></div><button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">+</button></div><div class="meal-body" data-day-id="'+escAttr(day.id)+'" data-meal="'+escAttr(meal)+'" ondragover="handleMealDragOver(event)" ondragleave="handleMealDragLeave(event)" ondrop="handleMealDrop(event)">'+(dishes.length?dishes.map(renderDish).join(''):'<div class="meal-empty">Nothing planned</div>')+'</div></div>';}
 function renderDish(dish){
   if(dish.isEvent){
-    return'<div class="dish dish-event" data-dish-id="'+escAttr(dish.id)+'"><div class="dish-title-row"><div><div class="dish-event-header"><span class="meal-badge event">🍽️ Restaurant / Event</span></div><div class="dish-event-name">'+escHtml(dish.eventName||'Unnamed Event')+'</div>'+(dish.eventTime?'<div class="dish-event-detail">⏰ '+escHtml(dish.eventTime)+'</div>':'')+(dish.eventAddress?'<div class="dish-event-detail">📍 '+escHtml(dish.eventAddress)+'</div>':'')+(dish.notes?'<div class="dish-note">'+escHtml(dish.notes)+'</div>':'')+'</div><button class="icon-button" onclick="editDish(\''+escAttr(dish.id)+'\')">✎</button></div></div>';
+    return'<div class="dish dish-event" draggable="true" data-dish-id="'+escAttr(dish.id)+'" ondragstart="handleDishDragStart(event,\''+escAttr(dish.id)+'\')" ondragend="handleDishDragEnd(event)"><div class="dish-title-row"><div><div class="dish-event-header"><span class="meal-badge event">🍽️ Restaurant / Event</span></div><div class="dish-event-name">'+escHtml(dish.eventName||'Unnamed Event')+'</div>'+(dish.eventTime?'<div class="dish-event-detail">⏰ '+escHtml(dish.eventTime)+'</div>':'')+(dish.eventAddress?'<div class="dish-event-detail">📍 '+escHtml(dish.eventAddress)+'</div>':'')+(dish.notes?'<div class="dish-note">'+escHtml(dish.notes)+'</div>':'')+'</div><button class="icon-button" onclick="editDish(\''+escAttr(dish.id)+'\')">✎</button></div></div>';
   }
-  var parts=[];if(dish.peopleEating)parts.push('For '+escHtml(String(dish.peopleEating)));if(dish.servings)parts.push('serves '+escHtml(String(dish.servings)));var tags=(dish.tags&&dish.tags.length)?'<div class="dish-tags">'+dish.tags.map(function(t){return'<span class="dish-tag">'+escHtml(t)+'</span>';}).join('')+'</div>':'';
-  return'<div class="dish" draggable="true" data-dish-id="'+escAttr(dish.id)+'" ondragstart="handleDishDragStart(event,\''+escAttr(dish.id)+'\')" ondragend="handleDishDragEnd(event)"><div class="dish-title-row"><div><div class="dish-title">'+escHtml(dish.name||'Untitled Dish')+'</div><div class="dish-meta"><span class="pill">Recipe</span>'+(parts.length?' <span class="meta-sep">·</span> '+parts.join(' · '):'')+( dish.url?' <span class="meta-sep">·</span> <a href="'+escAttr(dish.url)+'" target="_blank" onclick="event.stopPropagation()">↗ Link</a>':'')+'</div>'+tags+'</div><button class="icon-button" onclick="editDish(\''+escAttr(dish.id)+'\')">✎</button></div>'+(dish.notes?'<div class="dish-note">'+escHtml(dish.notes)+'</div>':'')+'</div>';
+  var parts=[];if(dish.peopleEating)parts.push('For '+escHtml(String(dish.peopleEating)));if(dish.servings)parts.push('serves '+escHtml(String(dish.servings)));var isVeg=dish.isVegetarian||(dish.tags||[]).some(function(t){return /veg|vegetarian/i.test(t);});var tags=(dish.tags&&dish.tags.length)?'<div class="dish-tags">'+dish.tags.map(function(t){return'<span class="dish-tag">'+escHtml(t)+'</span>';}).join('')+'</div>':'';
+  return'<div class="dish" draggable="true" data-dish-id="'+escAttr(dish.id)+'" ondragstart="handleDishDragStart(event,\''+escAttr(dish.id)+'\')" ondragend="handleDishDragEnd(event)"><div class="dish-title-row"><div><div class="dish-title">'+escHtml(dish.name||'Untitled Dish')+(isVeg?'<span class="veg-leaf" title="Vegetarian">🌿</span>':'')+'</div><div class="dish-meta"><span class="pill">Recipe</span>'+(parts.length?' <span class="meta-sep">·</span> '+parts.join(' · '):'')+( dish.url?' <span class="meta-sep">·</span> <a href="'+escAttr(dish.url)+'" target="_blank" onclick="event.stopPropagation()">↗ Link</a>':'')+'</div>'+tags+'</div><button class="icon-button" onclick="editDish(\''+escAttr(dish.id)+'\')">✎</button></div>'+(dish.notes?'<div class="dish-note">'+escHtml(dish.notes)+'</div>':'')+'</div>';
 }
+async function moveDay(idx,dir){var ni=idx+dir;if(!currentEvent||ni<0||ni>=currentEvent.days.length)return;var d=currentEvent.days.splice(idx,1)[0];currentEvent.days.splice(ni,0,d);autosave();renderPlanner();haptic(8);}
+async function copyDayMeals(dayId){var src=currentEvent.days.find(function(d){return d.id===dayId;});if(!src)return;var choices=currentEvent.days.filter(function(d){return d.id!==dayId;});if(!choices.length){showToast('Add another day first.','error');return;}var label=await promptAction({title:'Copy Day Meals',message:'Type the exact target day name:',placeholder:choices.map(function(d){return d.label;}).join(' / ')});if(!label)return;var target=choices.find(function(d){return d.label.toLowerCase()===label.toLowerCase();});if(!target){showToast('Target day not found.','error');return;}var copied=currentEvent.dishes.filter(function(d){return d.dayId===dayId;}).map(function(d){var nd=JSON.parse(JSON.stringify(d));nd.id=makeId();nd.dayId=target.id;return normalizeDish(nd);});currentEvent.dishes=currentEvent.dishes.concat(copied);addAuditEntry('day_copied','copied meals from '+src.label+' to '+target.label);autosave();renderAll();showToast('Copied '+copied.length+' item'+(copied.length!==1?'s':'')+' to '+target.label+'.','success');}
+async function quickAddDish(){if(!currentEvent.days.length){showToast('Create event days first.','error');return;}var name=await promptAction({title:'Quick Add Dish',message:'Dish name:',placeholder:'e.g., Grilled chicken'});if(!name)return;var day=currentEvent.days[0],meal=(day.meals&&day.meals[0])||'Dinner';currentEvent.dishes.push(normalizeDish({id:makeId(),dayId:day.id,meal:meal,name:name,ingredients:[],tags:[]}));addAuditEntry('dish_added','quick-added "'+name+'"');autosave();renderAll();showToast('Added '+name+'.','success');}
 function handleDishDragStart(e,id){draggedDishId=id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id);if(e.currentTarget)e.currentTarget.classList.add('dragging');}
 function handleDishDragEnd(e){if(e.currentTarget)e.currentTarget.classList.remove('dragging');draggedDishId=null;document.querySelectorAll('.meal-body.drag-over').forEach(function(el){el.classList.remove('drag-over');});}
 function handleMealDragOver(e){if(!draggedDishId)return;e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('drag-over');}
 function handleMealDragLeave(e){e.currentTarget.classList.remove('drag-over');}
 function handleMealDrop(e){e.preventDefault();e.currentTarget.classList.remove('drag-over');var dayId=e.currentTarget.dataset.dayId,meal=e.currentTarget.dataset.meal,id=draggedDishId||e.dataTransfer.getData('text/plain');if(!id)return;var dish=currentEvent.dishes.find(function(d){return d.id===id;});if(!dish)return;if(dish.dayId===dayId&&dish.meal===meal)return;dish.dayId=dayId;dish.meal=meal;renderAll();showToast('Moved "'+dish.name+'" to '+meal,'success');}
-function populateDishDayOptions(){var sel=safeEl('dishDay'),sel2=safeEl('eventDay');var opts=currentEvent.days.map(function(d){return'<option value="'+escAttr(d.id)+'">'+escHtml(d.label)+'</option>';}).join('');if(sel)sel.innerHTML=opts;if(sel2)sel2.innerHTML=opts;}
+function populateDishDayOptions(){var sel=safeEl('dishDay'),sel2=safeEl('eventDay');var opts=currentEvent.days.map(function(d){return'<option value="'+escAttr(d.id)+'">'+escHtml(d.label)+'</option>';}).join('');if(sel)sel.innerHTML=opts;if(sel2)sel2.innerHTML=opts;var meals=getDefaultMealTypes().map(function(m){return'<option>'+escHtml(m)+'</option>';}).join('');var dm=safeEl('dishMeal'),em=safeEl('eventMeal');if(dm)dm.innerHTML=meals;if(em)em.innerHTML=meals;}
 
 /* ===== AUTOCOMPLETE ===== */
 function populateIngredientSuggestions(){var dl=safeEl('ingredientSuggestions');if(!dl)return;var seen={};currentEvent.dishes.concat(currentEvent.recipeBank).forEach(function(dish){(dish.ingredients||[]).forEach(function(i){var n=(i.item||'').trim();if(n)seen[n.toLowerCase()]=n;});});dl.innerHTML=Object.keys(seen).sort().map(function(k){return'<option value="'+escAttr(seen[k])+'">'; }).join('');}
@@ -1217,46 +1448,220 @@ function populateTagSuggestions(){var dl=safeEl('tagSuggestions');if(!dl)return;
 
 /* ===== DISH MODAL ===== */
 function toggleEventMode(){var isEvent=safeEl('isEventCheck')&&safeEl('isEventCheck').checked;var ef=safeEl('eventFields');if(ef)ef.style.display=isEvent?'block':'none';var af=safeEl('assignmentFields'),ic=safeEl('importCard'),is=safeEl('ingredientSection');var fh=document.querySelector('.final-details-heading');var dcs=document.querySelectorAll('#dishModal .detail-card');[af,ic,is].forEach(function(el){if(el)el.style.display=isEvent?'none':'';});dcs.forEach(function(el){el.style.display=isEvent?'none':'';});if(fh)fh.style.display=isEvent?'none':'';}
-function openDishModal(dayId,meal,dishId,bankOnly){dayId=dayId||null;meal=meal||null;dishId=dishId||null;bankOnly=!!bankOnly;if(!currentEvent.days.length&&!bankOnly){showToast('Create event days first.','error');return;}editingDishId=dishId;addToBankOnly=bankOnly;populateDishDayOptions();clearDishModal();setText('dishModalTitle',bankOnly?'Add Recipe to Bank':dishId?'Edit':'Add Dish');var db2=safeEl('deleteEntryButton'),di=safeEl('deleteEntryId');if(di)di.value=dishId&&!bankOnly?dishId:'';if(db2)db2.style.display=dishId&&!bankOnly?'inline-flex':'none';var af=safeEl('assignmentFields');if(af)af.style.display=bankOnly?'none':'grid';if(dayId){setValue('dishDay',dayId);setValue('eventDay',dayId);}if(meal){setValue('dishMeal',meal);setValue('eventMeal',meal);}safeEl('dishModal').classList.add('active');}
-function closeDishModal(){var m=safeEl('dishModal');if(m)m.classList.remove('active');editingDishId=null;addToBankOnly=false;}
+function openDishModal(dayId,meal,dishId,bankOnly){dishModalHydrating=true;dayId=dayId||null;meal=meal||null;dishId=dishId||null;bankOnly=!!bankOnly;if(!currentEvent.days.length&&!bankOnly){showToast('Create event days first.','error');return;}editingDishId=dishId;addToBankOnly=bankOnly;populateDishDayOptions();clearDishModal();setText('dishModalTitle',bankOnly?'Add Recipe to Bank':dishId?'Edit':'Add Dish');var db2=safeEl('deleteEntryButton'),di=safeEl('deleteEntryId');if(di)di.value=dishId&&!bankOnly?dishId:'';if(db2)db2.style.display=dishId&&!bankOnly?'inline-flex':'none';var af=safeEl('assignmentFields');if(af)af.style.display=bankOnly?'none':'grid';if(dayId){setValue('dishDay',dayId);setValue('eventDay',dayId);}if(meal){setValue('dishMeal',meal);setValue('eventMeal',meal);}safeEl('dishModal').classList.add('active');dishModalDirty=false;var dn=safeEl('dishDirtyNote');if(dn)dn.style.display='none';setTimeout(function(){dishModalHydrating=false;},80);}
+function markDishModalDirty(){if(dishModalHydrating)return;dishModalDirty=true;var n=safeEl('dishDirtyNote');if(n)n.style.display='inline';}
+function closeDishModal(force){var m=safeEl('dishModal');if(!force&&dishModalDirty){confirmAction({title:'Discard unsaved changes?',message:'You have changes in this dish that have not been saved. Closing now will lose them.',confirmLabel:'Discard Changes',danger:true}).then(function(ok){if(ok)closeDishModal(true);});return;}if(m)m.classList.remove('active');editingDishId=null;addToBankOnly=false;dishModalDirty=false;var n=safeEl('dishDirtyNote');if(n)n.style.display='none';}
 function switchEntryMode(mode){safeEl('manualEntryTab')&&safeEl('manualEntryTab').classList.toggle('active',mode==='manual');safeEl('pasteRecipeTab')&&safeEl('pasteRecipeTab').classList.toggle('active',mode==='paste');safeEl('manualEntryPanel')&&safeEl('manualEntryPanel').classList.toggle('active',mode==='manual');safeEl('pasteRecipePanel')&&safeEl('pasteRecipePanel').classList.toggle('active',mode==='paste');}
-function clearDishModal(){setValue('dishName','');setValue('dishUrl','');setValue('servings','');setValue('peopleEating','');setValue('bulkIngredients','');setValue('pasteRecipeText','');setValue('eventName2','');setValue('eventTime','');setValue('eventAddress','');setValue('eventOtherNotes','');var ec=safeEl('isEventCheck');if(ec){ec.checked=false;}var ef=safeEl('eventFields');if(ef)ef.style.display='none';var af=safeEl('assignmentFields'),ic=safeEl('importCard'),is=safeEl('ingredientSection'),fh=document.querySelector('.final-details-heading');[af,ic,is].forEach(function(el){if(el)el.style.display='';});if(fh)fh.style.display='';document.querySelectorAll('#dishModal .detail-card').forEach(function(el){el.style.display='';});setPasteStatus('Paste any recipe text — from any website, cookbook, or message.','');switchEntryMode('paste');toggleImportCard(true);var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';addIngredientRow();}
+function clearDishModal(){setValue('dishName','');setValue('dishUrl','');setValue('servings','');setValue('peopleEating','');setValue('bulkIngredients','');setValue('pasteRecipeText','');setValue('eventName2','');setValue('eventTime','');setValue('eventAddress','');setValue('eventOtherNotes','');var ec=safeEl('isEventCheck');if(ec){ec.checked=false;}var ef=safeEl('eventFields');if(ef)ef.style.display='none';var af=safeEl('assignmentFields'),ic=safeEl('importCard'),is=safeEl('ingredientSection'),fh=document.querySelector('.final-details-heading');[af,ic,is].forEach(function(el){if(el)el.style.display='';});if(fh)fh.style.display='';document.querySelectorAll('#dishModal .detail-card').forEach(function(el){el.style.display='';});setPasteStatus('Paste any recipe text — from any website, cookbook, or message.','');hideParsePreview();switchEntryMode('paste');toggleImportCard(true);var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';addIngredientRow();}
 function toggleImportCard(forceOpen){var c=safeEl('importCard');if(!c)return;var open=typeof forceOpen==='boolean'?forceOpen:c.classList.contains('collapsed');c.classList.toggle('collapsed',!open);}
 
 /* ===== SMART PASTE ===== */
 function setPasteStatus(msg,type){var el=safeEl('pasteRecipeStatus');if(!el)return;el.textContent=msg;el.className='import-status'+(type?' '+type:'');}
+
+function normalizePastedRecipeText(text){
+  var raw=String(text||'').replace(/\u00a0/g,' ');
+  var lines=raw.split(/\r?\n/).map(function(l){return l.trim();}).filter(Boolean);
+  var junk=/^(subscribe|sign up|newsletter|advertisement|privacy|terms|cookies|all rights reserved|jump to recipe|print recipe|pin recipe|save recipe|share|facebook|pinterest|instagram|related recipes|you may also like|comments?|reviews?|rating|nutrition|calories|did you make this|leave a comment|equipment|tools|shopping list)$/i;
+  var cleaned=[];
+  lines.forEach(function(l){
+    l=l.replace(/\s+/g,' ').trim();
+    if(!l||junk.test(l))return;
+    if(/^https?:\/\//i.test(l))return;
+    if(l.length>240)return;
+    cleaned.push(l);
+  });
+  return cleaned.join('\n');
+}
+function ingredientWordRegex(){
+  return /\b(salt|pepper|oil|olive|butter|flour|sugar|honey|maple|egg|eggs|milk|cream|cheese|yogurt|garlic|onion|shallot|lemon|lime|tomato|tomatoes|cilantro|parsley|basil|mint|thyme|rosemary|oregano|paprika|cumin|chile|chili|pepper|peppers|chicken|beef|pork|steak|fish|salmon|shrimp|lobster|clam|scallop|pasta|rice|beans|lentils|tortilla|bread|stock|broth|vinegar|mustard|mayo|mayonnaise|sauce|salsa|ketchup|barbecue|bbq|avocado|lettuce|arugula|spinach|kale|potato|potatoes|carrot|celery|cucumber|corn|mushroom|mushrooms|zucchini|eggplant|wine|beer|tequila|vodka|water|nuts|almonds|walnuts|pecans|seeds|oats|baking powder|baking soda|vanilla|cinnamon|ginger)\b/i;
+}
+function allowedStandaloneIngredient(line){
+  return /^(kosher salt|salt|black pepper|pepper|water|ice|olive oil|oil|butter|eggs?|garlic|ginger|parsley|cilantro|basil|mint|thyme|rosemary|oregano|honey|sugar)$/i.test(String(line||'').trim());
+}
+function classifyIngredientLine(line){
+  var l=String(line||'').replace(/^[\-*•·]+\s*/,'').trim();
+  if(!l)return{ok:false,line:l,reason:'blank'};
+  var lower=l.toLowerCase();
+  if(l.length>155)return{ok:false,line:l,reason:'too long'};
+  if(/^(instructions?|directions?|method|preparation|steps?|notes?|nutrition|calories|equipment|tools|for the|to make|make the|recipe notes?|storage|leftovers?)\b/i.test(l))return{ok:false,line:l,reason:'section header'};
+  if(/\b(click|subscribe|newsletter|comment|review|share|print|save|pin|advertisement|photo|video|copyright|affiliate|privacy|cookie|website|sponsored|posted by)\b/i.test(l))return{ok:false,line:l,reason:'website text'};
+  if(/\b(prep|cook|total|active|inactive|ready in|chill time|rest time|bake time|minutes?|mins?|hours?|hrs?|seconds?|servings?|yield|makes|difficulty|author)\b/i.test(l) && !ingredientWordRegex().test(l))return{ok:false,line:l,reason:'time/meta'};
+  if(/\b(add|cook|bake|stir|mix|serve|transfer|place|remove|combine|whisk|heat|preheat|simmer|boil|roast|grill|fold|pour|season|arrange|cover|refrigerate|let stand)\b/i.test(l) && l.split(/\s+/).length>4)return{ok:false,line:l,reason:'instruction'};
+  if(/[.!?]$/.test(l)&&l.split(' ').length>6)return{ok:false,line:l,reason:'sentence'};
+  if(/^\d+\.?\s+[A-Z]/.test(l)&&l.split(' ').length>8)return{ok:false,line:l,reason:'numbered instruction'};
+  if(/^(minutes?|mins?|hours?|hrs?|seconds?|servings?|yield|prep|cook|total|instructions?|directions?)$/i.test(l))return{ok:false,line:l,reason:'standalone meta word'};
+  var words=l.split(/\s+/).filter(Boolean);
+  var timeUnits=/\b(minutes?|mins?|hours?|hrs?|seconds?|sec|secs)\b/i;
+  var hasQty=/^(?:\d+|\d+\/\d+|\d+\s+\d+\/\d+|[¼½¾⅓⅔⅛⅜⅝⅞])\b/i.test(l);
+  var unitPattern=new RegExp('\\b('+UNITS.join('|')+')\\b','i');
+  var hasFoodUnit=unitPattern.test(l);
+  if(hasQty && timeUnits.test(l) && !ingredientWordRegex().test(l))return{ok:false,line:l,reason:'time quantity'};
+  if(words.length===1 && !allowedStandaloneIngredient(l))return{ok:false,line:l,reason:'single non-food word'};
+  if(hasQty && (ingredientWordRegex().test(l)||hasFoodUnit||words.length>=2))return{ok:true,line:l,reason:'quantity'};
+  if(hasFoodUnit && ingredientWordRegex().test(l))return{ok:true,line:l,reason:'unit+food'};
+  if(allowedStandaloneIngredient(l))return{ok:true,line:l,reason:'standalone ingredient'};
+  if(words.length<=8 && ingredientWordRegex().test(l) && !/\b(add|cook|bake|stir|mix|serve|transfer|place|remove|combine|whisk|heat|preheat)\b/i.test(l))return{ok:true,line:l,reason:'food words'};
+  return{ok:false,line:l,reason:'not ingredient-like'};
+}
+function looksLikeIngredientLine(line){return classifyIngredientLine(line).ok;}
+function splitIngredientCandidates(lines){
+  var accepted=[],low=[],rejected=[],seen={};
+  (lines||[]).forEach(function(raw){
+    var c=classifyIngredientLine(raw);
+    var key=String(c.line||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+    if(!key)return;
+    var isLow=c.ok && (/\b(for serving|for garnish|to taste|optional| or )\b/i.test(c.line)||c.reason==='food words');
+    if(c.ok && !isLow){if(!seen[key]){seen[key]=true;accepted.push(c.line);}}
+    else if(c.ok && isLow){if(!seen[key]){seen[key]=true;low.push(c.line);}}
+    else if(rejected.length<80){rejected.push({line:c.line,reason:c.reason});}
+  });
+  return{accepted:accepted.slice(0,80),low:low.slice(0,50),rejected:rejected};
+}
+function dedupeIngredientLines(lines){var s=splitIngredientCandidates(lines);return s.accepted.concat(s.low);}
+function localParseFullRecipeText(text){
+  var clean=normalizePastedRecipeText(text);
+  var lines=clean.split(/\r?\n/).map(function(l){return l.trim();}).filter(Boolean);
+  var result={name:'',servings:'',ingredients:[],lowConfidenceIngredients:[],rejectedIngredients:[],notes:''};
+  if(!lines.length)return result;
+  var skip=/^(prep|cook|total|active|inactive|yield|difficulty|author|source|directions|instructions|method|steps?|ingredients?|nutrition|calories)\b/i;
+  var titleCandidates=lines.filter(function(l){return l.length>2&&l.length<90&&!skip.test(l)&&!looksLikeIngredientLine(l)&&!/\b(comment|review|subscribe|newsletter|privacy|terms)\b/i.test(l);});
+  result.name=titleCandidates[0]||'';
+  var servingMatch=clean.match(/(?:serves|servings|yield|makes)\s*:?\s*(?:about\s*)?(\d+(?:\s*[-–]\s*\d+)?)/i);
+  if(servingMatch)result.servings=servingMatch[1].replace(/\s+/g,'');
+  var start=-1,end=lines.length;
+  for(var i=0;i<lines.length;i++){if(/^ingredients?\b/i.test(lines[i])){start=i+1;break;}}
+  if(start<0){start=lines.findIndex(function(l){return looksLikeIngredientLine(l);});}
+  if(start<0)start=0;
+  for(var j=start;j<lines.length;j++){
+    if(j>start && /^(instructions?|directions?|method|preparation|steps?|nutrition|notes?)\b/i.test(lines[j])){end=j;break;}
+  }
+  var section=lines.slice(start,end).map(function(l){return l.replace(/^[\-*•·]+\s*/,'');});
+  var split=splitIngredientCandidates(section);
+  if(!split.accepted.length&&!split.low.length)split=splitIngredientCandidates(lines);
+  result.ingredients=split.accepted;
+  result.lowConfidenceIngredients=split.low;
+  result.rejectedIngredients=split.rejected;
+  return result;
+}
+function sanitizeParsedRecipe(recipe,originalText){
+  recipe=recipe||{};
+  var local=localParseFullRecipeText(originalText||'');
+  var ing=Array.isArray(recipe.ingredients)?recipe.ingredients:[];
+  ing=ing.map(function(x){
+    if(typeof x==='string')return x;
+    if(x&&typeof x==='object')return [x.quantity,x.unit,x.item||x.name].filter(Boolean).join(' ');
+    return '';
+  });
+  var split=splitIngredientCandidates(ing);
+  if(local.ingredients.length+local.lowConfidenceIngredients.length && (split.accepted.length+split.low.length<2 || split.accepted.length+split.low.length>60))split=splitIngredientCandidates(local.ingredients.concat(local.lowConfidenceIngredients).concat((split.rejected||[]).map(function(r){return r.line;})));
+  var name=String(recipe.name||recipe.title||'').trim();
+  if(!name||name.length>90||/\b(subscribe|newsletter|comment|review|privacy|print|save)\b/i.test(name))name=local.name||'';
+  var servings=String(recipe.servings||recipe.yield||'').trim();
+  if(!servings&&local.servings)servings=local.servings;
+  var rejected=(split.rejected||[]).concat(local.rejectedIngredients||[]).slice(0,80);
+  var low=(split.low||[]).concat(local.lowConfidenceIngredients||[]).filter(Boolean);
+  return {name:name,servings:servings,ingredients:split.accepted,lowConfidenceIngredients:low,rejectedIngredients:rejected,notes:String(recipe.notes||'').trim()};
+}
+function setPasteStatus(msg,type){var el=safeEl('pasteRecipeStatus');if(!el)return;el.textContent=msg;el.className='import-status'+(type?' '+type:'');}
+function hideParsePreview(){pendingParsedRecipe=null;var el=safeEl('parsePreview');if(el){el.classList.remove('visible');el.innerHTML='';}}
+function renderPreviewInput(line,checked,cls){return'<div class="parse-preview-line '+(cls||'')+'"><label><input type="checkbox" class="parse-preview-check" '+(checked?'checked':'')+'><input type="text" class="parse-preview-text" value="'+escAttr(line)+'"></label></div>';}
+function toggleRejectedIngredient(btn){var line=btn.closest('.parse-preview-line');if(!line)return;line.classList.toggle('included');btn.textContent=line.classList.contains('included')?'Included':'Include';haptic(8);}
+function collectPreviewIngredientLines(){var el=safeEl('parsePreview'),out=[];if(!el)return out;el.querySelectorAll('.parse-preview-line').forEach(function(row){var txt=row.querySelector('.parse-preview-text');if(!txt)return;var checked=row.classList.contains('included')||(row.querySelector('.parse-preview-check')&&row.querySelector('.parse-preview-check').checked);var val=txt.value.trim();if(checked&&val)out.push(val);});return out;}
+function showParsedRecipePreview(recipe,sourceLabel){
+  recipe=recipe||{};pendingParsedRecipe=recipe;
+  var el=safeEl('parsePreview');if(!el)return;
+  var title=recipe.name||recipe.title||'',servings=recipe.servings?(' · serves '+escHtml(recipe.servings)):'';
+  var ingredients=(recipe.ingredients||[]).map(normalizeIngredientDisplayLine),low=(recipe.lowConfidence||[]).map(normalizeIngredientDisplayLine),rejected=recipe.rejected||[];
+  el.innerHTML='<div class="parse-preview-head"><div class="parse-preview-title">Review parsed recipe before applying</div><div class="parse-preview-sub">'+escHtml(sourceLabel||'Parsed')+servings+'</div><input id="parsePreviewTitleInput" class="parse-title-input" placeholder="Recipe title" value="'+escAttr(title)+'"></div>'+ 
+    '<div class="parse-preview-body">'+
+      '<div class="parse-preview-tools"><button type="button" class="secondary" onclick="setAllPreviewChecks(true)">Select All</button><button type="button" class="secondary" onclick="setAllPreviewChecks(false)">Clear All</button><button type="button" class="secondary" onclick="addPreviewIngredientRow()">+ Add Ingredient</button></div>'+ 
+      '<div class="parse-preview-section"><div class="parse-preview-label">Accepted ingredients ('+ingredients.length+')</div>'+ 
+        (ingredients.length?'<div class="parse-preview-list">'+ingredients.map(function(i){return renderPreviewInput(i,true,'');}).join('')+'</div>':'<div class="parse-preview-empty">No high-confidence ingredients found.</div>')+
+      '</div>'+ 
+      (low.length?'<div class="parse-preview-section"><div class="parse-preview-label">Low confidence / optional ('+low.length+')</div><div class="parse-preview-list parse-preview-low">'+low.map(function(i){return renderPreviewInput(i,false,'');}).join('')+'</div></div>':'')+
+      (rejected.length?'<div class="parse-preview-section"><div class="parse-preview-label">Rejected / ignored text ('+rejected.length+')</div><div class="parse-preview-list parse-preview-rejected">'+rejected.slice(0,40).map(function(r){var line=normalizeIngredientDisplayLine(r.line||r);return'<div class="parse-preview-line" data-line="'+escAttr(line)+'"><input type="text" class="parse-preview-text" value="'+escAttr(line)+'"><span style="font-size:11px;opacity:.7;">'+escHtml(r.reason||'rejected')+'</span><button type="button" class="parse-include-btn" onclick="toggleRejectedIngredient(this)">Include</button></div>';}).join('')+'</div></div>':'')+
+      '<div class="parse-preview-actions"><button type="button" onclick="acceptParsedRecipePreview()">Use Selected Ingredients</button><button type="button" class="secondary" onclick="hideParsePreview()">Keep Editing Paste</button></div>'+ 
+    '</div>';
+  el.classList.add('visible');
+  setPasteStatus('Parsed '+ingredients.length+' likely ingredients plus '+low.length+' optional/questionable lines. Review before applying.','success');
+}
+function setAllPreviewChecks(on){var el=safeEl('parsePreview');if(!el)return;el.querySelectorAll('.parse-preview-check').forEach(function(cb){cb.checked=!!on;});el.querySelectorAll('.parse-preview-line.included').forEach(function(r){if(!on)r.classList.remove('included');});}
+function addPreviewIngredientRow(){var list=document.querySelector('#parsePreview .parse-preview-list');if(!list)return;list.insertAdjacentHTML('beforeend',renderPreviewInput('',true,''));var inputs=list.querySelectorAll('.parse-preview-text');if(inputs.length)inputs[inputs.length-1].focus();}
+function acceptParsedRecipePreview(){
+  if(!pendingParsedRecipe){showToast('Nothing parsed yet.','error');return;}
+  var selected=collectPreviewIngredientLines();
+  if(!selected.length){showToast('Select at least one ingredient.','error');return;}
+  var title=getValue('parsePreviewTitleInput').trim();
+  var recipe=Object.assign({},pendingParsedRecipe,{name:title||pendingParsedRecipe.name,title:title||pendingParsedRecipe.title,ingredients:selected});
+  applyParsedRecipe(recipe,'Applied');
+  hideParsePreview();
+}
+function applyParsedRecipe(recipe,sourceLabel){
+  recipe=recipe||{};
+  if(recipe.name)setValue('dishName',recipe.name);
+  if(recipe.servings){var el=safeEl('servings');if(el){el.readOnly=false;setValue('servings',recipe.servings);el.readOnly=true;}}
+  if(recipe.notes)setValue('dishNotes',recipe.notes);
+  var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';
+  (recipe.ingredients||[]).forEach(addIngredientFromText);
+  if(!(recipe.ingredients||[]).length)addIngredientRow();
+  updateScaledIngredientDisplay();toggleImportCard(false);haptic(12);
+  setPasteStatus((sourceLabel||'Parsed')+' '+(recipe.ingredients||[]).length+' ingredients. Review below.','success');
+}
 async function pasteFullRecipe(){
   var text=getValue('pasteRecipeText').trim();if(!text){setPasteStatus('Paste recipe text first.','warning');return;}
+  hideParsePreview();
+  var cleanText=normalizePastedRecipeText(text);
   var key=getApiKey();
-  if(!key){setPasteStatus('No API key saved. Go to App Admin → ✦ AI & API to add your key.','error');return;}
+  if(!key){
+    var local=localParseFullRecipeText(cleanText);
+    if(local.ingredients.length){showParsedRecipePreview(local,'Parsed locally without AI');return;}
+    setPasteStatus('Could not find a clean ingredients section. Try copying only the recipe card or use Paste Ingredients.','error');return;
+  }
   setPasteStatus('Parsing with AI…','');
   try{
-    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:'Extract the recipe from the text below. Return ONLY valid JSON, no markdown, no backticks:\n{"name":"","servings":"","ingredients":["2 cups flour","1 tsp salt"],"notes":""}\n\nRecipe text:\n'+text.slice(0,9000)}]})});
-    if(!res.ok){var errData=await res.json().catch(function(){return{};});var msg='';if(res.status===401){msg='Invalid API key — check App Admin → AI & API.';}else if(errData.type==='exceeded_limit'||(errData.windows&&errData.windows['5h']&&errData.windows['5h'].status==='exceeded_limit')){var resetsAt=errData.resetsAt||(errData.windows&&errData.windows['5h']&&errData.windows['5h'].resets_at);var resetTime=resetsAt?new Date(resetsAt*1000).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}):'soon';msg='API usage limit reached for this 5-hour window — resets at '+resetTime+'. Try again later.';}else{msg=(errData.error&&errData.error.message)||('API error '+res.status);}setPasteStatus(msg,'error');return;}
+    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1400,messages:[{role:'user',content:'Extract a cooking recipe from messy copied webpage text. Return ONLY valid JSON, no markdown, no explanation. Schema: {"name":"","servings":"","ingredients":["2 cups flour","1 tsp salt"],"notes":""}. Rules: include ONLY real food ingredient lines from the recipe ingredients section. Exclude time words like minutes/hours, instructions, ads, comments, reviews, nutrition, equipment, related recipes, newsletters, page navigation, and prose. If a line is not clearly a grocery ingredient, exclude it. Do not invent ingredients.\n\nCopied text:\n'+cleanText.slice(0,12000)}]})});
+    if(!res.ok){
+      var localFail=localParseFullRecipeText(cleanText);
+      if(localFail.ingredients.length){showParsedRecipePreview(localFail,'AI unavailable, parsed locally');return;}
+      var errData=await res.json().catch(function(){return{};});
+      var msg=(errData.error&&errData.error.message)||('API error '+res.status);
+      setPasteStatus(msg,'error');return;
+    }
     var data=await res.json(),raw=(data.content||[]).map(function(i){return i.text||'';}).join('').trim();
     var recipe=JSON.parse(raw.replace(/^```(?:json)?/,'').replace(/```$/,'').trim());
-    if(recipe.name)setValue('dishName',recipe.name);
-    if(recipe.servings){var el=safeEl('servings');if(el){el.readOnly=false;setValue('servings',recipe.servings);el.readOnly=true;}}
-    if(recipe.notes)setValue('dishNotes',recipe.notes);
-    var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';
-    (recipe.ingredients||[]).forEach(addIngredientFromText);
-    if(!(recipe.ingredients||[]).length)addIngredientRow();
-    updateScaledIngredientDisplay();toggleImportCard(false);
-    setPasteStatus('Parsed '+(recipe.ingredients||[]).length+' ingredients. Review below.','success');
-  }catch(e){setPasteStatus('Could not parse — try pasting ingredients manually. ('+e.message+')','error');}
+    recipe=sanitizeParsedRecipe(recipe,cleanText);
+    if(!recipe.ingredients.length){setPasteStatus('The AI response did not contain clean ingredient lines. Try copying just the recipe card or use Paste Ingredients.','error');return;}
+    showParsedRecipePreview(recipe,'AI parsed');
+  }catch(e){
+    var localCatch=localParseFullRecipeText(cleanText);
+    if(localCatch.ingredients.length){showParsedRecipePreview(localCatch,'AI parse failed, parsed locally');return;}
+    setPasteStatus('Could not parse cleanly — try copying only the ingredients section. ('+e.message+')','error');
+  }
 }
+
+
+
+function toTitleCaseIngredient(str){return String(str||'').toLowerCase().replace(/([a-z])/g,function(m){return m.toUpperCase();}).replace(/And/g,'and').replace(/Or/g,'or').replace(/For/g,'for').replace(/To/g,'to').replace(/Of/g,'of').replace(/Extra-Firm/g,'Extra-Firm');}
+function abbrUnit(u){var m={tablespoon:'tbsp',tablespoons:'tbsp',teaspoon:'tsp',teaspoons:'tsp',ounce:'oz',ounces:'oz',pound:'lb',pounds:'lb',cups:'c',cup:'c',quart:'qt',quarts:'qt',pint:'pt',pints:'pt',gallon:'gal',gallons:'gal'};return m[String(u||'').toLowerCase()]||u;}
+function normalizeIngredientDisplayLine(line){return String(line||'').replace(/ tablespoons?/gi,' tbsp').replace(/ teaspoons?/gi,' tsp').replace(/ ounces?/gi,' oz').replace(/ pounds?/gi,' lb').replace(/ cups?/gi,' c').replace(/ quarts?/gi,' qt').replace(/ pints?/gi,' pt').replace(/ gallons?/gi,' gal').replace(/\(\s*([0-9]+)\s*-?\s*oz\s*\)/gi,'($1-oz)');}
 
 /* ===== INGREDIENT PARSING ===== */
 var UNITS=['cup','cups','tbsp','tablespoon','tablespoons','tbs','tsp','teaspoon','teaspoons','oz','ounce','ounces','lb','lbs','pound','pounds','g','gram','grams','kg','ml','liter','liters','qt','quart','pt','pint','gal','gallon','can','cans','package','packages','pkg','bag','bags','box','boxes','bunch','bunches','clove','cloves','head','heads','slice','slices','stick','sticks','pinch','pinches','dash','dashes','handful','jar','jars','bottle','bottles','sprig','sprigs','piece','pieces'];
 function isUnit(w){return w&&UNITS.indexOf(String(w).toLowerCase().trim())>=0;}
 function prepLine(line){return String(line||'').trim().replace(/^[\-*\u2022\u00B7]+\s*/,'').replace(/\u00BC/g,' 1/4').replace(/\u00BD/g,' 1/2').replace(/\u00BE/g,' 3/4').replace(/(\d+)\s*[-\u2013\u2014]\s*(\d+)/g,'$1').replace(/[,;:()]/g,' ').replace(/[\u2013\u2014]/g,' ').replace(/\s+of\s+/gi,' ').replace(/\s+/g,' ').trim();}
-function parseIngLine(line){var text=prepLine(line);if(!text)return{quantity:'',unit:'',item:''};var sm=text.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)\s+(.+)$/);if(sm)return splitRest(sm[1],sm[2]);var em=text.match(/^(.+?)\s+(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)(?:\s+(.+))?$/);if(em){var ip=cleanItem(em[1]),qty=em[2].trim(),tr=(em[3]||'').trim();if(!ip&&!tr)return{quantity:qty,unit:'',item:''};if(tr){var pp=tr.split(' ');if(isUnit(pp[0]))return{quantity:qty,unit:pp[0],item:cleanItem((pp.slice(1).join(' ')?pp.slice(1).join(' ')+' ':'')+ip)};return{quantity:qty,unit:'',item:cleanItem(tr+' '+ip)};}return{quantity:qty,unit:'',item:ip};}return{quantity:'',unit:'',item:cleanItem(text)};}
-function splitRest(q,rest){var pp=String(rest||'').split(' ').filter(Boolean),u='',it=String(rest||'').trim();if(pp.length&&isUnit(pp[0])){u=pp[0];it=pp.slice(1).join(' ');}return{quantity:q||'',unit:u,item:cleanItem(it)};}
+function parseIngLine(line){
+  var original=normalizeIngredientDisplayLine(line),text=prepLine(original);if(!text)return{quantity:'',unit:'',item:'',originalText:original};
+  var pm=text.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)\s+\(([^)]+)\)\s+(.+)$/);
+  if(pm){var rest=pm[3],parts=rest.split(' '),unit=isUnit(parts[0])?abbrUnit(parts.shift()):'';return{quantity:pm[1],unit:unit,item:toTitleCaseIngredient(parts.join(' ')),packageNote:'('+normalizeIngredientDisplayLine(pm[2])+')',originalText:original};}
+  var sm=text.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)\s+(.+)$/);if(sm)return splitRest(sm[1],sm[2],original);
+  var em=text.match(/^(.+?)\s+(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)(?:\s+(.+))?$/);if(em){var ip=cleanItem(em[1]),qty=em[2].trim(),tr=(em[3]||'').trim();if(!ip&&!tr)return{quantity:qty,unit:'',item:'',originalText:original};if(tr){var pp=tr.split(' ');if(isUnit(pp[0]))return{quantity:qty,unit:abbrUnit(pp[0]),item:toTitleCaseIngredient(cleanItem((pp.slice(1).join(' ')?pp.slice(1).join(' ')+' ':'')+ip)),originalText:original};return{quantity:qty,unit:'',item:toTitleCaseIngredient(cleanItem(tr+' '+ip)),originalText:original};}return{quantity:qty,unit:'',item:toTitleCaseIngredient(ip),originalText:original};}
+  return{quantity:'',unit:'',item:toTitleCaseIngredient(cleanItem(text)),originalText:original};}
+function splitRest(q,rest,original){var pp=String(rest||'').split(' ').filter(Boolean),u='',it=String(rest||'').trim();if(pp.length&&isUnit(pp[0])){u=abbrUnit(pp[0]);it=pp.slice(1).join(' ');}return{quantity:q||'',unit:u,item:toTitleCaseIngredient(cleanItem(it)),originalText:original||String(rest||'')};}
 function cleanItem(item){item=String(item||'').trim().replace(/^\d+[\s\/]*/,'');if(item.toLowerCase().indexOf('of ')===0)item=item.slice(3).trim();return item.replace(/to taste/gi,'').replace(/\s+/g,' ').trim();}
-function addIngredientFromText(line){var p=parseIngLine(line);if(!p.quantity&&!p.unit&&!p.item)return;addIngredientRow(p.quantity,p.unit,p.item);}
-function addIngredientRow(q,u,it){var wrap=safeEl('ingredientRows');if(!wrap)return;var row=document.createElement('div');row.className='ingredient-row';row.draggable=true;row.dataset.baseQty=q||'';row.innerHTML='<span class="drag-handle">\u22ee\u22ee</span><input class="ing-qty" placeholder="Qty" value="'+escAttr(q||'')+'" oninput="this.closest(\'.ingredient-row\').dataset.baseQty=this.value"><input class="ing-unit" placeholder="Unit" value="'+escAttr(u||'')+'"><input class="ing-item" list="ingredientSuggestions" placeholder="Ingredient" value="'+escAttr(it||'')+'"><button class="remove-ingredient" onclick="this.parentElement.remove()">\u00d7</button>';wrap.appendChild(row);row.addEventListener('dragstart',function(){row.classList.add('dragging');});row.addEventListener('dragend',function(){row.classList.remove('dragging');});}
+function addIngredientFromText(line){var p=parseIngLine(line);if(!p.quantity&&!p.unit&&!p.item)return;addIngredientRow(p.quantity,p.unit,p.item,'',p.packageNote);}
+function addIngredientRow(q,u,it,adjusted,packageNote){var wrap=safeEl('ingredientRows');if(!wrap)return;var row=document.createElement('div');row.className='ingredient-row';row.draggable=true;u=abbrUnit(u||'');it=toTitleCaseIngredient(it||'');var adj=adjusted||q||'';row.dataset.baseQty=q||'';row.dataset.packageNote=packageNote||'';row.innerHTML='<span class="drag-handle">⋮⋮</span><input class="ing-qty ing-original" placeholder="Orig" value="'+escAttr(q||'')+'" oninput="this.closest(&quot;.ingredient-row&quot;).dataset.baseQty=this.value;updateScaledIngredientDisplay()"><input class="ing-adjusted" placeholder="Adj" value="'+escAttr(adj)+'"><input class="ing-unit" placeholder="Unit" value="'+escAttr(u||'')+'"><input class="ing-item" list="ingredientSuggestions" placeholder="Ingredient" value="'+escAttr(it||'')+'"><button class="remove-ingredient" onclick="this.parentElement.remove()">×</button>';wrap.appendChild(row);row.addEventListener('dragstart',function(){row.classList.add('dragging');});row.addEventListener('dragend',function(){row.classList.remove('dragging');});}
 function parseBulkIngredients(){var t=getValue('bulkIngredients').trim();if(!t)return;t.split('\n').map(function(l){return l.trim();}).filter(Boolean).forEach(addIngredientFromText);setValue('bulkIngredients','');updateScaledIngredientDisplay();}
-function collectIngredients(){return Array.from(document.querySelectorAll('#ingredientRows .ingredient-row')).map(function(row){var q=row.querySelector('.ing-qty').value.trim();return{quantity:row.dataset.baseQty||q,displayedQuantity:q,unit:row.querySelector('.ing-unit').value.trim(),item:row.querySelector('.ing-item').value.trim()};}).filter(function(i){return i.quantity||i.unit||i.item;});}
+function collectIngredients(){return Array.from(document.querySelectorAll('#ingredientRows .ingredient-row')).map(function(row){var oq=row.querySelector('.ing-original')||row.querySelector('.ing-qty'),aq=row.querySelector('.ing-adjusted'),unit=row.querySelector('.ing-unit'),item=row.querySelector('.ing-item');var q=(oq?oq.value:'').trim(),adj=(aq?aq.value:q).trim(),u=(unit?unit.value:'').trim(),it=toTitleCaseIngredient((item?item.value:'').trim());return{quantity:q,displayedQuantity:adj,unit:abbrUnit(u),item:it,packageNote:row.dataset.packageNote||''};}).filter(function(i){return i.quantity||i.unit||i.item;});}
 function parseTags(){return getValue('dishTags').split(',').map(function(t){return t.trim();}).filter(Boolean);}
 function saveDishFromModal(){
   var isEvent=safeEl('isEventCheck')&&safeEl('isEventCheck').checked;
@@ -1266,20 +1671,20 @@ function saveDishFromModal(){
     dish=normalizeDish({id:editingDishId||makeId(),dayId:getValue('eventDay'),meal:getValue('eventMeal'),isEvent:true,eventName:eName,eventTime:getValue('eventTime').trim(),eventAddress:getValue('eventAddress').trim(),notes:getValue('eventOtherNotes').trim(),name:eName,ingredients:[],tags:[]});
   }else{
     var name=getValue('dishName').trim();if(!name){showToast('Add a dish name.','error');return;}
-    dish=normalizeDish({id:editingDishId||makeId(),dayId:addToBankOnly?null:getValue('dishDay'),meal:addToBankOnly?null:getValue('dishMeal'),name:name,url:getValue('dishUrl').trim(),servings:getValue('servings').trim(),peopleEating:getValue('peopleEating').trim(),notes:'',tags:[],ingredients:collectIngredients(),isEvent:false});
+    dish=normalizeDish({id:editingDishId||makeId(),dayId:addToBankOnly?null:getValue('dishDay'),meal:addToBankOnly?null:getValue('dishMeal'),name:name,url:getValue('dishUrl').trim(),servings:getValue('servings').trim(),peopleEating:getValue('peopleEating').trim(),notes:'',tags:parseTags(),isVegetarian:parseTags().some(function(t){return /veg|vegetarian/i.test(t);}),ingredients:collectIngredients(),isEvent:false});
   }
   if(addToBankOnly){currentEvent.recipeBank.push(dish);}
   else if(editingDishId){var idx=currentEvent.dishes.findIndex(function(d){return d.id===editingDishId;});if(idx>=0)currentEvent.dishes[idx]=dish;else currentEvent.dishes.push(dish);}
   else{currentEvent.dishes.push(dish);}
   addAuditEntry(editingDishId?'dish_edited':'dish_added',(editingDishId?'updated':'added')+' "'+(dish.eventName||dish.name)+'"');
-  closeDishModal();renderAll();showToast(addToBankOnly?'Recipe saved to bank.':editingDishId?'Dish updated.':'Dish added.','success');
+  dishModalDirty=false;closeDishModal(true);renderAll();showToast(addToBankOnly?'Recipe saved to bank.':editingDishId?'Dish updated.':'Dish added.','success');
 }
-function editDish(id){var dish=currentEvent.dishes.find(function(d){return d.id===id;}),isBank=false;if(!dish){dish=currentEvent.recipeBank.find(function(r){return r.id===id;});isBank=!!dish;}if(!dish)return;openDishModal(dish.dayId,dish.meal,id,isBank);if(dish.isEvent){var ec=safeEl('isEventCheck');if(ec)ec.checked=true;toggleEventMode();setValue('eventDay',dish.dayId||'');setValue('eventMeal',dish.meal||'Dinner');setValue('eventName2',dish.eventName||'');setValue('eventTime',dish.eventTime||'');setValue('eventAddress',dish.eventAddress||'');setValue('eventOtherNotes',dish.notes||'');}else{setValue('dishName',dish.name||'');setValue('dishUrl',dish.url||'');setValue('servings',dish.servings||'');setValue('peopleEating',dish.peopleEating||'');toggleImportCard(false);var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';(dish.ingredients||[]).forEach(function(i){addIngredientRow(i.quantity,i.unit,i.item);});if(!(dish.ingredients||[]).length)addIngredientRow();updateScaledIngredientDisplay();}}
-async function deleteEditingDish(){var tid=getValue('deleteEntryId')||editingDishId;if(!tid){showToast('Could not find item.','error');return;}if(!await confirmAction({message:'Remove this dish from the plan?',confirmLabel:'Remove',danger:true}))return;var d=currentEvent.dishes.find(function(x){return String(x.id)===String(tid);});currentEvent.dishes=currentEvent.dishes.filter(function(x){return String(x.id)!==String(tid);});if(d)addAuditEntry('dish_removed','removed "'+(d.eventName||d.name)+'"');closeDishModal();renderAll();showToast('Dish removed.','success');}
+function editDish(id){var dish=currentEvent.dishes.find(function(d){return d.id===id;}),isBank=false;if(!dish){dish=currentEvent.recipeBank.find(function(r){return r.id===id;});isBank=!!dish;}if(!dish)return;openDishModal(dish.dayId,dish.meal,id,isBank);if(dish.isEvent){var ec=safeEl('isEventCheck');if(ec)ec.checked=true;toggleEventMode();setValue('eventDay',dish.dayId||'');setValue('eventMeal',dish.meal||'Dinner');setValue('eventName2',dish.eventName||'');setValue('eventTime',dish.eventTime||'');setValue('eventAddress',dish.eventAddress||'');setValue('eventOtherNotes',dish.notes||'');}else{setValue('dishName',dish.name||'');setValue('dishUrl',dish.url||'');setValue('servings',dish.servings||'');setValue('peopleEating',dish.peopleEating||'');setValue('dishTags',(dish.tags||[]).join(', '));toggleImportCard(false);var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';(dish.ingredients||[]).forEach(function(i){addIngredientRow(i.quantity,i.unit,i.item);});if(!(dish.ingredients||[]).length)addIngredientRow();updateScaledIngredientDisplay();}}
+async function deleteEditingDish(){var tid=getValue('deleteEntryId')||editingDishId;if(!tid){showToast('Could not find item.','error');return;}if(!await confirmAction({message:'Remove this dish from the plan?',confirmLabel:'Remove',danger:true}))return;var d=currentEvent.dishes.find(function(x){return String(x.id)===String(tid);});currentEvent.dishes=currentEvent.dishes.filter(function(x){return String(x.id)!==String(tid);});if(d)addAuditEntry('dish_removed','removed "'+(d.eventName||d.name)+'"');dishModalDirty=false;closeDishModal(true);renderAll();showToast('Dish removed.','success');}
 function enableIngredientDropZone(){var c=safeEl('ingredientRows');if(!c||c.dataset.dragReady)return;c.dataset.dragReady='true';c.addEventListener('dragover',function(e){e.preventDefault();var after=getDragAfter(c,e.clientY),drag=c.querySelector('.ingredient-row.dragging');if(!drag)return;if(after==null)c.appendChild(drag);else c.insertBefore(drag,after);});}
 function getDragAfter(container,y){return Array.from(container.querySelectorAll('.ingredient-row:not(.dragging)')).reduce(function(cl,ch){var box=ch.getBoundingClientRect(),off=y-box.top-box.height/2;if(off<0&&off>cl.offset)return{offset:off,element:ch};return cl;},{offset:Number.NEGATIVE_INFINITY}).element;}
 function getCurrentModalScale(){var o=parseFloat(getValue('servings')),f=parseFloat(getValue('peopleEating')||getValue('servings'));if(!o||!f)return 1;return f/o;}
-function updateScaledIngredientDisplay(){var s=getCurrentModalScale();document.querySelectorAll('#ingredientRows .ingredient-row').forEach(function(row){var inp=row.querySelector('.ing-qty'),base=row.dataset.baseQty||inp.value,scaled=scaleQty(base,s);if(scaled!==inp.value)inp.value=scaled;});}
+function updateScaledIngredientDisplay(){var s=getCurrentModalScale();document.querySelectorAll('#ingredientRows .ingredient-row').forEach(function(row){var orig=row.querySelector('.ing-original')||row.querySelector('.ing-qty'),adj=row.querySelector('.ing-adjusted')||orig;if(!orig||!adj)return;var base=row.dataset.baseQty||orig.value;adj.value=scaleQty(base,s);});}
 function getDishScale(dish){var o=parseFloat(dish.servings),f=parseFloat(dish.peopleEating||dish.servings);if(!o||!f)return 1;return f/o;}
 function scaleQty(q,s){if(!q||!s||s===1)return q||'';var f=parseFrac(q);if(f==null)return q;return fmtQty(f*s);}
 function parseFrac(v){var t=String(v||'').trim();if(/^\d+\s+\d+\/\d+$/.test(t)){var m=t.match(/^(\d+)\s+(\d+)\/(\d+)$/);return parseInt(m[1],10)+parseInt(m[2],10)/parseInt(m[3],10);}if(/^\d+\/\d+$/.test(t)){var p=t.split('/'),d=parseFloat(p[1]);return d?parseFloat(p[0])/d:null;}var n=parseFloat(t.replace(',','.'));return isNaN(n)?null:n;}
@@ -1298,31 +1703,36 @@ function primaryStore(meta){if(meta.storeAssignments&&meta.storeAssignments.leng
 function aggregateRows(){
   var grouped={};
   currentEvent.dishes.forEach(function(dish){
-    if(dish.isEvent)return; // skip restaurant/event dishes
+    if(dish.isEvent)return;
     var scale=getDishScale(dish);
     (dish.ingredients||[]).forEach(function(ing){
-      var item=(ing.item||'').trim().replace(/^\d+[\s.\/]+/,'');if(!item)return; // clean item name
+      var item=(ing.item||'').trim().replace(/^\d+[\s.\/]+/,'');if(!item)return;
       var unit=(ing.unit||'').trim(),sqty=scaleQty(ing.quantity,scale),key=normKey(item,unit);
-      if(!grouped[key])grouped[key]={key:key,item:item,unit:unit,quantityTotal:0,quantityText:'',numeric:true,dishes:[],usedFor:[]};
+      if(!grouped[key])grouped[key]={key:key,item:item,unit:unit,quantityTotal:0,quantityText:'',numeric:true,dishes:[],usedFor:[],isManual:false};
       var pq=parseFrac(sqty);
       if(pq==null)grouped[key].numeric=false;else grouped[key].quantityTotal+=pq;
       if(grouped[key].dishes.indexOf(dish.name)<0)grouped[key].dishes.push(dish.name);
       grouped[key].usedFor.push({dish:dish.name,quantity:sqty,unit:unit});
     });
   });
+  (currentEvent.manualGroceryItems||[]).forEach(function(mi){
+    var key='manual|'+mi.id;
+    grouped[key]={key:key,item:mi.item,unit:mi.unit||'',quantityText:mi.quantity||'',quantityTotal:0,numeric:false,dishes:['Manual item'],usedFor:[{dish:'Manual item',quantity:mi.quantity||'',unit:mi.unit||''}],isManual:true,manualId:mi.id,manualStore:mi.store,manualDept:mi.department};
+  });
   return Object.keys(grouped).map(function(key){
     var row=grouped[key];
-    row.quantityText=row.numeric?fmtQty(row.quantityTotal):row.usedFor.map(function(u){return[u.quantity,u.unit].filter(Boolean).join(' ');}).join(' + ');
+    if(!row.isManual)row.quantityText=row.numeric?fmtQty(row.quantityTotal):row.usedFor.map(function(u){return[u.quantity,u.unit].filter(Boolean).join(' ');}).join(' + ');
     var meta=currentEvent.groceryMeta[row.key]||{};
-    row.department=meta.department||guessDept(row.item);
+    row.department=meta.department||row.manualDept||guessDept(row.item);
     row.store=primaryStore(meta);
+    if(row.store==='Unassigned'&&row.manualStore)row.store=row.manualStore;
     row.status=meta.status||'Need';
     row.checkedBy=meta.checkedBy||null;
-    row.storeAssignments=Array.isArray(meta.storeAssignments)?meta.storeAssignments:[];
+    row.storeAssignments=Array.isArray(meta.storeAssignments)?meta.storeAssignments:(row.manualStore&&row.manualStore!=='Unassigned'?[row.manualStore]:[]);
     return row;
   });
 }
-function guessDept(item){var t=String(item||'').toLowerCase();if(/lime|lemon|lettuce|tomato|onion|cilantro|pepper|avocado|cucumber|garlic|herb|fruit|apple|orange/.test(t))return'Produce';if(/beef|chicken|pork|steak|sausage|bacon/.test(t))return'Meat';if(/shrimp|fish|salmon|tuna|lobster|clam|scallop/.test(t))return'Seafood';if(/milk|cream|cheese|butter|yogurt|egg|mozzarella|cheddar|cotija/.test(t))return'Dairy';if(/bread|roll|bun|baguette|tortilla/.test(t))return'Bakery';if(/wine|beer|tequila|vodka|rum|bourbon/.test(t))return'Alcohol';return'Pantry';}
+function guessDept(item){var t=String(item||'').toLowerCase();if(/pepper|garlic powder|onion powder|paprika|cumin|chili powder|oregano|basil|thyme|rosemary|cinnamon|spice|seasoning|kosher salt|salt/.test(t))return'Pantry';if(/ketchup|mustard|mayo|mayonnaise|barbecue|bbq|hot sauce|soy sauce|vinegar|oil|sauce|dressing/.test(t))return'Pantry';if(/lime|lemon|lettuce|tomato|onion|cilantro|fresh garlic|avocado|cucumber|herb|fruit|apple|orange|carrot|celery|potato|pepper/.test(t))return'Produce';if(/tofu|tempeh|seitan/.test(t))return'Pantry';if(/beef|chicken|pork|steak|sausage|bacon/.test(t))return'Meat';if(/shrimp|fish|salmon|tuna|lobster|clam|scallop/.test(t))return'Seafood';if(/milk|cream|cheese|butter|yogurt|egg|mozzarella|cheddar|cotija/.test(t))return'Dairy';if(/bread|roll|bun|baguette|tortilla/.test(t))return'Bakery';if(/wine|beer|tequila|vodka|rum|bourbon/.test(t))return'Alcohol';return'Pantry';}
 function guessStore(item,dept){var t=String(item||'').toLowerCase();for(var i=0;i<(currentEvent.storeRules||[]).length;i++){var kws=String(currentEvent.storeRules[i].keywords||'').split(',').map(function(k){return k.trim().toLowerCase();}).filter(Boolean);if(kws.some(function(kw){return t.indexOf(kw)>=0;}))return currentEvent.storeRules[i].store;}if(dept==='Seafood')return'Fish Market';if(dept==='Meat')return'Butcher';if(dept==='Bakery')return'Bakery';if(dept==='Alcohol')return'Liquor Store';return'Unassigned';}
 function populateGroceryFilters(){var sf=safeEl('groceryStoreFilter'),df=safeEl('groceryDepartmentFilter');if(sf)sf.innerHTML='<option value="All">All Stores</option>'+(currentEvent.stores||[]).map(function(s){return'<option>'+escHtml(s)+'</option>';}).join('');if(df)df.innerHTML='<option value="All">All Depts</option>'+(currentEvent.departments||[]).map(function(d){return'<option>'+escHtml(d)+'</option>';}).join('');}
 function buildGroceryList(){
@@ -1332,27 +1742,61 @@ function buildGroceryList(){
   var rows=aggregateRows(),sf=getValue('groceryStoreFilter')||'All',df=getValue('groceryDepartmentFilter')||'All';
   if(sf!=='All')rows=rows.filter(function(r){return r.store===sf||r.storeAssignments.indexOf(sf)>=0;});
   if(df!=='All')rows=rows.filter(function(r){return r.department===df;});
-  if(groceryNeededOnly)rows=rows.filter(function(r){return r.status!=='Bought';});
-  rows.sort(function(a,b){if(grocerySortMode==='alpha')return String(a.item).localeCompare(String(b.item));var la=grocerySortMode==='department'?a.department:a.store,lb=grocerySortMode==='department'?b.department:b.store;return String(la).localeCompare(String(lb))||String(a.item).localeCompare(String(b.item));});
+  if(groceryNeededOnly)rows=rows.filter(function(r){return r.status!=='Bought'&&r.status!=='Have';});
+  rows.sort(function(a,b){if(shoppingMode){var sa=(a.status==='Bought'||a.status==='Have')?1:0,sb=(b.status==='Bought'||b.status==='Have')?1:0;if(sa!==sb)return sa-sb;}if(grocerySortMode==='alpha')return String(a.item).localeCompare(String(b.item));var la=grocerySortMode==='department'?a.department:a.store,lb=grocerySortMode==='department'?b.department:b.store;return String(la).localeCompare(String(lb))||String(a.item).localeCompare(String(b.item));});
+  updateGroceryProgress(rows);updateSortButtons();
   var emptyHtml='<div class="empty"><div class="empty-icon">🛒</div><h3>No items yet</h3><p>Add dishes with ingredients to your meal plan.</p></div>';
   if(!rows.length){if(shoppingMode)shopOut.innerHTML=emptyHtml;else tableOut.innerHTML=emptyHtml;return;}
   if(shoppingMode)renderShoppingList(shopOut,rows);else renderGroceryTable(tableOut,rows);
 }
+function updateGroceryProgress(rows){
+  var el=safeEl('groceryProgress');if(!el)return;
+  rows=rows||aggregateRows();var total=rows.length,bought=rows.filter(function(r){return r.status==='Bought'||r.status==='Have';}).length,pct=total?Math.round(bought/total*100):0;
+  el.innerHTML='<span><strong>'+bought+'</strong> of <strong>'+total+'</strong> handled</span><div class="shopping-progress-bar"><div class="shopping-progress-fill" style="width:'+pct+'%;"></div></div><span>'+pct+'%</span>';
+}
+function updateSortButtons(){var c=safeEl('grocerySortControl');if(c)c.querySelectorAll('button[data-sort]').forEach(function(b){b.classList.toggle('active',b.dataset.sort===grocerySortMode);});var n=safeEl('neededOnlyBtn');if(n)n.classList.toggle('active',groceryNeededOnly);}
 function renderGroceryTable(out,rows){
+  updateGroceryProgress(rows);updateSortButtons();
   var last='',trows=rows.map(function(r){
     var sec=grocerySortMode==='alpha'?null:(grocerySortMode==='department'?r.department:r.store);
     var secRow=sec&&sec!==last?'<tr class="grocery-section-row"><td colspan="5">'+escHtml(sec||'Unassigned')+'</td></tr>':'';if(sec)last=sec;
-    var dup=r.storeAssignments&&r.storeAssignments.length>1;
-    var storeTags=r.storeAssignments.length?r.storeAssignments.map(function(s){return'<span style="display:inline-block;font-size:9.5px;background:var(--theme-accent-soft);color:var(--theme-accent-dark);padding:1px 6px;border-radius:999px;font-weight:700;margin-right:3px;">'+escHtml(s)+'</span>';}).join(''):'<span style="font-size:11px;color:var(--muted);">'+escHtml(r.store)+'</span>';
-    return secRow+'<tr class="'+(r.status==='Bought'?'bought':'')+'"><td><span class="grocery-item-name">'+escHtml(dispPlural(r.item,r.quantityText))+'</span>'+(dup?'<span class="dup-badge">DUP</span>':'')+'</td><td><span class="grocery-qty">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' '))+'</span></td><td class="grocery-used-for grocery-col-dept">'+escHtml(r.dishes.join(', '))+'</td><td class="grocery-col-dept">'+storeTags+'</td><td style="text-align:center;"><input type="checkbox" class="grocery-check" data-key="'+escAttr(r.key)+'" '+(r.status==='Bought'?'checked':'')+' /></td></tr>';
+    var stores=r.storeAssignments&&r.storeAssignments.length?r.storeAssignments:[r.store||'Unassigned'];
+    var storeTags=stores.map(function(s){return'<span class="grocery-tag">'+escHtml(s)+'</span>';}).join('');
+    var deptTag='<span class="grocery-tag dept">'+escHtml(r.department||'Unassigned')+'</span>';
+    var dup=stores.length>1;
+    var status=r.status||'Need';
+    return secRow+'<tr class="'+(status==='Bought'||status==='Have'?'bought':'')+'"><td><span class="grocery-item-name">'+escHtml(dispPlural(r.item,r.quantityText))+'</span>'+(dup?'<span class="dup-badge">DUP</span>':'')+(r.isManual?'<span class="manual-badge">Manual</span>':'')+'<div class="grocery-item-sub">'+storeTags+deptTag+'</div></td><td><span class="grocery-qty">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'as needed')+'</span></td><td class="mobile-hide"><div class="grocery-dishes">'+escHtml(r.dishes.join(', '))+'</div></td><td class="mobile-hide"><select class="grocery-status-select" data-key="'+escAttr(r.key)+'"><option '+(status==='Need'?'selected':'')+'>Need</option><option '+(status==='Bought'?'selected':'')+'>Bought</option><option '+(status==='Have'?'selected':'')+'>Have</option></select></td><td class="got-col"><input type="checkbox" class="grocery-check" data-key="'+escAttr(r.key)+'" '+(status==='Bought'||status==='Have'?'checked':'')+' /></td></tr>';
   }).join('');
-  out.innerHTML='<table class="grocery-table"><thead><tr><th>Ingredient</th><th>Qty</th><th class="grocery-col-dept">Used For</th><th class="grocery-col-dept">Store</th><th>Got it</th></tr></thead><tbody>'+trows+'</tbody></table>';
-  out.querySelectorAll('.grocery-check').forEach(function(cb){cb.addEventListener('change',function(){updateGroceryMeta(cb.dataset.key,'status',cb.checked?'Bought':'Need');});});
+  out.innerHTML='<table class="grocery-table"><thead><tr><th>Ingredient</th><th>Qty</th><th>Dishes</th><th>Status</th><th class="got-col">✓</th></tr></thead><tbody>'+trows+'</tbody></table>';
+  out.querySelectorAll('.grocery-check').forEach(function(cb){cb.addEventListener('change',function(){haptic();updateGroceryMeta(cb.dataset.key,'status',cb.checked?'Bought':'Need');});});
+  out.querySelectorAll('.grocery-status-select').forEach(function(sel){sel.addEventListener('change',function(){haptic();updateGroceryMeta(sel.dataset.key,'status',sel.value);});});
 }
+async function addManualGroceryItem(){
+  if(!currentEvent)return;
+  var name=await promptAction({title:'Add Manual Grocery Item',message:'Add something not tied to a recipe:',placeholder:'e.g., Paper towels'});if(!name)return;
+  var qty=await promptAction({title:'Quantity',message:'Optional quantity:',placeholder:'e.g., 2 rolls'});
+  currentEvent.manualGroceryItems=currentEvent.manualGroceryItems||[];
+  name=toTitleCaseIngredient(name);currentEvent.manualGroceryItems.push({id:makeId(),item:name,quantity:qty||'',unit:'',department:guessDept(name),store:guessStore(name,guessDept(name))});
+  addAuditEntry('manual_grocery','added manual grocery item "'+name+'"');autosave();buildGroceryList();showToast('Manual item added.','success');
+}
+function printGroceryList(){switchTabSilent('grocery');buildGroceryList();setTimeout(function(){window.print();},100);}
+function haptic(){try{if(navigator.vibrate)navigator.vibrate(12);}catch(e){}}
 
 /* ===== ASSIGN STORES — one source of truth ===== */
-function toggleAssignStoresMode(){assignStoresMode=!assignStoresMode;var btn=safeEl('assignStoresModeBtn'),cont=safeEl('assignStoresContainer'),out=safeEl('groceryTableInner');if(btn){btn.style.background=assignStoresMode?'#d97706':'linear-gradient(135deg,#7c3aed,#5b21b6)';btn.textContent=assignStoresMode?'🏪 Assigning…':'🏪 Assign';}if(cont)cont.style.display=assignStoresMode?'block':'none';if(out)out.style.display=assignStoresMode?'none':'block';if(assignStoresMode)renderAssignStoresGrid();else buildGroceryList();}
+function setGroceryMode(mode){
+  assignStoresMode=(mode==='assign');shoppingMode=(mode==='shop');
+  document.body.classList.toggle('shopping-mode',shoppingMode);
+  ['List','Assign','Shop'].forEach(function(n){var el=safeEl('mode'+n+'Btn');if(el)el.classList.toggle('active',mode.toLowerCase().indexOf(n.toLowerCase())===0);});
+  var cont=safeEl('assignStoresContainer'),out=safeEl('groceryTableInner'),shopOut=safeEl('groceryOutput');
+  if(cont)cont.style.display=assignStoresMode?'block':'none';
+  if(out)out.style.display=assignStoresMode?'none':'block';
+  if(shopOut&&!shoppingMode)shopOut.innerHTML='';
+  if(shoppingMode){updateBottomNav('shop');requestWakeLock();}else{if(mode==='list')updateBottomNav('grocery');releaseWakeLock();}
+  if(assignStoresMode)renderAssignStoresGrid();else buildGroceryList();
+}
+function toggleAssignStoresMode(){setGroceryMode(assignStoresMode?'list':'assign');}
 function renderAssignStoresGrid(){var grid=safeEl('assignStoresGrid');if(!grid)return;var rows=aggregateRows(),activeStores=getActiveStores().filter(function(s){return s!=='Unassigned';});if(!rows.length){grid.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);">Add dishes with ingredients first.</div>';return;}if(!activeStores.length){grid.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);">No active stores — check stores in Event Setup.</div>';return;}var hdr='<th>Ingredient</th><th>Qty</th>'+activeStores.map(function(s){return'<th style="min-width:64px;">'+escHtml(s)+'</th>';}).join('');var body=rows.map(function(r){var a=r.storeAssignments||[],dup=a.length>1;return'<tr><td>'+escHtml(dispPlural(r.item,r.quantityText))+(dup?'<span class="dup-badge">DUP</span>':'')+'</td><td style="font-size:12px;color:var(--muted);">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'—')+'</td>'+activeStores.map(function(s){return'<td><input type="checkbox" class="assign-store-check" data-key="'+escAttr(r.key)+'" data-store="'+escAttr(s)+'" '+(a.indexOf(s)>=0?'checked':'')+' onchange="setItemStore(this)" /></td>';}).join('')+'</tr>';}).join('');grid.innerHTML='<table class="assign-stores-table"><thead><tr>'+hdr+'</tr></thead><tbody>'+body+'</tbody></table>';}
+async function bulkAssignVisibleItems(){var stores=getActiveStores().filter(function(s){return s!=='Unassigned';});if(!stores.length){showToast('No active stores.','error');return;}var store=await promptAction({title:'Bulk Assign Store',message:'Type store name for all currently visible items:',placeholder:stores.join(' / ')});if(!store)return;var match=stores.find(function(s){return s.toLowerCase()===store.toLowerCase();});if(!match){showToast('Store not found.','error');return;}document.querySelectorAll('#assignStoresGrid tbody tr').forEach(function(row){var cb=Array.from(row.querySelectorAll('.assign-store-check')).find(function(x){return x.dataset.store===match;});if(cb&&!cb.checked){cb.checked=true;setItemStore(cb);}});showToast('Assigned visible items to '+match+'.','success');}
 function setItemStore(cb){
   var key=cb.dataset.key,store=cb.dataset.store;
   currentEvent.groceryMeta=currentEvent.groceryMeta||{};currentEvent.groceryMeta[key]=currentEvent.groceryMeta[key]||{};
@@ -1365,6 +1809,19 @@ function setItemStore(cb){
   saveToLocal(currentEvent);scheduleFbSave();
 }
 
+/* ===== WAKE LOCK + PWA UPDATE HELPERS ===== */
+var wakeLock=null;
+async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
+async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
+function registerUpdateCheck(){
+  if(!('serviceWorker' in navigator))return;
+  // Single-file friendly: we cannot generate a durable service worker from inside this file.
+  // This forces reload checks when the app comes back into view, which helps PWA home-screen caching.
+  var lastCheck=0;
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){var now=Date.now();if(now-lastCheck>60000){lastCheck=now;fetch(location.href,{cache:'reload'}).catch(function(){});}}});
+}
+
 /* ===== SHOPPING MODE + RESET ===== */
 function renderShoppingList(out,rows){
   var u=getUser(),myInitials=u?u.initials:'';
@@ -1374,25 +1831,25 @@ function renderShoppingList(out,rows){
   var storeCounts={};rows.forEach(function(r){var a=r.storeAssignments&&r.storeAssignments.length?r.storeAssignments:[r.store||'Unassigned'];storeCounts[r.key]=a.filter(function(s){return activeStores.indexOf(s)>=0||s==='Unassigned';}).length;});
   var resetBar='<div class="shopping-reset-bar"><button class="secondary" onclick="resetGroceryCheckoffs()" style="font-size:12px;padding:7px 14px;">↩ Reset all</button></div>';
   var progress='<div class="shopping-progress"><span><strong>'+bought+'</strong> of <strong>'+total+'</strong> items</span><div class="shopping-progress-bar"><div class="shopping-progress-fill" style="width:'+pct+'%;"></div></div><span style="font-weight:700;">'+pct+'%</span></div>';
-  var sectionsHtml=keys.length?keys.map(function(store){var items=groups[store],sb=items.filter(function(r){return r.status==='Bought';}).length;
-    return'<div class="shopping-section"><div class="shopping-section-header" onclick="this.parentElement.classList.toggle(\'collapsed\')"><h3>'+escHtml(store)+'</h3><span class="shopping-section-count">'+sb+'/'+items.length+' done</span></div><div class="shopping-section-body">'+items.map(function(r){
+  var sectionsHtml=keys.length?keys.map(function(store){var items=groups[store].slice().sort(function(a,b){var as=a.status==='Bought'?1:0,bs=b.status==='Bought'?1:0;return as-bs||String(a.department).localeCompare(String(b.department))||String(a.item).localeCompare(String(b.item));}),sb=items.filter(function(r){return r.status==='Bought';}).length;
+    return'<div class="shopping-section"><div class="shopping-section-header" onclick="this.parentElement.classList.toggle('collapsed')"><h3>'+escHtml(store)+'</h3><span class="shopping-section-count">'+sb+'/'+items.length+' done</span></div><div class="shopping-section-body">'+items.map(function(r){
       var iid='s-'+r.key.replace(/[^a-z0-9]/gi,'')+store.replace(/[^a-z0-9]/gi,''),isDup=storeCounts[r.key]>1,isBought=r.status==='Bought',isMe=isBought&&r.checkedBy===myInitials,isOther=isBought&&r.checkedBy&&r.checkedBy!==myInitials;
       var whoHtml=isMe?'<div class="shopping-item-who me">You checked this off</div>':isOther?'<div class="shopping-item-who other">'+escHtml(r.checkedBy)+' checked this off</div>':'';
       var itemClass='shopping-item'+(isBought?' bought':'')+(isMe?' bought-by-me':'');
-      return'<label class="'+itemClass+'" for="'+iid+'"><input id="'+iid+'" type="checkbox" class="shopping-item-check" data-key="'+escAttr(r.key)+'" '+(isBought?'checked':'')+' /><div class="shopping-item-body"><div class="shopping-item-name">'+escHtml(dispPlural(r.item,r.quantityText))+(isDup?'<span class="dup-badge">DUP</span>':'')+'</div><div class="shopping-item-qty">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'as needed')+(r.dishes.length?' · '+escHtml(r.dishes.join(', ')):'')+'</div>'+whoHtml+'</div></label>';
+      return'<label class="'+itemClass+'" for="'+iid+'"><input id="'+iid+'" type="checkbox" class="shopping-item-check" data-key="'+escAttr(r.key)+'" '+(isBought?'checked':'')+' /><div class="shopping-item-body"><div class="shopping-item-titleline"><div class="shopping-item-name">'+escHtml(dispPlural(r.item,r.quantityText))+(isDup?'<span class="dup-badge">DUP</span>':'')+'</div><div class="shopping-item-dept">'+escHtml(r.department||'')+'</div></div><div class="shopping-item-qty">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'as needed')+(r.dishes.length?' · '+escHtml(r.dishes.join(', ')):'')+'</div>'+whoHtml+'</div></label>';
     }).join('')+'</div></div>';
   }).join(''):'<div class="empty" style="margin-top:0;"><div class="empty-icon">🏪</div><h3>No store sections yet</h3><p>Use Assign Stores to assign items to stores.</p></div>';
   out.innerHTML=resetBar+progress+'<div class="shopping-list">'+sectionsHtml+'</div>';
-  out.querySelectorAll('.shopping-item-check').forEach(function(cb){cb.addEventListener('change',function(){updateGroceryMeta(cb.dataset.key,'status',cb.checked?'Bought':'Need');});});
+  out.querySelectorAll('.shopping-item-check').forEach(function(cb){cb.addEventListener('change',function(){updateGroceryMeta(cb.dataset.key,'status',cb.checked?'Bought':'Need');haptic();});});
 }
-function toggleShoppingMode(){shoppingMode=!shoppingMode;var btn=safeEl('shoppingModeBtn');if(btn){btn.classList.toggle('active',shoppingMode);btn.textContent=shoppingMode?'✕ Exit':'🛒 Shop';}document.body.classList.toggle('shopping-mode',shoppingMode);if(shoppingMode)updateBottomNav('shop');else updateBottomNav('grocery');buildGroceryList();}
+function toggleShoppingMode(){setGroceryMode(shoppingMode?'list':'shop');}
 function resetGroceryCheckoffs(){if(!currentEvent)return;Object.keys(currentEvent.groceryMeta||{}).forEach(function(key){if(currentEvent.groceryMeta[key]){currentEvent.groceryMeta[key].status='Need';currentEvent.groceryMeta[key].checkedBy=null;currentEvent.groceryMeta[key].checkedAt=null;}});saveToLocal(currentEvent);fbWriteGroceryMeta(currentCode,currentEvent.groceryMeta);addAuditEntry('reset','reset all checkoffs');buildGroceryList();showToast('Checkoffs reset.','success');}
 function updateGroceryMeta(key,field,value){
   currentEvent.groceryMeta=currentEvent.groceryMeta||{};currentEvent.groceryMeta[key]=currentEvent.groceryMeta[key]||{};currentEvent.groceryMeta[key][field]=value;
   if(field==='status'){
     var u=getUser();
-    if(value==='Bought'){currentEvent.groceryMeta[key].checkedBy=u?u.initials:'?';currentEvent.groceryMeta[key].checkedAt=new Date().toISOString();addAuditEntry('checked','checked off "'+key.split('|')[0]+'"');}
-    else{currentEvent.groceryMeta[key].checkedBy=null;currentEvent.groceryMeta[key].checkedAt=null;addAuditEntry('unchecked','unchecked "'+key.split('|')[0]+'"');}
+    if(value==='Bought'||value==='Have'){currentEvent.groceryMeta[key].checkedBy=u?u.initials:'?';currentEvent.groceryMeta[key].checkedAt=new Date().toISOString();addAuditEntry(value==='Have'?'already_have':'checked',(value==='Have'?'marked already have ':'checked off ')+ '"'+key.split('|')[0].replace('manual|','')+'"');}
+    else{currentEvent.groceryMeta[key].checkedBy=null;currentEvent.groceryMeta[key].checkedAt=null;addAuditEntry('unchecked','unchecked "'+key.split('|')[0].replace('manual|','')+'"');}
   }
   saveToLocal(currentEvent);fbWriteGroceryMeta(currentCode,currentEvent.groceryMeta);buildGroceryList();
 }
@@ -1400,13 +1857,35 @@ function setGrocerySort(mode){grocerySortMode=mode;buildGroceryList();}
 function toggleNeededOnly(){groceryNeededOnly=!groceryNeededOnly;buildGroceryList();}
 function clearGroceryFilters(){groceryNeededOnly=false;setValue('groceryStoreFilter','All');setValue('groceryDepartmentFilter','All');buildGroceryList();}
 function copyGroceryList(){var lines=aggregateRows().map(function(r){return[r.quantityText,r.unit,dispPlural(r.item,r.quantityText)].filter(Boolean).join(' ')+' — '+r.dishes.join(', ');});navigator.clipboard.writeText(lines.join('\n')).then(function(){showToast('Copied to clipboard.','success');});}
+function shareGroceryList(){var text=aggregateRows().map(function(r){return '☐ '+[r.quantityText,r.unit,dispPlural(r.item,r.quantityText)].filter(Boolean).join(' ')+' — '+(r.store||'')+(r.dishes&&r.dishes.length?' — '+r.dishes.join(', '):'');}).join('\n');if(navigator.share){navigator.share({title:'Grocery List',text:text}).catch(function(){});}else{navigator.clipboard.writeText(text).then(function(){showToast('Grocery list copied for sharing.','success');});}}
 
 /* ===== ADMIN ===== */
+
+function haptic(ms){try{if(navigator.vibrate)navigator.vibrate(ms||12);}catch(e){}}
+function isDarkMode(){try{return localStorage.getItem('mealPlanner.darkMode')==='1';}catch(e){return false;}}
+function applyDarkMode(){document.body.classList.toggle('dark-mode',isDarkMode());renderDarkModeButton();}
+function renderDarkModeButton(){var b=safeEl('darkModeButton');if(b)b.textContent=isDarkMode()?'Light Mode':'Dark Mode';}
+function toggleDarkMode(){try{localStorage.setItem('mealPlanner.darkMode',isDarkMode()?'0':'1');}catch(e){}applyDarkMode();haptic(10);}
+function getDefaultMealTypes(){return currentEvent&&currentEvent.mealTypes&&currentEvent.mealTypes.length?currentEvent.mealTypes:['Breakfast','Lunch','Dinner'];}
+function saveMealTypes(){var meals=getValue('adminMealTypes').split('\n').map(function(s){return s.trim();}).filter(Boolean);if(!meals.length){showToast('Add at least one meal type.','error');return;}currentEvent.mealTypes=meals;currentEvent.days.forEach(function(d){if(!Array.isArray(d.meals)||!d.meals.length)d.meals=meals.slice();});autosave();renderAll();showToast('Meal types saved.','success');}
+
 function saveStoresDepartments(){var stores=getValue('adminStores').split('\n').map(function(s){return s.trim();}).filter(Boolean),depts=getValue('adminDepartments').split('\n').map(function(d){return d.trim();}).filter(Boolean);if(!stores.length){showToast('Add at least one store.','error');return;}if(!depts.length){showToast('Add at least one department.','error');return;}currentEvent.stores=stores;currentEvent.departments=depts;if(currentEvent.activeStores)currentEvent.activeStores=currentEvent.activeStores.filter(function(s){return stores.indexOf(s)>=0;});populateGroceryFilters();renderStoreRules();renderActiveStoresList();autosave();showToast('Saved.','success');}
-function syncAdminInputs(){setValue('adminStores',(currentEvent.stores||getDefaultStores()).join('\n'));setValue('adminDepartments',(currentEvent.departments||getDefaultDepts()).join('\n'));}
-function switchAppAdminTab(tab){appAdminLastTab=tab;document.querySelectorAll('.app-admin-tab').forEach(function(b){b.classList.toggle('active',b.dataset.adminTab===tab);});document.querySelectorAll('.app-admin-tab-panel').forEach(function(p){p.classList.remove('active');});var panel=safeEl('adminTab'+tab.charAt(0).toUpperCase()+tab.slice(1));if(panel)panel.classList.add('active');if(tab==='themes'){themeAdminTab=currentEvent.theme||'larchmont';document.querySelectorAll('.theme-inner-tab').forEach(function(b){b.classList.toggle('active',b.dataset.themeTab===themeAdminTab);});renderThemeGallery();var t=safeEl('themePreviewTitle');if(t)t.textContent=currentEvent.name||themeDisplayName(themeAdminTab);}if(tab==='ai'){renderApiKeyStatus();}}
+function syncAdminInputs(){setValue('adminStores',(currentEvent.stores||getDefaultStores()).join('\n'));setValue('adminDepartments',(currentEvent.departments||getDefaultDepts()).join('\n'));setValue('adminMealTypes',(currentEvent.mealTypes||['Breakfast','Lunch','Dinner']).join('\n'));renderDarkModeButton();}
+function switchAppAdminTab(tab){appAdminLastTab=tab;document.querySelectorAll('.app-admin-tab').forEach(function(b){b.classList.toggle('active',b.dataset.adminTab===tab);});document.querySelectorAll('.app-admin-tab-panel').forEach(function(p){p.classList.remove('active');});var panel=safeEl('adminTab'+tab.charAt(0).toUpperCase()+tab.slice(1));if(panel)panel.classList.add('active');if(tab==='themes'){themeAdminTab=currentEvent.theme||'larchmont';document.querySelectorAll('.theme-inner-tab').forEach(function(b){b.classList.toggle('active',b.dataset.themeTab===themeAdminTab);});renderThemeGallery();var t=safeEl('themePreviewTitle');if(t)t.textContent=currentEvent.name||themeDisplayName(themeAdminTab);}if(tab==='ai'){renderApiKeyStatus();}if(tab==='data'){renderAdminTripDataList();}}
 function toggleAppAdmin(open){var panel=safeEl('appAdminPanel'),bd=safeEl('appAdminBackdrop');if(!panel||!bd)return;var s=typeof open==='undefined'?!panel.classList.contains('active'):open;if(s){syncAdminInputs();renderStoreRules();switchAppAdminTab(appAdminLastTab);}panel.classList.toggle('active',s);bd.classList.toggle('active',s);}
 function toggleAdminPanel(open){var drawer=safeEl('adminDrawer'),bd=safeEl('adminBackdrop');if(!drawer||!bd)return;var s=typeof open==='undefined'?!drawer.classList.contains('active'):open;drawer.classList.toggle('active',s);bd.classList.toggle('active',s);}
+
+/* ===== DATA ADMIN ===== */
+function renderAdminTripDataList(){
+  var el=safeEl('adminTripDataList');if(!el)return;var all=getAllTrips(),codes=Object.keys(all);
+  if(!codes.length){el.innerHTML='<div class="rules-empty">No trips saved on this device.</div>';return;}
+  el.innerHTML=codes.map(function(code){var ev=all[code]||{};return'<div class="active-store-row" style="justify-content:space-between;align-items:flex-start;margin-bottom:8px;"><div><strong>'+escHtml(ev.name||ev.location||code)+'</strong><div style="font-family:monospace;font-size:11px;color:var(--muted);">'+escHtml(code)+'</div><div style="font-size:11px;color:var(--muted);">'+escHtml((ev.startDate||'')+(ev.endDate?' – '+ev.endDate:''))+'</div></div><div class="actions"><button class="secondary" type="button" onclick="duplicateTripTemplate(\''+escAttr(code)+'\')">Duplicate</button><button class="secondary" type="button" onclick="removeLocalTripOnly(\''+escAttr(code)+'\')">Local only</button><button class="danger" type="button" onclick="deleteTripEverywhere(\''+escAttr(code)+'\')">Delete</button></div></div>';}).join('');
+}
+
+async function duplicateTripTemplate(code){var all=getAllTrips(),src=all[code];if(!src){showToast('Trip not found.','error');return;}var name=await promptAction({title:'Duplicate Trip',message:'Name the new trip:',defaultValue:(src.name||src.location||'Trip')+' Copy'});if(!name)return;var ev=normalizeEvent(JSON.parse(JSON.stringify(src)));ev.id=makeId();ev.code=generateTripCode(name,ev.startDate||new Date().toISOString().slice(0,10));ev.name=name;ev.auditLog={};ev.groceryMeta={};ev.dishes=(ev.dishes||[]).map(function(d){d.id=makeId();return normalizeDish(d);});ev.recipeBank=(ev.recipeBank||[]).map(function(r){r.id=makeId();return normalizeDish(r);});saveToLocal(ev);recordDeviceTrip(ev.code);if(db)fbWriteTrip(ev);renderAdminTripDataList();renderLanding();showToast('Trip duplicated as '+ev.code+'.','success');}
+
+async function removeLocalTripOnly(code){if(!await confirmAction({title:'Remove Local Copy',message:'Remove this trip from this device only?',confirmLabel:'Remove'}))return;var all=getAllTrips();delete all[code];setAllTrips(all);setDeviceTrips(getDeviceTrips().filter(function(c){return c!==code;}));renderAdminTripDataList();renderLanding();showToast('Local copy removed.','success');}
+async function deleteTripEverywhere(code){if(!await confirmAction({title:'Delete Permanently',message:'This removes the trip from Firebase and this device. This cannot be undone.',confirmLabel:'Delete permanently',danger:true}))return;if(db){try{await db.ref('trips/'+code).remove();}catch(e){showToast('Firebase delete failed; removed locally only.','error');}}var all=getAllTrips();delete all[code];setAllTrips(all);setDeviceTrips(getDeviceTrips().filter(function(c){return c!==code;}));if(currentCode===code)goToLanding();renderAdminTripDataList();renderLanding();showToast('Trip deleted.','success');}
 
 /* ===== RECIPE BANK ===== */
 function renderRecipeBank(){var bank=safeEl('recipeBank');if(!bank)return;var search=(getValue('recipeBankSearch')||'').toLowerCase().trim();var recipes=currentEvent.recipeBank;if(search)recipes=recipes.filter(function(r){return(r.name||'').toLowerCase().indexOf(search)>=0||(r.tags||[]).join(' ').toLowerCase().indexOf(search)>=0;});if(!currentEvent.recipeBank.length){bank.innerHTML='<div class="empty"><div class="empty-icon">📖</div><h3>Recipe Bank is empty</h3><p>Save recipes here to reuse across trips.</p></div>';return;}if(!recipes.length){bank.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><h3>No matches</h3></div>';return;}bank.innerHTML='<div class="recipe-bank-grid">'+recipes.map(function(r){var tags=(r.tags&&r.tags.length)?'<div class="dish-tags" style="margin-top:8px;">'+r.tags.map(function(t){return'<span class="dish-tag">'+escHtml(t)+'</span>';}).join('')+'</div>':'';return'<div class="recipe-bank-card"><div class="dish-title-row"><div><div class="dish-title">'+escHtml(r.name)+'</div><div class="dish-meta">'+(r.url?'<a href="'+escAttr(r.url)+'" target="_blank">↗ Link</a> <span class="meta-sep">·</span> ':'')+(r.ingredients?r.ingredients.length:0)+' ingredients</div></div><button class="icon-button" onclick="editDish(\''+escAttr(r.id)+'\')">✎</button></div>'+tags+'<div class="actions" style="margin-top:10px;"><button class="secondary" style="flex:1;" onclick="addBankToPlanner(\''+escAttr(r.id)+'\')">+ Add to plan</button><button class="ghost" onclick="deleteBankItem(\''+escAttr(r.id)+'\')">Delete</button></div></div>';}).join('')+'</div>';}
@@ -1422,13 +1901,16 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'){var pb=safe
 
 /* ===== INIT ===== */
 document.addEventListener('DOMContentLoaded',function(){
-  safeEl('dishModal').addEventListener('click',function(e){if(e.target===safeEl('dishModal'))closeDishModal();});
+  // Safety net: never leave users on a permanent loading overlay.
+  setTimeout(function(){var el=safeEl('loadingOverlay');if(el){hideLoadingOverlay();showToast('Loading took too long. Try reopening the trip from the list.','error');}},12000);
+  safeEl('dishModal').addEventListener('click',function(e){if(e.target===safeEl('dishModal'))closeDishModal();});safeEl('dishModal').addEventListener('input',markDishModalDirty,true);safeEl('dishModal').addEventListener('change',markDishModalDirty,true);
   safeEl('newTripModal').addEventListener('click',function(e){if(e.target===safeEl('newTripModal'))closeNewTripModal();});
   safeEl('joinTripModal').addEventListener('click',function(e){if(e.target===safeEl('joinTripModal'))closeJoinTripModal();});
   safeEl('createDaysBtn').addEventListener('click',generateDays);
   safeEl('deleteEntryButton').addEventListener('click',deleteEditingDish);
   window.addEventListener('hashchange',handleHashChange);
   setupPWA();
+  applyDarkMode();registerUpdateCheck();
   // Check user name first
   if(!getUser()){safeEl('userModal').classList.remove('hidden');return;}
   // Then check hash

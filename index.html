@@ -1230,7 +1230,7 @@ catch(e){console.warn('Firebase unavailable:',e);}
 /* ===== SYNC ===== */
 var fbSaveTimer=null,tripListenerRef=null,tripListener=null;
 function setSyncStatus(s){var d=safeEl('syncDot');if(!d)return;d.className='sync-dot '+s;var t={synced:'Synced ✓',syncing:'Syncing…',offline:'Offline — saved locally',error:'Sync error'}[s]||'';if(s==='synced')t+=' · '+new Date().toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});d.title=t;}
-function fbWriteTrip(ev){if(!db)return Promise.resolve();setSyncStatus('syncing');fbWriteCount++;return db.ref('trips/'+ev.code).set(ev).then(function(){fbWriteCount=Math.max(0,fbWriteCount-1);setSyncStatus('synced');}).catch(function(e){fbWriteCount=Math.max(0,fbWriteCount-1);setSyncStatus('error');console.warn(e);});}
+function fbWriteTrip(ev){if(!db)return Promise.resolve();setSyncStatus('syncing');fbWriteCount++;fbSuppressUntil=Date.now()+3000;return db.ref('trips/'+ev.code).set(ev).then(function(){fbWriteCount=Math.max(0,fbWriteCount-1);fbSuppressUntil=Date.now()+1500;setSyncStatus('synced');}).catch(function(e){fbWriteCount=Math.max(0,fbWriteCount-1);fbSuppressUntil=0;setSyncStatus('error');console.warn(e);});}
 function fbWriteGroceryMeta(code,meta){if(!db||!code)return Promise.resolve();setSyncStatus('syncing');return db.ref('trips/'+code+'/groceryMeta').set(meta).then(function(){setSyncStatus('synced');}).catch(function(){setSyncStatus('error');});}
 function scheduleFbSave(){clearTimeout(fbSaveTimer);fbSaveTimer=setTimeout(function(){if(currentEvent&&currentCode)fbWriteTrip(currentEvent);},5000);}
 function subscribeToCurrentTrip(){
@@ -1238,7 +1238,7 @@ function subscribeToCurrentTrip(){
   tripListenerRef=db.ref('trips/'+currentCode);
   tripListener=tripListenerRef.on('value',function(snap){
     if(!snap.exists()||!currentEvent)return;
-    if(fbWriteCount>0)return;
+    if(fbWriteCount>0||Date.now()<fbSuppressUntil)return;
     var remote=normalizeEvent(snap.val()||{});remote.code=remote.code||currentCode;
     var remoteJson=JSON.stringify(remote);
     if(remoteJson===lastRemoteTripJson||remoteJson===JSON.stringify(currentEvent))return;
@@ -1256,7 +1256,7 @@ function unsubscribeCurrentTrip(){if(tripListenerRef&&tripListener){tripListener
 var TRIPS_KEY='mealPlanner.trips.v1',DEVICE_KEY='mealPlanner.deviceTrips.v1',GALLERY_KEY='mealPlanner.themeGallery.v1',API_KEY_STORAGE='mealPlanner.apiKey',USER_KEY='mealPlanner.user.v1';
 var currentEvent=null,currentCode=null,editingDishId=null,addToBankOnly=false,draggedDishId=null,shoppingMode=false,assignStoresMode=false,grocerySortMode=(function(){try{return localStorage.getItem('mealPlanner.grocerySort')||'department';}catch(e){return'department';}}()),groceryNeededOnly=false,appAdminLastTab='stores',themeAdminTab='larchmont',themePreviewIdx=-1,pendingTripCode=null;var pendingParsedRecipe=null;
 var dishModalDirty=false,dishModalHydrating=false,lastPresenceUsers=[];
-var suppressAutosaveRender=false,lastRemoteTripJson="",fbWriteCount=0;
+var suppressAutosaveRender=false,lastRemoteTripJson="",fbWriteCount=0,fbSuppressUntil=0;
 
 /* ===== USER MANAGEMENT ===== */
 function getUser(){try{return JSON.parse(localStorage.getItem(USER_KEY));}catch(e){return null;}}
@@ -2084,19 +2084,44 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
+var APP_VERSION='v11N';
 function registerUpdateCheck(){
-  if(!('serviceWorker' in navigator))return;
-  try{
-    navigator.serviceWorker.register('./sw.js').then(function(reg){
-      reg.update().catch(function(){});
-      if(reg.waiting&&navigator.serviceWorker.controller){reg.waiting.postMessage({type:'SKIP_WAITING'});}
-    }).catch(function(e){console.warn('Service worker registration failed',e);});
-    navigator.serviceWorker.addEventListener('controllerchange',function(){
-      if(!window.__mpReloadedForUpdate){window.__mpReloadedForUpdate=true;location.reload();}
-    });
-  }catch(e){console.warn('Service worker unavailable',e);}
+  // Service worker path (if sw.js exists on the server)
+  if('serviceWorker' in navigator){
+    try{
+      navigator.serviceWorker.register('./sw.js').then(function(reg){
+        reg.update().catch(function(){});
+        if(reg.waiting&&navigator.serviceWorker.controller){reg.waiting.postMessage({type:'SKIP_WAITING'});}
+      }).catch(function(){});
+      navigator.serviceWorker.addEventListener('controllerchange',function(){
+        if(!window.__mpReloadedForUpdate){window.__mpReloadedForUpdate=true;location.reload();}
+      });
+    }catch(e){}
+  }
+  // Version-string check: works without sw.js, fixes iOS PWA stale cache
   var lastCheck=0;
-  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){var now=Date.now();if(now-lastCheck>60000){lastCheck=now;fetch(location.href,{cache:'reload'}).catch(function(){});if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration){navigator.serviceWorker.getRegistration().then(function(reg){if(reg)reg.update().catch(function(){});}).catch(function(){});}}}});
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState!=='visible')return;
+    var now=Date.now();
+    if(now-lastCheck<60000)return;
+    lastCheck=now;
+    // Append timestamp so browser AND CDN bypass cache
+    fetch(location.pathname+'?_='+now,{cache:'no-store'})
+      .then(function(r){return r.text();})
+      .then(function(html){
+        // Only act if we got real HTML and the version string changed
+        if(html.indexOf('<!DOCTYPE')>=0&&html.indexOf('Meal Planner '+APP_VERSION)<0&&!window.__mpReloadedForUpdate){
+          window.__mpReloadedForUpdate=true;
+          showToast('App updated — reloading…','success');
+          // Cache-busting URL forces iOS PWA to load fresh; preserve any #trip= hash
+          setTimeout(function(){window.location.replace(location.pathname+'?_='+now+(location.hash||''));},1200);
+        }
+      })
+      .catch(function(){});
+    if('serviceWorker' in navigator&&navigator.serviceWorker.getRegistration){
+      navigator.serviceWorker.getRegistration().then(function(reg){if(reg)reg.update().catch(function(){});}).catch(function(){});
+    }
+  });
 }
 
 /* ===== SHOPPING MODE + RESET ===== */
@@ -2234,4 +2259,3 @@ document.addEventListener('DOMContentLoaded',function(){
 </script>
 </body>
 </html>
-

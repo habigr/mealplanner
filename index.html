@@ -1377,8 +1377,8 @@ function fbWriteTrip(ev){
   if(!db||!ev||!ev.code){console.warn('[MealPlanner] fbWriteTrip: invalid args');return Promise.resolve();}
   if(typeof isTripDeleted==='function'&&isTripDeleted(ev.code)){console.warn('[MealPlanner] fbWriteTrip: trip is deleted — skipping',ev.code);return Promise.resolve();}
   setSyncStatus('syncing');
-  // Write a cloned snapshot so later UI mutations cannot change the payload mid-flight.
-  var payload=JSON.parse(JSON.stringify(ev));
+  // Write a cloned, Firebase-safe snapshot so later UI mutations cannot change the payload mid-flight.
+  var payload=cloneEventForFirebase(ev);
   return db.ref('trips/'+payload.code).set(payload)
     .then(function(){setSyncStatus('synced');return payload;})
     .catch(function(e){setSyncStatus('error');console.warn('[MealPlanner] fbWriteTrip failed:',e);throw e;});
@@ -1411,7 +1411,7 @@ function shouldApplyRemoteTrip(remote,local){
   if(!remoteTs&&localTs&&remoteIsMissingLocalItems(remote,local))return false;
   return true;
 }
-function fbWriteGroceryMeta(code,meta){if(!db||!code)return Promise.resolve();setSyncStatus('syncing');return db.ref('trips/'+code+'/groceryMeta').set(meta).then(function(){setSyncStatus('synced');}).catch(function(){setSyncStatus('error');});}
+function fbWriteGroceryMeta(code,meta){if(!db||!code)return Promise.resolve();setSyncStatus('syncing');return db.ref('trips/'+code+'/groceryMeta').set(normalizeGroceryMetaKeys(meta)).then(function(){setSyncStatus('synced');}).catch(function(e){setSyncStatus('error');console.warn('[MealPlanner] fbWriteGroceryMeta failed:',e);showToast('Grocery save failed: '+(e&&e.message?e.message:'Firebase rejected grocery data'),'error');});}
 function scheduleFbSave(){clearTimeout(fbSaveTimer);fbSaveTimer=setTimeout(function(){if(currentEvent&&currentCode)fbWriteTrip(currentEvent).catch(function(){});},5000);}
 /* ===== FIREBASE SYNC =====
    Real-time listener for multi-device sync.
@@ -1832,7 +1832,7 @@ function getDefaultRules(){return[{keywords:'fish, shrimp, salmon, tuna, lobster
 function getDefaultThemeGallery(){return{larchmont:[{url:'https://westchesterwoman.org/wp-content/uploads/2017/08/Larchmont-Manor-Park--300x199.jpg',posX:50,posY:34,active:true}],'fire-island':[{url:'https://www.fireislandnews.com/wp-content/uploads/2024/09/Main-Pic.jpg?quality=51&w=1200',posX:50,posY:56,active:true}],adirondacks:[{url:'https://cdn.lakeplacid.com/s/1920x1080/d/73/f/73994223092e0f99eb3cc3bc106564a1/fp/49x59/t/f5afeb4a/adirondack-mountain-cabin-1920w.webp',posX:50,posY:50,active:true}]};}
 
 /* ===== NORMALIZE ===== */
-function normalizeEvent(e){e=e&&typeof e==='object'?e:{};e.id=e.id||makeId();e.code=String(e.code||makeId()).toLowerCase();e.name=e.name||'';e.location=e.location||'';e.theme=e.theme||'larchmont';e.startDate=e.startDate||'';e.endDate=e.endDate||'';e.days=Array.isArray(e.days)?e.days:[];e.dishes=Array.isArray(e.dishes)?e.dishes:[];e.recipeBank=Array.isArray(e.recipeBank)?e.recipeBank:[];e.manualGroceryItems=Array.isArray(e.manualGroceryItems)?e.manualGroceryItems:[];e.stores=Array.isArray(e.stores)?e.stores:getDefaultStores();e.departments=Array.isArray(e.departments)?e.departments:getDefaultDepts();e.groceryMeta=e.groceryMeta&&typeof e.groceryMeta==='object'?e.groceryMeta:{};e.auditLog=e.auditLog&&typeof e.auditLog==='object'?e.auditLog:{};e.storeRules=Array.isArray(e.storeRules)?e.storeRules:getDefaultRules();e.activeStores=Array.isArray(e.activeStores)?e.activeStores:null;e.mealTypes=Array.isArray(e.mealTypes)&&e.mealTypes.length?e.mealTypes:['Breakfast','Lunch','Dinner'];e.dishes.forEach(normalizeDish);e.recipeBank.forEach(normalizeDish);e.manualGroceryItems=e.manualGroceryItems.map(function(i){return{id:i.id||makeId(),item:i.item||'',quantity:i.quantity||'',unit:i.unit||'',department:i.department||'Pantry',store:i.store||'Unassigned'};}).filter(function(i){return i.item;});return e;}
+function normalizeEvent(e){e=e&&typeof e==='object'?e:{};e.id=e.id||makeId();e.code=String(e.code||makeId()).toLowerCase();e.name=e.name||'';e.location=e.location||'';e.theme=e.theme||'larchmont';e.startDate=e.startDate||'';e.endDate=e.endDate||'';e.days=Array.isArray(e.days)?e.days:[];e.dishes=Array.isArray(e.dishes)?e.dishes:[];e.recipeBank=Array.isArray(e.recipeBank)?e.recipeBank:[];e.manualGroceryItems=Array.isArray(e.manualGroceryItems)?e.manualGroceryItems:[];e.stores=Array.isArray(e.stores)?e.stores:getDefaultStores();e.departments=Array.isArray(e.departments)?e.departments:getDefaultDepts();e.groceryMeta=normalizeGroceryMetaKeys(e.groceryMeta&&typeof e.groceryMeta==='object'?e.groceryMeta:{});e.auditLog=e.auditLog&&typeof e.auditLog==='object'?e.auditLog:{};e.storeRules=Array.isArray(e.storeRules)?e.storeRules:getDefaultRules();e.activeStores=Array.isArray(e.activeStores)?e.activeStores:null;e.mealTypes=Array.isArray(e.mealTypes)&&e.mealTypes.length?e.mealTypes:['Breakfast','Lunch','Dinner'];e.dishes.forEach(normalizeDish);e.recipeBank.forEach(normalizeDish);e.manualGroceryItems=e.manualGroceryItems.map(function(i){return{id:i.id||makeId(),item:i.item||'',quantity:i.quantity||'',unit:i.unit||'',department:i.department||'Pantry',store:i.store||'Unassigned'};}).filter(function(i){return i.item;});return e;}
 function normalizeDish(d){d.id=d.id||makeId();d.servings=d.servings||'';d.peopleEating=d.peopleEating||'';d.imageUrl=d.imageUrl||'';d.tags=Array.isArray(d.tags)?d.tags:[];d.ingredients=Array.isArray(d.ingredients)?d.ingredients:[];d.isEvent=!!d.isEvent;d.isVegetarian=!!d.isVegetarian;d.ingredients=d.ingredients.map(function(i){return{quantity:i.quantity||i.displayedQuantity||'',displayedQuantity:i.displayedQuantity||i.quantity||'',unit:i.unit||'',item:i.item||''};});return d;}
 
 /* ===== TOAST + DIALOGS ===== */
@@ -1980,7 +1980,7 @@ function normalizePastedRecipeText(text){
   });
   return cleaned.join('\n');
 }
-var UNITS=['tsp','teaspoon','teaspoons','tbsp','tablespoon','tablespoons','cup','cups','oz','ounce','ounces','lb','pound','pounds','g','gram','grams','kg','kilogram','kilograms','ml','milliliter','milliliters','l','liter','liters','qt','quart','quarts','pt','pint','pints','gal','gallon','gallons','dash','pinch','handful','clove','cloves','slice','slices','piece','pieces','can','cans','package','packages','pkg','bottle','bottles','jar','jars','bunch','head','heads','sprig','sprigs','stalk','stalks','strip','strips','link','links','fillet','fillets','scoop','scoops','sheet','sheets','wedge','wedges'];
+var UNITS=['tsp','teaspoon','teaspoons','tbsp','tablespoon','tablespoons','cup','cups','c','oz','ounce','ounces','lb','pound','pounds','g','gram','grams','kg','kilogram','kilograms','ml','milliliter','milliliters','l','liter','liters','qt','quart','quarts','pt','pint','pints','gal','gallon','gallons','dash','pinch','handful','clove','cloves','slice','slices','piece','pieces','can','cans','package','packages','pkg','bottle','bottles','jar','jars','bunch','head','heads','sprig','sprigs','stalk','stalks','strip','strips','link','links','fillet','fillets','scoop','scoops','sheet','sheets','wedge','wedges'];
 function isUnit(word){var w=String(word||'').toLowerCase().replace(/\.$/,'');return UNITS.indexOf(w)>=0||UNITS.indexOf(w.replace(/s$/,''))>=0;}
 function prepLine(line){return String(line||'').replace(/¼/g,'1/4').replace(/½/g,'1/2').replace(/¾/g,'3/4').replace(/⅓/g,'1/3').replace(/⅔/g,'2/3').replace(/⅛/g,'1/8').replace(/⅜/g,'3/8').replace(/⅝/g,'5/8').replace(/⅞/g,'7/8').replace(/\u00bc/g,'1/4').replace(/\u00bd/g,'1/2').replace(/\u00be/g,'3/4').replace(/\s+/g,' ').trim();}
 function ingredientWordRegex(){
@@ -2207,22 +2207,22 @@ async function pasteFullRecipe(){
 
 
 function toTitleCaseIngredient(str){return String(str||'').toLowerCase().replace(/([a-z])/g,function(m){return m.toUpperCase();}).replace(/And/g,'and').replace(/Or/g,'or').replace(/For/g,'for').replace(/To/g,'to').replace(/Of/g,'of').replace(/Extra-Firm/g,'Extra-Firm');}
-function abbrUnit(u){var m={tablespoon:'tbsp',tablespoons:'tbsp',teaspoon:'tsp',teaspoons:'tsp',ounce:'oz',ounces:'oz',pound:'lb',pounds:'lb',cups:'c',cup:'c',quart:'qt',quarts:'qt',pint:'pt',pints:'pt',gallon:'gal',gallons:'gal'};return m[String(u||'').toLowerCase()]||u;}
+function abbrUnit(u){var m={tablespoon:'tbsp',tablespoons:'tbsp',teaspoon:'tsp',teaspoons:'tsp',ounce:'oz',ounces:'oz',pound:'lb',pounds:'lb',cups:'cup',cup:'cup',c:'cup',quart:'qt',quarts:'qt',pint:'pt',pints:'pt',gallon:'gal',gallons:'gal'};return m[String(u||'').toLowerCase()]||u;}
 function normalizeIngredientDisplayLine(line){
   return String(line||'')
     .replace(/\b tablespoons?\b/gi,' tbsp')
     .replace(/\b teaspoons?\b/gi,' tsp')
     .replace(/\b ounces?\b/gi,' oz')
     .replace(/\b pounds?\b/gi,' lb')
-    .replace(/\b cups?\b/gi,' c')
+    .replace(/\b cups?\b/gi,' cup')
     .replace(/\b quarts?\b/gi,' qt')
     .replace(/\b pints?\b/gi,' pt')
     .replace(/\b gallons?\b/gi,' gal')
-    .replace(/\b tablespoon\b/gi,'tbsp')
-    .replace(/\b teaspoon\b/gi,'tsp')
-    .replace(/\b ounce\b/gi,'oz')
-    .replace(/\b pound\b/gi,'lb')
-    .replace(/\b cup\b/gi,'c')
+    .replace(/\b tablespoon\b/gi,' tbsp')
+    .replace(/\b teaspoon\b/gi,' tsp')
+    .replace(/\b ounce\b/gi,' oz')
+    .replace(/\b pound\b/gi,' lb')
+    .replace(/\b cup\b/gi,' cup')
     .replace(/\(\s*([0-9]+)\s*-?\s*oz\s*\)/gi,'($1-oz)')
     .replace(/\s+/g,' ')
     .trim();
@@ -2232,6 +2232,7 @@ function parseIngLine(line){
   var pm=text.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)\s+\(([^)]+)\)\s+(.+)$/);
   if(pm){var rest=pm[3],parts=rest.split(' '),unit=isUnit(parts[0])?abbrUnit(parts.shift()):'';return{quantity:pm[1],unit:unit,item:toTitleCaseIngredient(parts.join(' ')),packageNote:'('+normalizeIngredientDisplayLine(pm[2])+')',originalText:original};}
   var sm=text.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)\s+(.+)$/);if(sm)return splitRest(sm[1],sm[2],original);
+  var glued=text.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)(tsp|tbsp|cup|cups|c|oz|lb|g|kg|ml|l|qt|pt|gal)\s+(.+)$/i);if(glued)return{quantity:glued[1],unit:abbrUnit(glued[2]),item:toTitleCaseIngredient(cleanItem(glued[3])),originalText:original};
   var em=text.match(/^(.+?)\s+(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)(?:\s+(.+))?$/);if(em){var ip=cleanItem(em[1]),qty=em[2].trim(),tr=(em[3]||'').trim();if(!ip&&!tr)return{quantity:qty,unit:'',item:'',originalText:original};if(tr){var pp=tr.split(' ');if(isUnit(pp[0]))return{quantity:qty,unit:abbrUnit(pp[0]),item:toTitleCaseIngredient(cleanItem((pp.slice(1).join(' ')?pp.slice(1).join(' ')+' ':'')+ip)),originalText:original};return{quantity:qty,unit:'',item:toTitleCaseIngredient(cleanItem(tr+' '+ip)),originalText:original};}return{quantity:qty,unit:'',item:toTitleCaseIngredient(ip),originalText:original};}
   return{quantity:'',unit:'',item:toTitleCaseIngredient(cleanItem(text)),originalText:original};}
 function splitRest(q,rest,original){var pp=String(rest||'').split(' ').filter(Boolean),u='',it=String(rest||'').trim();if(pp.length&&isUnit(pp[0])){u=abbrUnit(pp[0]);it=pp.slice(1).join(' ');}return{quantity:q||'',unit:u,item:toTitleCaseIngredient(cleanItem(it)),originalText:original||String(rest||'')};}
@@ -2288,14 +2289,43 @@ function parseFrac(v){var t=String(v||'').trim();if(/^\d+\s+\d+\/\d+$/.test(t)){
 function fmtQty(v){if(!v&&v!==0)return'';if(v===0)return'0';if(Number.isInteger(v))return String(v);var whole=Math.floor(v),frac=v-whole,fracs=[[0.125,'1/8'],[0.1667,'1/6'],[0.2,'1/5'],[0.25,'1/4'],[0.3333,'1/3'],[0.375,'3/8'],[0.5,'1/2'],[0.625,'5/8'],[0.6667,'2/3'],[0.75,'3/4'],[0.875,'7/8']];var cl=null,md=0.04;for(var i=0;i<fracs.length;i++){var dv=Math.abs(frac-fracs[i][0]);if(dv<md){md=dv;cl=fracs[i][1];}}if(cl)return whole>0?whole+' '+cl:cl;return String(Math.round(v*100)/100);}
 
 /* ===== GROCERY ===== */
-// Robust key normalisation — strips leading digits, handles plurals
+// Firebase-safe grocery keys. Visible ingredient names can still contain fractions, slashes, dots, etc.
+// Only the hidden object key is cleaned because Firebase RTDB rejects . # $ / [ ] in path keys.
+function firebaseSafeGroceryKey(v){
+  return String(v==null?'':v)
+    .replace(/\./g,'·')
+    .replace(/#/g,'＃')
+    .replace(/\$/g,'＄')
+    .replace(/\//g,'∕')
+    .replace(/\[/g,'（')
+    .replace(/\]/g,'）');
+}
+function normalizeGroceryMetaKeys(meta){
+  var out={};
+  if(!meta||typeof meta!=='object')return out;
+  Object.keys(meta).forEach(function(k){
+    var safe=firebaseSafeGroceryKey(k);
+    out[safe]=Object.assign({},out[safe]||{},meta[k]||{});
+  });
+  return out;
+}
+function cloneEventForFirebase(ev){
+  var copy=JSON.parse(JSON.stringify(ev||{}));
+  copy.groceryMeta=normalizeGroceryMetaKeys(copy.groceryMeta||{});
+  return copy;
+}
+// Robust key normalisation — strips leading digits, handles plurals, and returns a Firebase-safe key
 function normKey(item,unit){
   var k=String(item||'').trim().toLowerCase()
     .replace(/^\d+[\s.\/]+/,'') // strip leading numbers e.g. "2 limes" → "limes"
     .replace(/ies$/,'y').replace(/ves$/,'f').replace(/es$/,'').replace(/s$/,'');
-  return k+'|'+String(unit||'').trim().toLowerCase();
+  return firebaseSafeGroceryKey(k+'|'+String(unit||'').trim().toLowerCase());
 }
-function dispPlural(item,qty){var n=String(item||'Unspecified'),v=parseFloat(qty);return(!isNaN(v)&&v!==1&&!/s$/i.test(n))?n+'s':n;}
+function dispPlural(item,qty){
+  // Grocery item names should display exactly as entered/parsed.
+  // Do not auto-pluralize food names: "milk" should stay "Milk", not "Milks".
+  return String(item||'Unspecified');
+}
 function primaryStore(meta){if(meta.storeAssignments&&meta.storeAssignments.length)return meta.storeAssignments[0];return meta.store||'Unassigned';}
 function aggregateRows(){
   var grouped={};
@@ -2413,7 +2443,7 @@ function toggleAssignStoresMode(){setGroceryMode(assignStoresMode?'list':'assign
 function renderAssignStoresGrid(){var grid=safeEl('assignStoresGrid');if(!grid)return;var rows=(typeof getCurrentGroceryRows==='function'?getCurrentGroceryRows():aggregateRows()),activeStores=getActiveStores().filter(function(s){return s!=='Unassigned';});if(!rows.length){grid.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);">Add dishes with ingredients first.</div>';return;}if(!activeStores.length){grid.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);">No active stores — check stores in Event Setup.</div>';return;}var hdr='<th>Ingredient</th><th>Qty</th>'+activeStores.map(function(s){return'<th style="min-width:64px;">'+escHtml(s)+'</th>';}).join('');var body=rows.map(function(r){var a=r.storeAssignments||[],dup=a.length>1;return'<tr><td>'+escHtml(dispPlural(r.item,r.quantityText))+(dup?'<span class="dup-badge">DUP</span>':'')+'</td><td style="font-size:12px;color:var(--muted);">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'—')+'</td>'+activeStores.map(function(s){return'<td><input type="checkbox" class="assign-store-check" data-key="'+escAttr(r.key)+'" data-store="'+escAttr(s)+'" '+(a.indexOf(s)>=0?'checked':'')+' onchange="setItemStore(this)" /></td>';}).join('')+'</tr>';}).join('');grid.innerHTML='<table class="assign-stores-table"><thead><tr>'+hdr+'</tr></thead><tbody>'+body+'</tbody></table>';}
 async function bulkAssignVisibleItems(){var stores=getActiveStores().filter(function(s){return s!=='Unassigned';});if(!stores.length){showToast('No active stores.','error');return;}var store=await promptAction({title:'Bulk Assign Store',message:'Type store name for all currently visible items:',placeholder:stores.join(' / ')});if(!store)return;var match=stores.find(function(s){return s.toLowerCase()===store.toLowerCase();});if(!match){showToast('Store not found.','error');return;}document.querySelectorAll('#assignStoresGrid tbody tr').forEach(function(row){var cb=Array.from(row.querySelectorAll('.assign-store-check')).find(function(x){return x.dataset.store===match;});if(cb&&!cb.checked){cb.checked=true;setItemStore(cb);}});showToast('Assigned visible items to '+match+'.','success');}
 function setItemStore(cb){
-  var key=cb.dataset.key,store=cb.dataset.store;
+  var key=firebaseSafeGroceryKey(cb.dataset.key),store=cb.dataset.store;
   currentEvent.groceryMeta=currentEvent.groceryMeta||{};currentEvent.groceryMeta[key]=currentEvent.groceryMeta[key]||{};
   var a=Array.isArray(currentEvent.groceryMeta[key].storeAssignments)?currentEvent.groceryMeta[key].storeAssignments.slice():[];
   if(cb.checked){if(a.indexOf(store)<0)a.push(store);}else{a=a.filter(function(s){return s!==store;});}
@@ -2483,8 +2513,9 @@ function renderShoppingList(out,rows){
   out.querySelectorAll('.shopping-item-check').forEach(function(cb){cb.addEventListener('change',function(){updateGroceryMeta(cb.dataset.key,'status',cb.checked?'Bought':'Need');haptic();});});
 }
 function toggleShoppingMode(){setGroceryMode(shoppingMode?'list':'shop');}
-function resetGroceryCheckoffs(){if(!currentEvent)return;Object.keys(currentEvent.groceryMeta||{}).forEach(function(key){if(currentEvent.groceryMeta[key]){currentEvent.groceryMeta[key].status='Need';currentEvent.groceryMeta[key].checkedBy=null;currentEvent.groceryMeta[key].checkedAt=null;}});saveToLocal(currentEvent);fbWriteGroceryMeta(currentCode,currentEvent.groceryMeta);addAuditEntry('reset','reset all checkoffs');buildGroceryList();showToast('Checkoffs reset.','success');}
+function resetGroceryCheckoffs(){if(!currentEvent)return;Object.keys(currentEvent.groceryMeta||{}).forEach(function(key){if(currentEvent.groceryMeta[key]){currentEvent.groceryMeta[key].status='Need';currentEvent.groceryMeta[key].checkedBy=null;currentEvent.groceryMeta[key].checkedAt=null;}});currentEvent.groceryMeta=normalizeGroceryMetaKeys(currentEvent.groceryMeta);saveToLocal(currentEvent);fbWriteGroceryMeta(currentCode,currentEvent.groceryMeta);addAuditEntry('reset','reset all checkoffs');buildGroceryList();showToast('Checkoffs reset.','success');}
 function updateGroceryMeta(key,field,value){
+  key=firebaseSafeGroceryKey(key);
   currentEvent.groceryMeta=currentEvent.groceryMeta||{};currentEvent.groceryMeta[key]=currentEvent.groceryMeta[key]||{};currentEvent.groceryMeta[key][field]=value;
   if(field==='status'){
     var u=getUser();
@@ -2561,7 +2592,7 @@ async function deleteManualGroceryItem(id){
   var ok=await confirmAction({message:'Remove this manual item?',confirmLabel:'Remove',danger:true});
   if(!ok)return;
   currentEvent.manualGroceryItems=(currentEvent.manualGroceryItems||[]).filter(function(i){return i.id!==id;});
-  delete currentEvent.groceryMeta['manual|'+id];
+  delete currentEvent.groceryMeta[firebaseSafeGroceryKey('manual|'+id)];
   commitAndSync();buildGroceryList();showToast('Item removed.','success');
 }
 
@@ -2867,4 +2898,3 @@ document.addEventListener('DOMContentLoaded',function(){
 </div>
 </body>
 </html>
-

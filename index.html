@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v46
+     Meal Planner v47
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3430,10 +3430,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v46';
+var APP_VERSION='v47';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v46';
+var APP_VERSION_TAG='Meal Planner v47';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4623,6 +4623,7 @@ function renderRecipeBank(){
 function addBankToPlanner(id){if(!currentEvent||!currentEvent.days.length){showToast('Create event days first.','error');return;}
   var r=_menuLibrary.find(function(x){return x.id===id;})||(currentEvent.recipeBank||[]).find(function(x){return x.id===id;});
   if(!r)return;
+  closeMenuLibraryFromLanding();
   openDishModal(currentEvent.days[0].id,'Dinner');setValue('dishName',r.name||'');setValue('dishUrl',r.url||'');setValue('servings',r.servings||'');setValue('peopleEating',r.peopleEating||'');setValue('dishNotes',r.notes||'');var vc2=safeEl('isVegetarianCheck');if(vc2)vc2.checked=!!(r.isVegetarian||(r.tags||[]).some(function(t){return /veg|vegetarian/i.test(t);}));toggleImportCard(false);var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';(r.ingredients||[]).forEach(function(i){addIngredientRow(i.quantity,i.unit,i.item);});if(!(r.ingredients||[]).length)addIngredientRow();updateScaledIngredientDisplay();
   // Stamp bankRecipeId after modal opens
   setTimeout(function(){editingDishId=editingDishId||null;window._pendingBankRecipeId=r.id;},100);
@@ -5285,6 +5286,9 @@ function executeImportRecipeUrl(a){
 }
 
 async function backgroundImportAndReview(url,intendedDay,intendedMeal){
+  var normalizedUrl=url.split('?')[0].replace(/\/+$/,'');
+  var existing=_menuLibrary.find(function(r){return r.url&&r.url.split('?')[0].replace(/\/+$/,'')===normalizedUrl;});
+  if(existing){showToast('"'+existing.name+'" is already in your library.','success');showRecipeReviewPanel(existing,intendedDay,intendedMeal);return;}
   var key=getApiKey();if(!key){showToast('Add API key in App Settings.','error');return;}
   showToast('⏳ Fetching recipe…','');
   var title='',description='',imageUrl='';

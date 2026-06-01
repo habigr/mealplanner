@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v56
+     Meal Planner v57
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1224,7 +1224,7 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 #recipeDetailOverlay{display:none;position:fixed;inset:0;z-index:9050;flex-direction:column;}
 #recipeDetailOverlay.visible{display:flex;}
 /* Panel: CSS Grid is bulletproof for header/body/footer — auto auto auto with 1fr middle */
-.recipe-detail-panel{display:grid;grid-template-rows:auto 1fr auto;flex:1;min-height:0;background:#fff;overflow:hidden;}
+.recipe-detail-panel{display:grid;grid-template-rows:auto minmax(0,1fr) auto;flex:1;min-height:0;background:#fff;overflow:hidden;}
 .recipe-detail-header{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;border-bottom:1px solid var(--border-light);background:#fff;}
 .recipe-detail-header-title{flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 /* Body: fills the 1fr row, scrolls within it */
@@ -1273,17 +1273,10 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 .library-modal-wrap{display:grid;grid-template-rows:auto 1fr;flex:1;min-height:0;}
 .library-modal-wrap>div:last-child{overflow-y:auto;min-height:0;}
 
-/* Mobile: safe-area for recipe detail only */
+/* Mobile: 100dvh keeps panel bottom above iOS Safari toolbar; footer in-flow with safe-area gap */
 @media(max-width:768px){
-  #recipeDetailOverlay.visible{padding-top:env(safe-area-inset-top,0px);}
-  /* Footer: fixed to bottom of screen — bypasses all layout ambiguity */
-  .recipe-detail-footer{
-    position:fixed;bottom:0;left:0;right:0;z-index:9051;
-    padding-bottom:max(12px,calc(env(safe-area-inset-bottom,0px)+8px));
-    border-radius:0;
-  }
-  /* Body: padding so content never hides behind the fixed footer */
-  .recipe-detail-body{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px));}
+  #recipeDetailOverlay.visible{bottom:auto;height:100vh;height:100dvh;padding-top:env(safe-area-inset-top,0px);}
+  .recipe-detail-footer{padding-bottom:max(16px,calc(env(safe-area-inset-bottom,0px)+16px));}
   .recipe-detail-hero img{height:180px;}
   .recipe-detail-name{font-size:22px;}
 }
@@ -1291,7 +1284,7 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 /* Desktop: both overlays become centered modals — panel gets concrete height so flex works */
 @media(min-width:769px){
   #recipeDetailOverlay.visible{background:rgba(10,20,50,.5);backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding:48px 20px 24px;}
-  .recipe-detail-panel{flex:none;grid-template-rows:auto 1fr auto;width:100%;max-width:700px;height:calc(100vh - 96px);border-radius:20px;margin:0 auto;box-shadow:0 24px 80px rgba(0,0,0,.3);}
+  .recipe-detail-panel{flex:none;grid-template-rows:auto minmax(0,1fr) auto;width:100%;max-width:700px;height:calc(100vh - 96px);border-radius:20px;margin:0 auto;box-shadow:0 24px 80px rgba(0,0,0,.3);}
   .recipe-detail-hero img{height:280px;}
   #menuLibraryOverlay{background:rgba(10,20,50,.5);backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding:48px 20px 24px;}
   .library-modal-wrap{flex:none;width:100%;max-width:980px;height:calc(100vh - 96px);border-radius:20px;overflow:hidden;margin:0 auto;box-shadow:0 24px 80px rgba(0,0,0,.3);background:var(--bg);}
@@ -3609,10 +3602,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v56';
+var APP_VERSION='v57';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v56';
+var APP_VERSION_TAG='Meal Planner v57';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

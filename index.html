@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v53
+     Meal Planner v54
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1220,11 +1220,18 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 }
 
 /* ===== RECIPE DETAIL OVERLAY ===== */
-#recipeDetailOverlay{display:none;position:fixed;inset:0;background:#fff;z-index:9050;flex-direction:column;overflow:hidden;}
+/* Overlay: full screen, flex column */
+#recipeDetailOverlay{display:none;position:fixed;inset:0;z-index:9050;flex-direction:column;}
 #recipeDetailOverlay.visible{display:flex;}
-.recipe-detail-header{display:flex;align-items:center;gap:10px;padding:max(14px,calc(env(safe-area-inset-top,0px)+10px)) 16px 12px;border-bottom:1px solid var(--border-light);background:#fff;flex-shrink:0;}
+/* Panel: flex:1 fills the overlay (more reliable than height:100% inside flex) */
+/* min-height:0 is critical — without it flex child won't shrink below content */
+.recipe-detail-panel{display:flex;flex-direction:column;flex:1;min-height:0;background:#fff;overflow:hidden;}
+.recipe-detail-header{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;border-bottom:1px solid var(--border-light);background:#fff;flex-shrink:0;}
 .recipe-detail-header-title{flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.recipe-detail-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:20px;}
+/* Body: flex:1 + min-height:0 = scrollable within remaining space */
+.recipe-detail-body{flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;}
+.recipe-detail-footer{padding:12px 16px;padding-bottom:max(14px,calc(env(safe-area-inset-bottom,0px)+14px));display:flex;gap:8px;background:#fff;border-top:1.5px solid var(--border-light);flex-shrink:0;}
+.recipe-detail-footer button{flex:1;font-size:13px;}
 .recipe-detail-hero{overflow:hidden;}
 .recipe-detail-hero img{width:100%;height:240px;object-fit:cover;display:block;}
 .recipe-detail-accent{height:3px;background:var(--theme-accent);flex-shrink:0;}
@@ -1245,8 +1252,6 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 .recipe-steps-list li{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border-light);font-size:14px;line-height:1.65;color:var(--text);}
 .recipe-steps-list li:last-child{border-bottom:none;}
 .recipe-step-num{font-size:12px;font-weight:800;color:var(--theme-accent);background:var(--theme-accent-soft);border:1.5px solid var(--theme-border);min-width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
-.recipe-detail-footer{padding:12px 16px;padding-bottom:max(12px,calc(env(safe-area-inset-bottom,0px)+12px));display:flex;gap:8px;background:#fff;border-top:1.5px solid var(--border-light);flex-shrink:0;}
-.recipe-detail-footer button{flex:1;font-size:13px;}
 
 /* ===== v51: RECIPE CARD IMAGES + DESKTOP MODALS ===== */
 
@@ -1265,29 +1270,26 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 .recipe-veg-badge{display:inline-flex;align-items:center;gap:4px;background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;}
 .recipe-paywall-note{font-size:11.5px;color:var(--muted);font-style:italic;margin-top:5px;}
 
-/* Recipe detail panel */
-.recipe-detail-panel{display:flex;flex-direction:column;width:100%;height:100%;background:#fff;}
-.recipe-detail-header,.recipe-detail-footer{flex-shrink:0;}
-.recipe-detail-body{flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;}
-/* Library modal wrap */
-.library-modal-wrap{display:flex;flex-direction:column;width:100%;height:100%;}
+/* Library modal wrap: same flex:1 + min-height:0 pattern */
+.library-modal-wrap{display:flex;flex-direction:column;flex:1;min-height:0;}
 .library-modal-wrap>div:last-child{flex:1;overflow-y:auto;min-height:0;}
 
-/* Desktop: centered modals with breathing room — concrete height so flex/footer works */
-@media(min-width:769px){
-  #recipeDetailOverlay{background:rgba(10,20,50,.5);backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding:48px 20px 24px;}
-  .recipe-detail-panel{width:100%;max-width:700px;height:calc(100vh - 96px);border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3);margin:0 auto;}
-  .recipe-detail-hero img{height:280px;}
-  #menuLibraryOverlay{background:rgba(10,20,50,.5);backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding:48px 20px 24px;}
-  .library-modal-wrap{width:100%;max-width:980px;height:calc(100vh - 96px);border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3);background:var(--bg);margin:0 auto;}
-}
-
-/* Mobile: safe-area on header, not panel (panel padding-top breaks height:100%) */
+/* Mobile: push content below the notch via overlay padding — most reliable iOS approach */
 @media(max-width:768px){
-  .recipe-detail-header{padding-top:max(14px,calc(env(safe-area-inset-top,0px)+10px))!important;}
+  #recipeDetailOverlay.visible{padding-top:env(safe-area-inset-top,0px);}
+  #menuLibraryOverlay{padding-top:env(safe-area-inset-top,0px);}
+  .recipe-detail-footer{padding-bottom:max(20px,calc(env(safe-area-inset-bottom,0px)+16px))!important;}
   .recipe-detail-hero img{height:180px;}
   .recipe-detail-name{font-size:22px;}
-  .recipe-detail-footer{padding-bottom:max(24px,calc(env(safe-area-inset-bottom,0px)+20px));}
+}
+
+/* Desktop: both overlays become centered modals — panel gets concrete height so flex works */
+@media(min-width:769px){
+  #recipeDetailOverlay.visible{background:rgba(10,20,50,.5);backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding:48px 20px 24px;}
+  .recipe-detail-panel{flex:none;width:100%;max-width:700px;height:calc(100vh - 96px);border-radius:20px;margin:0 auto;box-shadow:0 24px 80px rgba(0,0,0,.3);}
+  .recipe-detail-hero img{height:280px;}
+  #menuLibraryOverlay{background:rgba(10,20,50,.5);backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding:48px 20px 24px;}
+  .library-modal-wrap{flex:none;width:100%;max-width:980px;height:calc(100vh - 96px);border-radius:20px;overflow:hidden;margin:0 auto;box-shadow:0 24px 80px rgba(0,0,0,.3);background:var(--bg);}
 }
 
 /* ===== v49: VIEW / EDIT MODE SYSTEM ===== */
@@ -3602,10 +3604,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v53';
+var APP_VERSION='v54';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v53';
+var APP_VERSION_TAG='Meal Planner v54';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4814,9 +4816,10 @@ function renderRecipeBank(){
   }
   refreshRecipeDetail();
 }
-function addBankToPlanner(id){if(!currentEvent||!currentEvent.days.length){showToast('Create event days first.','error');return;}
-  var r=_menuLibrary.find(function(x){return x.id===id;})||(currentEvent.recipeBank||[]).find(function(x){return x.id===id;});
+function addBankToPlanner(id){
+  var r=_menuLibrary.find(function(x){return x.id===id;})||(currentEvent&&(currentEvent.recipeBank||[]).find(function(x){return x.id===id;}));
   if(!r)return;
+  if(!currentEvent||!currentEvent.days.length){closeMenuLibraryFromLanding();showAddToTripPicker(r);return;}
   closeMenuLibraryFromLanding();
   openDishModal(currentEvent.days[0].id,'Dinner');setValue('dishName',r.name||'');setValue('dishUrl',r.url||'');setValue('servings',r.servings||'');setValue('peopleEating',r.peopleEating||'');setValue('dishNotes',r.notes||'');var vc2=safeEl('isVegetarianCheck');if(vc2)vc2.checked=!!(r.isVegetarian||(r.tags||[]).some(function(t){return /veg|vegetarian/i.test(t);}));toggleImportCard(false);var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';(r.ingredients||[]).forEach(function(i){addIngredientRow(i.quantity,i.unit,i.item);});if(!(r.ingredients||[]).length)addIngredientRow();updateScaledIngredientDisplay();
   // Stamp bankRecipeId after modal opens
@@ -5977,16 +5980,18 @@ async function showAddToTripPicker(recipe){
   if(!currentUser){showToast('Sign in to add to a trip.','error');return;}
   try{
     var snap=await db.ref('users/'+currentUser.uid+'/trips').once('value');
-    var tripCodes=Object.keys(snap.val()||{});
+    var tripCodes=Object.keys(snap.val()||{}).filter(function(c){return c&&c!=='null'&&c!=='undefined';});
     if(!tripCodes.length){showToast('No trips found. Create a trip first.','error');return;}
     // Load trip names
     var trips=[];
     for(var i=0;i<tripCodes.length;i++){
       var code=tripCodes[i];
       var tSnap=await db.ref('trips/'+code+'/name').once('value');
-      trips.push({code:code,name:tSnap.val()||code});
+      var tripName=tSnap.val();
+      if(!tripName||String(tripName)==='null'||String(tripName)==='undefined')tripName=code;
+      trips.push({code:code,name:tripName});
     }
-    showPickerSheet('Which trip?',trips.map(function(t){return{label:t.name||t.code,value:t.code};}),function(tripCode){
+    showPickerSheet('Which trip?',trips.map(function(t){return{label:t.name,value:t.code};}),function(tripCode){
       db.ref('trips/'+tripCode).once('value').then(function(snap){
         if(!snap.val()){showToast('Trip not found.','error');return;}
         var tripData=normalizeEvent(snap.val());

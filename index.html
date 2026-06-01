@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v55
+     Meal Planner v56
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1263,7 +1263,7 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 .recipe-card-img img{width:100%;height:140px;object-fit:cover;display:block;transition:transform .35s;}
 .recipe-card-v2:hover .recipe-card-img img{transform:scale(1.04);}
 .recipe-card-no-img{height:4px;background:var(--theme-accent);opacity:.5;}
-.recipe-card-has-img .recipe-card-emoji{display:none;}
+.recipe-card-emoji{display:none;}
 
 /* Veg badge + paywall note in detail view */
 .recipe-veg-badge{display:inline-flex;align-items:center;gap:4px;background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;}
@@ -1273,11 +1273,17 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 .library-modal-wrap{display:grid;grid-template-rows:auto 1fr;flex:1;min-height:0;}
 .library-modal-wrap>div:last-child{overflow-y:auto;min-height:0;}
 
-/* Mobile: push content below the notch via overlay padding — most reliable iOS approach */
+/* Mobile: safe-area for recipe detail only */
 @media(max-width:768px){
   #recipeDetailOverlay.visible{padding-top:env(safe-area-inset-top,0px);}
-  #menuLibraryOverlay{padding-top:env(safe-area-inset-top,0px);}
-  .recipe-detail-footer{padding-bottom:max(20px,calc(env(safe-area-inset-bottom,0px)+16px))!important;}
+  /* Footer: fixed to bottom of screen — bypasses all layout ambiguity */
+  .recipe-detail-footer{
+    position:fixed;bottom:0;left:0;right:0;z-index:9051;
+    padding-bottom:max(12px,calc(env(safe-area-inset-bottom,0px)+8px));
+    border-radius:0;
+  }
+  /* Body: padding so content never hides behind the fixed footer */
+  .recipe-detail-body{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px));}
   .recipe-detail-hero img{height:180px;}
   .recipe-detail-name{font-size:22px;}
 }
@@ -3603,10 +3609,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v55';
+var APP_VERSION='v56';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v55';
+var APP_VERSION_TAG='Meal Planner v56';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4712,7 +4718,7 @@ function renderRecipeCard(r){
   var ownerHtml=ownerName?'<div class="recipe-owner-line" title="Owner: '+escAttr(ownerName)+'">'+ownerAvatarHtml+'<span style="font-size:11px;color:var(--muted);">'+escHtml(ownerName)+'</span></div>':'';
   var hasImg=!!(r.imageUrl);
   var imgHtml=hasImg
-    ?'<div class="recipe-card-img"><img src="'+escAttr(proxyImageUrl(r.imageUrl,400,160))+'" alt="" loading="lazy" onerror="this.closest(\'.recipe-card-img\').style.display=\'none\'"></div>'
+    ?'<div class="recipe-card-img"><img src="'+escAttr(r.imageUrl)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="recipeCardImgFail(this)"></div>'
     :'<div class="recipe-card-no-img"></div>';
   return'<div class="recipe-card-v2'+(hasImg?' recipe-card-has-img':'')+'" onclick="showRecipeDetail(\''+escAttr(r.id)+'\')" style="cursor:pointer;">'
     +imgHtml
@@ -5399,7 +5405,9 @@ function executeDeleteBankRecipe(a){
 }
 async function deleteBankItem(id){if(!await confirmAction({message:'Delete this recipe from the Recipe Library?',confirmLabel:'Delete',danger:true}))return;closeRecipeDetail();deleteFromMenuLibrary(id);if(currentEvent){currentEvent.recipeBank=(currentEvent.recipeBank||[]).filter(function(r){return r.id!==id;});commitAndSync();}showToast('Recipe deleted.','success');}
 
-function proxyImageUrl(url,w,h){if(!url)return'';return'https://images.weserv.nl/?url='+encodeURIComponent(url)+'&w='+(w||400)+'&h='+(h||280)+'&fit=cover&output=webp&we';}
+// v56: image load failed — replace with accent stripe, NEVER emoji
+function recipeCardImgFail(img){var p=img&&img.parentElement;if(p)p.outerHTML='<div class="recipe-card-no-img"></div>';}
+function recipeHeroImgFail(img){var h=img&&img.closest('.recipe-detail-hero');if(h)h.outerHTML='<div class="recipe-detail-accent"></div>';}
 function isPaywalledSource(url){if(!url)return false;try{var h=new URL(url).hostname.replace('www.','');return['cooking.nytimes.com','nytimes.com','washingtonpost.com','latimes.com','wsj.com'].some(function(d){return h===d||h.endsWith('.'+d);});}catch(e){return false;}}
 
 /* ===== RECIPE DETAIL VIEW ===== */
@@ -5412,7 +5420,7 @@ function showRecipeDetail(id){
   if(!overlay||!body||!footer)return;
   if(ht)ht.textContent=r.name||'';
   var html='';
-  if(r.imageUrl)html+='<div class="recipe-detail-hero"><img src="'+escAttr(proxyImageUrl(r.imageUrl,700,300))+'" alt="'+escAttr(r.name||'')+'" onerror="this.closest(\'.recipe-detail-hero\').style.display=\'none\'"></div>';
+  if(r.imageUrl)html+='<div class="recipe-detail-hero"><img src="'+escAttr(r.imageUrl)+'" alt="'+escAttr(r.name||'')+'" referrerpolicy="no-referrer" onerror="recipeHeroImgFail(this)"></div>';
   else html+='<div class="recipe-detail-accent"></div>';
   html+='<div class="recipe-detail-info">';
   html+='<div class="recipe-detail-name">'+escHtml(r.name||'Untitled Recipe')+'</div>';

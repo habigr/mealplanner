@@ -1,0 +1,220 @@
+# MEAL PLANNER — CLAUDE.md
+
+## HIGHEST PRIORITY — NON-NEGOTIABLE
+
+No data loss under any circumstances. There is real live trip data in Firebase including active trips like MDW 2026.
+
+Before touching any sync, save, or Firebase logic:
+- Never write an empty dishes array to Firebase
+- Never overwrite a trip with fewer dishes than currently stored
+- Never delete or modify groceryMeta without preserving store assignments
+- validateBeforeFirebaseWrite must pass before any Firebase write
+- If any operation might risk data, stop and ask before proceeding
+
+Before any build touching sync or save logic, read the current Firebase data structure and confirm the fix cannot overwrite real data with empty or stale data.
+
+---
+
+## SESSION RULES
+
+At the start of every session:
+- Read this entire CLAUDE.md file completely
+- Run git log to confirm current live version
+- Next version = current live version + 1, never reuse a version number
+- Confirm what is in progress before starting anything new
+- Do not start building until you know exactly what version you are on
+
+At the end of every session:
+- Update this file to reflect what was completed, tested, what failed, and what is next
+- Move completed items to DONE section with version number they were fixed in
+- Update PENDING list with current priority order
+- Robbie will say "session done, update CLAUDE.md" as the signal to do this
+
+---
+
+## PROJECT CONTEXT
+
+- Single HTML file PWA — index.html
+- Firebase project: meal-planning-app-e4651
+- Live URL: habigr.github.io/mealplanner
+- GitHub: habigr/mealplanner
+- No framework, no build step, no bundler
+- Firebase Realtime Database for sync
+- GitHub Pages for hosting — auto-deploys on git push
+- All JavaScript in one file, var-based globals, string-based innerHTML rendering
+
+---
+
+## ARCHITECTURE — DO NOT BREAK
+
+- TripStore wrapper exists around currentEvent/currentCode — do not remove globals, 200+ read sites still use them directly
+- _isApplyingRemoteChange flag prevents ping-pong sync loop — do not remove
+- _isLoadingTrip flag prevents timestamp inflation on initial load — do not remove
+- validateBeforeFirebaseWrite runs before every Firebase write — do not bypass
+- normalizeEvent handles Firebase object maps for dishes and days — do not simplify
+- window.runRegressionTests() must pass 25/25 before any push
+- window.checkSyncFreshness() available to verify local matches Firebase
+- mpLog, window.mpDiag() diagnostic tools must remain intact
+
+---
+
+## HOW TO WORK WITH ROBBIE
+
+Before starting any fix:
+- Read the relevant code first
+- Explain what you found in plain English, not technical jargon
+- Ask clarifying questions if anything is unclear about expected behavior
+- Write acceptance criteria — exactly what done looks like, on which devices, verified how
+- Get confirmation from Robbie before touching anything
+- State what you plan to change and why before writing a single line
+
+During a fix:
+- Flag immediately if something unexpected is found in the code
+- If a previous fix attempt left behind bad or conflicting code, report it before proceeding
+- Never make judgment calls silently — surface the decision and ask
+- If a change affects more than what was asked, stop and flag it
+- If something feels risky, say so out loud before proceeding
+- Actively flag concerns if changes affect data flow, permissions, Firebase saving, or sync
+
+After a fix:
+- List every function changed with exact rollback instructions
+- Generate a targeted manual test checklist specific to what changed
+- Note any related issues observed but not fixed
+- Update CHANGELOG.md with plain English description of what changed and why
+
+Proactively pause and flag for stabilization if:
+- More than 3 bugs introduced in recent builds
+- A fix keeps failing or being re-attempted
+- Any change touches Firebase write paths, sync logic, or save logic
+- Data flow getting more complex instead of simpler
+- The same area of code has been fixed more than twice — stop and investigate structurally
+- Regression test count is dropping
+
+**Never assume. Never guess. Never make a judgment call without asking first.**
+
+---
+
+## BUILD RULES — EVERY TIME
+
+- node --check must pass before delivering any build — no exceptions
+- window.runRegressionTests() must pass 25/25 before every push
+- Check git log before building — next version = current + 1
+- Never reuse a version number
+- Maximum 3-5 changes per build
+- No mixing bug fixes with architecture changes or new features in same build
+- Read exact code before editing — no assumptions about what is there
+- File size sanity check — warn if file shrinks significantly, means code was deleted
+- After build, list every changed function with rollback lines
+- Generate targeted manual test checklist based only on what changed in that build
+- After any build touching sync, save, or Firebase — mandatory observation before next build in that area
+- Use test branch for risky changes, only merge to main when confirmed working
+
+---
+
+## AUTOMATED TEST SUITE
+
+Run automatically after every build, do not deliver if any fail:
+- node --check — syntax validation, must pass
+- All critical functions must exist — commitAndSync, normalizeEvent, openLoadedTrip, renderAll, buildGroceryList, fbWriteTrip, validateBeforeFirebaseWrite, repairCorruptedTripCodes, TripStore.setTrip, TripStore.clearTrip, TripStore.getTrip, TripStore.getCode, TripStore.isLoaded
+- No duplicate function definitions anywhere in the file
+- Version number valid format (vN) and higher than previous version
+- All Phase 0.5 guardrails present — validateBeforeFirebaseWrite, runRegressionTests, mpLog, checkVersionEnforcement
+- _isApplyingRemoteChange flag declared
+- _isLoadingTrip flag declared
+- No undefined variable references in key functions
+- File size within reasonable range of previous version
+
+Browser console tests — run before every push:
+- window.runRegressionTests() — must pass 25/25
+- window.mpDiag() — spot check state after opening a trip
+- window.checkSyncFreshness() — verify local matches Firebase after sync test
+
+---
+
+## PENDING ISSUES — FULL LIST
+
+### CRITICAL — Fix these first
+
+1. **Recipes reappearing after deletion** — subscribeToMenuLibrary has no guard, Firebase echoes deleted recipes back minutes later. Workaround: adding any dish forces a fresh write that wins over the echo. Same timestamp guard issue as trips but unfixed in library listener.
+2. **Recipe images inconsistent** — v55 added images.weserv.nl proxy, needs verification that images are loading correctly.
+3. **Duplicate recipe imports from URL** — v47 added URL dedup by URL string, needs verification.
+4. **Meal type deletion/re-add flaky** — dishes added back to deleted meals disappear again when another meal is deleted on same day. Firebase listener applying stale snapshots after rapid sequential writes. Verify after v44 sync fix — may partially resolve.
+5. **Trip ID null in App Admin on mobile** — shows null on mobile but correct ID on desktop.
+
+### IMPORTANT — UI Broken
+
+6. **Buttons at bottom of recipe view cut off** — multiple failed fix attempts (v52–v55). v55 switched to CSS Grid layout. Needs verification.
+7. **Recipe name cuts off in view mode when too long** — should wrap, header should expand with it.
+8. **AI button overlaps send button on mobile** — both need to be tappable.
+9. **Meal type reappears at bottom after re-add** — when a deleted meal type is recreated by adding a dish, it gets pushed to end of day.meals instead of inserted at correct position. Fix: insert at same relative position as in currentEvent.mealTypes order.
+10. **Grocery dedup broken** — Smart Dedup renames items but does not merge quantities with existing matching rows. Creates false duplicate flags and split quantities. Dedup rename and quantity merge must happen together using the same key.
+
+### CLEANUP
+
+11. **Owner field placeholder never appears** — the placeholder text for the owner field never shows up, needs investigation and fix.
+12. **URL import error message misleading on corporate networks** — currently says "Claude may not know this recipe" when the real issue is network blocking. Should say: "Could not fetch the page — this may be blocked by your network. Try on a different connection."
+13. **Meal type reappears at bottom after re-add** — see #9 above.
+
+### DISH CARDS AND PROFILE PHOTOS
+
+14. **Plan view dish cards** — show profile photo of assigned cook when dish is assigned to someone. Show nothing when unassigned. No placeholder avatar.
+15. **Recipe detail view** — show profile photo and name of assigned cook in detail section. Not on library card, only in detail view. Use existing profile photo from _knownUsers registry. Gracefully handle no photo — show initials fallback only, no broken image.
+
+### NEW FEATURES — After all bugs fixed
+
+16. **Group by toggle on recipe library** — sections by category, owner, date added (most recent first).
+17. **View vs edit mode for dishes** — separate planning session needed before building.
+18. **App Admin vs Trip Settings restructure** — universal settings must be separated from trip-specific settings. Collapsible sections. Clean separation required before building permissions.
+19. **User management tab in App Admin** — grid of all users who have logged in, which trips they have accessed, ability to manually add users to trips.
+20. **Admin permissions system** — admin roles, Firebase security rules. Build only after #18 is complete.
+
+---
+
+## CHANGELOG
+
+- v55 — CSS Grid layout for recipe detail footer (bulletproof), images.weserv.nl proxy for recipe images, veg filter now works in library overlay, owner filter dropdown added to library overlay, setRecipeFilter calls renderMenuLibraryOverlay
+- v54 — flex:1+min-height:0 panel layout, safe-area via overlay padding, addBankToPlanner routes to trip picker when no days, null trip code/name filtered in showAddToTripPicker
+- v53 — owner dropdown always shows current user, clearDishModal loads known users on open
+- v52 — recipe detail Library Info section (who added, date, trips used), footer always shows +Plan/Edit/Cook buttons, desktop modal top breathing room
+- v51 — recipe card image thumbnails, desktop centered modals, veg badge, paywall note, isPaywalledSource helper
+- v50 — recipe detail full-screen overlay, view/edit modes, hero image, ingredient/step layout, Add to Plan flow
+- v49 — view/edit mode toggle for planner, mobile density improvements, visual polish
+- v48 — removed redundant syncFromFirebase from subscribeToCurrentTrip, addDishToTripInBackground writes full trip, checkLibraryHealth() and runSmokeTests()
+- v47 — addBankToPlanner closes library overlay before opening dish modal, URL import deduplication by URL
+- v46 — addDishToTripInBackground uses TripStore.setTrip()
+- v45 — subscribeToCurrentTrip and refreshCurrentTrip use TripStore.setTrip(), dead code removed, grocery search debounced
+- v44 — _isLoadingTrip flag, autosave updatedAt guard, mpLog on timestamp guard blocks, window.checkSyncFreshness()
+- v43 — removeMealFromDay crash fixed, duplicate trip title removed, dark mode button removed, Add a dish text removed, blank trip grocery warning suppressed, guessDept adds Beverages category
+- v42 — blank trip grocery warning suppressed, guessDept Beverages routing
+- v41 — version mismatch banner added
+- v40 — background Firebase refresh skips renderAll when not newer
+- v39 — _isApplyingRemoteChange flag stops ping-pong sync loop
+- v38 — syncFromFirebase migrated to TripStore.setTrip
+- v37 — restoreFromBackup migrated, sync validation guards added
+- v36 — createTrip migrated to TripStore, Firebase callbacks logged
+- v35 — TripStore wrapper Phase 1A, openLoadedTrip and goToLanding migrated
+- v34 — Phase 0.5 guardrails, mpLog, validateBeforeFirebaseWrite, runRegressionTests, checkVersionEnforcement
+- v33 — repairCorruptedTripCodes, renderLanding null key filter
+- v32 — openLoadedTrip currentCode assignment fixed
+
+---
+
+## DONE
+
+- Phase 0.5 complete — mpLog, validateBeforeFirebaseWrite, runRegressionTests, checkVersionEnforcement, window.mpDiag ✅
+- Phase 1A complete — TripStore wrapper, openLoadedTrip and goToLanding migrated ✅
+- Phase 1B complete — createTrip migrated, Firebase callbacks logged ✅
+- Phase 1C complete — restoreFromBackup migrated, syncFromFirebase and subscribeToCurrentTrip validation guards ✅
+- Phase 1D complete — syncFromFirebase migrated to TripStore.setTrip ✅
+- Phase 2A complete — _isApplyingRemoteChange flag, ping-pong loop broken ✅
+- Phase 2B complete — background Firebase refresh timestamp check ✅
+- v44 sync fix — _isLoadingTrip flag, autosave guard, timestamp block logging ✅
+- v45 dead code cleanup, TripStore consistency ✅
+- v47 Add to Plan overlay bug fixed, URL dedup added ✅
+- removeMealFromDay crash fixed ✅
+- Duplicate trip title removed from plan tab ✅
+- Dark mode button removed ✅
+- Add a dish text removed from empty meal slots ✅
+- Blank trip grocery warning suppressed ✅
+- guessDept routes beverages to Beverages department ✅
+- Version mismatch banner added ✅

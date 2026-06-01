@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v54
+     Meal Planner v55
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1223,14 +1223,13 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 /* Overlay: full screen, flex column */
 #recipeDetailOverlay{display:none;position:fixed;inset:0;z-index:9050;flex-direction:column;}
 #recipeDetailOverlay.visible{display:flex;}
-/* Panel: flex:1 fills the overlay (more reliable than height:100% inside flex) */
-/* min-height:0 is critical — without it flex child won't shrink below content */
-.recipe-detail-panel{display:flex;flex-direction:column;flex:1;min-height:0;background:#fff;overflow:hidden;}
-.recipe-detail-header{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;border-bottom:1px solid var(--border-light);background:#fff;flex-shrink:0;}
+/* Panel: CSS Grid is bulletproof for header/body/footer — auto auto auto with 1fr middle */
+.recipe-detail-panel{display:grid;grid-template-rows:auto 1fr auto;flex:1;min-height:0;background:#fff;overflow:hidden;}
+.recipe-detail-header{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;border-bottom:1px solid var(--border-light);background:#fff;}
 .recipe-detail-header-title{flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-/* Body: flex:1 + min-height:0 = scrollable within remaining space */
-.recipe-detail-body{flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;}
-.recipe-detail-footer{padding:12px 16px;padding-bottom:max(14px,calc(env(safe-area-inset-bottom,0px)+14px));display:flex;gap:8px;background:#fff;border-top:1.5px solid var(--border-light);flex-shrink:0;}
+/* Body: fills the 1fr row, scrolls within it */
+.recipe-detail-body{overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;}
+.recipe-detail-footer{padding:12px 16px;padding-bottom:max(14px,calc(env(safe-area-inset-bottom,0px)+14px));display:flex;gap:8px;background:#fff;border-top:1.5px solid var(--border-light);}
 .recipe-detail-footer button{flex:1;font-size:13px;}
 .recipe-detail-hero{overflow:hidden;}
 .recipe-detail-hero img{width:100%;height:240px;object-fit:cover;display:block;}
@@ -1270,9 +1269,9 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 .recipe-veg-badge{display:inline-flex;align-items:center;gap:4px;background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;}
 .recipe-paywall-note{font-size:11.5px;color:var(--muted);font-style:italic;margin-top:5px;}
 
-/* Library modal wrap: same flex:1 + min-height:0 pattern */
-.library-modal-wrap{display:flex;flex-direction:column;flex:1;min-height:0;}
-.library-modal-wrap>div:last-child{flex:1;overflow-y:auto;min-height:0;}
+/* Library modal wrap: grid for reliable header+body layout */
+.library-modal-wrap{display:grid;grid-template-rows:auto 1fr;flex:1;min-height:0;}
+.library-modal-wrap>div:last-child{overflow-y:auto;min-height:0;}
 
 /* Mobile: push content below the notch via overlay padding — most reliable iOS approach */
 @media(max-width:768px){
@@ -1286,7 +1285,7 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 /* Desktop: both overlays become centered modals — panel gets concrete height so flex works */
 @media(min-width:769px){
   #recipeDetailOverlay.visible{background:rgba(10,20,50,.5);backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding:48px 20px 24px;}
-  .recipe-detail-panel{flex:none;width:100%;max-width:700px;height:calc(100vh - 96px);border-radius:20px;margin:0 auto;box-shadow:0 24px 80px rgba(0,0,0,.3);}
+  .recipe-detail-panel{flex:none;grid-template-rows:auto 1fr auto;width:100%;max-width:700px;height:calc(100vh - 96px);border-radius:20px;margin:0 auto;box-shadow:0 24px 80px rgba(0,0,0,.3);}
   .recipe-detail-hero img{height:280px;}
   #menuLibraryOverlay{background:rgba(10,20,50,.5);backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding:48px 20px 24px;}
   .library-modal-wrap{flex:none;width:100%;max-width:980px;height:calc(100vh - 96px);border-radius:20px;overflow:hidden;margin:0 auto;box-shadow:0 24px 80px rgba(0,0,0,.3);background:var(--bg);}
@@ -3604,10 +3603,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v54';
+var APP_VERSION='v55';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v54';
+var APP_VERSION_TAG='Meal Planner v55';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4651,7 +4650,7 @@ function detectRecipeCategory(recipe){
   return 'Other';
 }
 
-function setRecipeFilter(f,btn){_recipeFilter=f;document.querySelectorAll('.recipe-filter-tab').forEach(function(b){b.classList.toggle('active',b.dataset.filter===f);});renderRecipeBank();}
+function setRecipeFilter(f,btn){_recipeFilter=f;document.querySelectorAll('.recipe-filter-tab').forEach(function(b){b.classList.toggle('active',b.dataset.filter===f);});renderRecipeBank();renderMenuLibraryOverlay();}
 function setRecipeSort(v){_recipeSort=v;renderRecipeBank();}
 function setRecipeView(v){_recipeView=v;renderRecipeBank();}
 
@@ -4713,7 +4712,7 @@ function renderRecipeCard(r){
   var ownerHtml=ownerName?'<div class="recipe-owner-line" title="Owner: '+escAttr(ownerName)+'">'+ownerAvatarHtml+'<span style="font-size:11px;color:var(--muted);">'+escHtml(ownerName)+'</span></div>':'';
   var hasImg=!!(r.imageUrl);
   var imgHtml=hasImg
-    ?'<div class="recipe-card-img"><img src="'+escAttr(r.imageUrl)+'" alt="" loading="lazy" onerror="this.closest(\'.recipe-card-img\').style.display=\'none\'"></div>'
+    ?'<div class="recipe-card-img"><img src="'+escAttr(proxyImageUrl(r.imageUrl,400,160))+'" alt="" loading="lazy" onerror="this.closest(\'.recipe-card-img\').style.display=\'none\'"></div>'
     :'<div class="recipe-card-no-img"></div>';
   return'<div class="recipe-card-v2'+(hasImg?' recipe-card-has-img':'')+'" onclick="showRecipeDetail(\''+escAttr(r.id)+'\')" style="cursor:pointer;">'
     +imgHtml
@@ -5400,6 +5399,7 @@ function executeDeleteBankRecipe(a){
 }
 async function deleteBankItem(id){if(!await confirmAction({message:'Delete this recipe from the Recipe Library?',confirmLabel:'Delete',danger:true}))return;closeRecipeDetail();deleteFromMenuLibrary(id);if(currentEvent){currentEvent.recipeBank=(currentEvent.recipeBank||[]).filter(function(r){return r.id!==id;});commitAndSync();}showToast('Recipe deleted.','success');}
 
+function proxyImageUrl(url,w,h){if(!url)return'';return'https://images.weserv.nl/?url='+encodeURIComponent(url)+'&w='+(w||400)+'&h='+(h||280)+'&fit=cover&output=webp&we';}
 function isPaywalledSource(url){if(!url)return false;try{var h=new URL(url).hostname.replace('www.','');return['cooking.nytimes.com','nytimes.com','washingtonpost.com','latimes.com','wsj.com'].some(function(d){return h===d||h.endsWith('.'+d);});}catch(e){return false;}}
 
 /* ===== RECIPE DETAIL VIEW ===== */
@@ -5412,7 +5412,7 @@ function showRecipeDetail(id){
   if(!overlay||!body||!footer)return;
   if(ht)ht.textContent=r.name||'';
   var html='';
-  if(r.imageUrl)html+='<div class="recipe-detail-hero"><img src="'+escAttr(r.imageUrl)+'" alt="'+escAttr(r.name||'')+'" onerror="this.closest(\'.recipe-detail-hero\').style.display=\'none\'"></div>';
+  if(r.imageUrl)html+='<div class="recipe-detail-hero"><img src="'+escAttr(proxyImageUrl(r.imageUrl,700,300))+'" alt="'+escAttr(r.name||'')+'" onerror="this.closest(\'.recipe-detail-hero\').style.display=\'none\'"></div>';
   else html+='<div class="recipe-detail-accent"></div>';
   html+='<div class="recipe-detail-info">';
   html+='<div class="recipe-detail-name">'+escHtml(r.name||'Untitled Recipe')+'</div>';
@@ -6093,9 +6093,19 @@ function renderMenuLibraryOverlay(){
   }
   var recipes=_menuLibrary.length?_menuLibrary:localRecipes;
   if(_recipeFilter==='veg')recipes=recipes.filter(function(r){return r.isVegetarian;});
+  if(_recipeOwnerFilter)recipes=recipes.filter(function(r){return(r.owner||r.addedBy||'')=== _recipeOwnerFilter;});
   if(search)recipes=recipes.filter(function(r){return(r.name||'').toLowerCase().indexOf(search)>=0||(r.ingredients||[]).some(function(i){return(i.item||'').toLowerCase().indexOf(search)>=0;});});
-  if(!recipes.length){el.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--muted);">'+((!_menuLibraryLoaded)?'Loading…':'No recipes yet. Add your first recipe above.')+'</div>';return;}
-    el.innerHTML='<div class="recipe-bank-grid-v2">'+recipes.map(renderRecipeCard).join('')+'</div>';
+  // Render owner filter dropdown
+  var ownerWrap=safeEl('libraryOwnerFilterWrap');
+  if(ownerWrap){
+    var allOwners=[...new Set((_menuLibrary.length?_menuLibrary:localRecipes).map(function(r){return r.owner||r.addedBy||'';}).filter(Boolean))].sort();
+    if(allOwners.length>1){
+      ownerWrap.style.display='block';
+      ownerWrap.innerHTML='<select id="libraryOwnerSelect" style="width:100%;font-size:13px;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--panel);margin-bottom:8px;" onchange="setRecipeOwnerFilter(this.value);renderMenuLibraryOverlay()"><option value="">All chefs</option>'+allOwners.map(function(o){return'<option value="'+escAttr(o)+'"'+(_recipeOwnerFilter===o?' selected':'')+'>'+escHtml(o)+'</option>';}).join('')+'</select>';
+    }else{ownerWrap.style.display='none';}
+  }
+  if(!recipes.length){el.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--muted);">'+((!_menuLibraryLoaded)?'Loading…':'No recipes match.')+'</div>';return;}
+  el.innerHTML='<div class="recipe-bank-grid-v2">'+recipes.map(renderRecipeCard).join('')+'</div>';
 }
 
 /* ===== UID-TRIP LINKAGE ===== */
@@ -6631,6 +6641,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <button class="recipe-filter-tab" data-filter="veg" onclick="setRecipeFilter('veg',this)">🌿 Veg</button>
     </div>
     <div class="recipe-search-wrap"><input id="recipeBankSearchLanding" placeholder="Search Recipe Library…" oninput="renderMenuLibraryOverlay()"></div>
+    <div id="libraryOwnerFilterWrap" style="display:none;"></div>
     <div id="menuLibraryOverlayList"></div>
   </div>
   </div>

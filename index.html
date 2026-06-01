@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v45
+     Meal Planner v46
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3430,10 +3430,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v45';
+var APP_VERSION='v46';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v45';
+var APP_VERSION_TAG='Meal Planner v46';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5753,7 +5753,7 @@ function addDishToTripInBackground(recipe,tripCode,dayId,meal){
   db.ref('trips/'+tripCode+'/dishes/'+dishKey).set(dish).then(function(){
     console.log('[addDishToTrip] Success: '+recipe.name+' → '+tripCode+' '+dayId+' '+meal);
     if(tripCode===currentCode){
-      db.ref('trips/'+tripCode).once('value').then(function(s){if(s.val()){mpLog('TRIPSTORE','addDishToTripInBackground applying remote',{tripCode:tripCode});currentEvent=normalizeEvent(s.val());renderAll();}});
+      db.ref('trips/'+tripCode).once('value').then(function(s){if(s.val()){mpLog('TRIPSTORE','addDishToTripInBackground applying remote',{tripCode:tripCode});var remote=normalizeEvent(s.val());var resolvedCode=String(remote.code||tripCode).toLowerCase();remote.code=resolvedCode;TripStore.setTrip(remote,resolvedCode,'addDishToTripInBackground');renderAll();}});
       showToast('✓ "'+recipe.name+'" added to '+meal+'!','success');
       setTimeout(function(){
         var tc=safeEl('toastContainer');if(!tc)return;

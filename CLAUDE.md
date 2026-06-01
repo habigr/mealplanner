@@ -136,14 +136,13 @@ Browser console tests — run before every push:
 ### CRITICAL — Fix these first
 
 1. **Recipes reappearing after deletion** — subscribeToMenuLibrary has no guard, Firebase echoes deleted recipes back minutes later. Workaround: adding any dish forces a fresh write that wins over the echo. Same timestamp guard issue as trips but unfixed in library listener.
-2. **Recipe images inconsistent** — v55 added images.weserv.nl proxy, needs verification that images are loading correctly.
+2. **Recipe images inconsistent** — RENDERING FIXED in v56 (removed proxy, direct load, no emoji fallback). Confirmed working. REMAINING: many recipes have a link but no stored imageUrl (Flank Steak, Grilled Asparagus, Swordfish Kebabs, etc.) — these need a Firebase backfill that fetches the image from the link and writes ONLY the imageUrl field. Needs sign-off (Firebase write).
 3. **Duplicate recipe imports from URL** — v47 added URL dedup by URL string, needs verification.
 4. **Meal type deletion/re-add flaky** — dishes added back to deleted meals disappear again when another meal is deleted on same day. Firebase listener applying stale snapshots after rapid sequential writes. Verify after v44 sync fix — may partially resolve.
 5. **Trip ID null in App Admin on mobile** — shows null on mobile but correct ID on desktop.
 
 ### IMPORTANT — UI Broken
 
-6. **Buttons at bottom of recipe view cut off** — multiple failed fix attempts (v52–v55). v55 switched to CSS Grid layout. Needs verification.
 7. **Recipe name cuts off in view mode when too long** — should wrap, header should expand with it.
 8. **AI button overlaps send button on mobile** — both need to be tappable.
 9. **Meal type reappears at bottom after re-add** — when a deleted meal type is recreated by adding a dish, it gets pushed to end of day.meals instead of inserted at correct position. Fix: insert at same relative position as in currentEvent.mealTypes order.
@@ -160,6 +159,10 @@ Browser console tests — run before every push:
 14. **Plan view dish cards** — show profile photo of assigned cook when dish is assigned to someone. Show nothing when unassigned. No placeholder avatar.
 15. **Recipe detail view** — show profile photo and name of assigned cook in detail section. Not on library card, only in detail view. Use existing profile photo from _knownUsers registry. Gracefully handle no photo — show initials fallback only, no broken image.
 
+### COOKING MODE — revisit as a group later (per Robbie)
+
+C1. Emojis still present in cooking mode (v56 only removed them from recipe library cards). Cooking mode needs its own design pass — defer until we tackle cooking mode as a whole.
+
 ### NEW FEATURES — After all bugs fixed
 
 16. **Group by toggle on recipe library** — sections by category, owner, date added (most recent first).
@@ -172,6 +175,10 @@ Browser console tests — run before every push:
 
 ## CHANGELOG
 
+- v59 — trimmed iPhone footer bottom gap (mobile additive 20px→8px)
+- v58 — FOOTER FIXED (real root cause): footer padding-bottom:max(…calc(env())…) was resolving to 0px in Chrome, so buttons sat flush at screen edge. v52–v57 all reused this same broken expression → no change ever. Replaced with plain literal padding:12px 16px 20px + simple calc for mobile safe-area. Diagnosed via live getComputedStyle measurements.
+- v57 — grid-template-rows 1fr→minmax(0,1fr) (correct but not the root cause); removed v56 position:fixed footer band-aid; mobile overlay 100dvh
+- v56 — removed images.weserv.nl proxy (was causing intermittent image loss), direct imageUrl load with accent-stripe fallback (never emoji); removed emoji from recipe cards entirely; reverted unrequested v54 library-top padding
 - v55 — CSS Grid layout for recipe detail footer (bulletproof), images.weserv.nl proxy for recipe images, veg filter now works in library overlay, owner filter dropdown added to library overlay, setRecipeFilter calls renderMenuLibraryOverlay
 - v54 — flex:1+min-height:0 panel layout, safe-area via overlay padding, addBankToPlanner routes to trip picker when no days, null trip code/name filtered in showAddToTripPicker
 - v53 — owner dropdown always shows current user, clearDishModal loads known users on open
@@ -218,3 +225,7 @@ Browser console tests — run before every push:
 - Blank trip grocery warning suppressed ✅
 - guessDept routes beverages to Beverages department ✅
 - Version mismatch banner added ✅
+- v56 recipe images: removed flaky proxy, direct load, emoji fallback eliminated ✅
+- v56 emoji removed from recipe cards (clean accent stripe for no-image) ✅
+- v56 reverted unrequested library-top mobile shift ✅
+- v58/v59 recipe detail footer cutoff — root cause was max()/env() padding-bottom resolving to 0px; fixed with literal padding ✅

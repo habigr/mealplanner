@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v43
+     Meal Planner v45
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1391,7 +1391,7 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
           </div>
           <!-- 5. Filter panel (desktop: inline; mobile: controlled by handle below) -->
           <div class="grocery-filter-panel" id="groceryFilterPanel">
-            <div class="grocery-search-row"><input id="grocerySearch" placeholder="Search ingredients or dishes…" oninput="buildGroceryList()" /></div>
+            <div class="grocery-search-row"><input id="grocerySearch" placeholder="Search ingredients or dishes…" oninput="clearTimeout(window._grocerySearchTimer);window._grocerySearchTimer=setTimeout(buildGroceryList,250)" /></div>
             <div class="grocery-filter-grid">
               <div class="field"><label for="groceryDepartmentFilter">Department</label><select id="groceryDepartmentFilter" onchange="buildGroceryList()"></select></div>
               <div class="field"><label for="groceryStoreFilter">Store</label><select id="groceryStoreFilter" onchange="buildGroceryList()"></select></div>
@@ -1823,6 +1823,26 @@ window.runRegressionTests=function(){
   else console.log('[MealPlanner] All regression tests passed ✓');
   return{pass:p,fail:f,results:results};
 };
+window.checkSyncFreshness=function(){
+  if(!db||!currentCode||!currentEvent){console.warn('[SyncFreshness] No active trip or Firebase connection');return;}
+  db.ref('trips/'+currentCode).once('value').then(function(snap){
+    if(!snap.exists()){console.warn('[SyncFreshness] Trip not found in Firebase:',currentCode);return;}
+    var fb=snap.val();
+    var localName=currentEvent.name||'';
+    var fbName=fb.name||'';
+    var localTs=currentEvent.updatedAt||'';
+    var fbTs=fb.updatedAt||'';
+    var nameMismatch=localName!==fbName;
+    var tsMismatch=localTs!==fbTs;
+    if(nameMismatch||tsMismatch){
+      mpLog('SYNC','checkSyncFreshness MISMATCH',{localName:localName,fbName:fbName,localTs:localTs,fbTs:fbTs});
+      console.warn('[SyncFreshness] MISMATCH detected',{localName:localName,fbName:fbName,localTs:localTs,fbTs:fbTs});
+    }else{
+      mpLog('SYNC','checkSyncFreshness OK',{name:localName,ts:localTs});
+      console.log('[SyncFreshness] OK — local and Firebase in sync',{name:localName,ts:localTs});
+    }
+  }).catch(function(e){console.warn('[SyncFreshness] Firebase fetch failed:',e);});
+};
 
 /* ===== PHASE 1A: TRIPSTORE WRAPPER ===== */
 // Lightweight wrapper around currentEvent/currentCode.
@@ -1959,13 +1979,13 @@ function fbWriteTrip(ev){
     .then(function(){setSyncStatus('synced');})
     .catch(function(e){setSyncStatus('error');console.warn('[MealPlanner] fbWriteTrip failed:',e);});
 }
-function fbWriteGroceryMeta(code,meta){if(!db||!code)return Promise.resolve();setSyncStatus('syncing');return db.ref('trips/'+code+'/groceryMeta').set(meta).then(function(){setSyncStatus('synced');}).catch(function(){setSyncStatus('error');});}
 function scheduleFbSave(){clearTimeout(fbSaveTimer);fbSaveTimer=setTimeout(function(){if(currentEvent&&currentCode)fbWriteTrip(currentEvent);},5000);}
 /* ===== PHASE 2A: REMOTE CHANGE FLAG ===== */
 // Prevents autosave from writing back to Firebase when renderAll is triggered
 // by an incoming remote change. Breaks the ping-pong sync loop between devices.
 // Only skips Firebase scheduling — local save (saveState) still runs normally.
 var _isApplyingRemoteChange = false;
+var _isLoadingTrip = false;
 
 /* ===== FIREBASE SYNC =====
    Real-time listener for multi-device sync.
@@ -1986,7 +2006,7 @@ function syncFromFirebase(){
       var localTs=currentEvent.updatedAt||'';
       // Only apply Firebase if it is strictly newer than local state.
       // This prevents an older Firebase echo from erasing a dish just saved locally.
-      if(localTs&&(!remoteTs||remoteTs<=localTs)){setSyncStatus('synced');return;}
+      if(localTs&&(!remoteTs||remoteTs<=localTs)){mpLog('SYNC','syncFromFirebase BLOCKED by timestamp guard',{localTs:localTs,remoteTs:remoteTs});setSyncStatus('synced');return;}
       // Validate remote before applying — do not apply corrupted data
       if(!remote.code||!Array.isArray(remote.dishes)){
         mpLog('TRIPSTORE','syncFromFirebase SKIPPED: remote failed validation',{code:remote.code,dishesType:typeof remote.dishes});
@@ -2018,15 +2038,16 @@ function subscribeToCurrentTrip(){
     var localTs=currentEvent.updatedAt||'';
     // Only apply Firebase if it is strictly newer than local state.
     // Older or same-time remote data must not overwrite a just-saved local dish.
-    if(localTs&&(!remoteTs||remoteTs<=localTs)){setSyncStatus('synced');return;}
+    if(localTs&&(!remoteTs||remoteTs<=localTs)){mpLog('SYNC','subscribeToCurrentTrip BLOCKED by timestamp guard',{localTs:localTs,remoteTs:remoteTs});setSyncStatus('synced');return;}
     // Validate remote before applying — do not apply corrupted data
     if(!remote.code||!Array.isArray(remote.dishes)){
       mpLog('TRIPSTORE','subscribeToCurrentTrip SKIPPED: remote failed validation',{code:remote.code,dishesType:typeof remote.dishes});
       setSyncStatus('synced');return;
     }
     mpLog('TRIPSTORE','subscribeToCurrentTrip applying remote',{code:remote.code,dishes:(remote.dishes||[]).length,remoteTs:remoteTs,localTs:localTs});
-    currentEvent=remote;
-    currentCode=String(remote.code||currentCode).toLowerCase();
+    var resolvedCode=String(remote.code||currentCode).toLowerCase();
+    remote.code=resolvedCode;
+    if(!TripStore.setTrip(remote,resolvedCode,'subscribeToCurrentTrip')){setSyncStatus('error');return;}
     saveToLocal(currentEvent);
     _isApplyingRemoteChange=true;
     renderAll();
@@ -2044,7 +2065,7 @@ function unsubscribeCurrentTrip(){
 var TRIPS_KEY='mealPlanner.trips.v1',DEVICE_KEY='mealPlanner.deviceTrips.v1',GALLERY_KEY='mealPlanner.themeGallery.v1',API_KEY_STORAGE='mealPlanner.apiKey',USER_KEY='mealPlanner.user.v1';
 var currentEvent=null,currentCode=null,editingDishId=null,addToBankOnly=false,draggedDishId=null,dragOverDishId=null,shoppingMode=false,assignStoresMode=false,grocerySortMode=(function(){try{return localStorage.getItem('mealPlanner.grocerySort')||'department';}catch(e){return'department';}}()),groceryNeededOnly=false,appAdminLastTab='stores',themeAdminTab='larchmont',themePreviewIdx=-1,pendingTripCode=null;var pendingParsedRecipe=null;
 var dishModalDirty=false,dishModalHydrating=false,lastPresenceUsers=[];
-var suppressAutosaveRender=false; // kept so refreshCurrentTrip still compiles; renderAll no longer uses it
+
 var tripLastBgTime=0; // tracks when app was last backgrounded for focus-sync logic
 
 /* ===== USER MANAGEMENT ===== */
@@ -2251,7 +2272,7 @@ function openLoadedTrip(ev,code,source){
   recordDeviceTrip(currentCode);
   if(window.location.hash!=='#trip='+currentCode)window.location.hash='trip='+currentCode;
   showAppScreen();
-  renderAll();
+  _isLoadingTrip=true;renderAll();_isLoadingTrip=false;
   restoreLastTab();
   checkAndOfferRestore(currentEvent);
   subscribeToCurrentTrip();
@@ -2385,8 +2406,8 @@ function goToLanding(){
 }
 function autosave(){
   if(!currentEvent||!currentCode)return;
-  mpLog('SAVE','autosave',{code:currentCode,dishes:(currentEvent.dishes||[]).length,remote:_isApplyingRemoteChange});
-  try{syncEventFieldsFromInputs();currentEvent.updatedAt=new Date().toISOString();}catch(e){}
+  mpLog('SAVE','autosave',{code:currentCode,dishes:(currentEvent.dishes||[]).length,remote:_isApplyingRemoteChange,loading:_isLoadingTrip});
+  try{syncEventFieldsFromInputs();if(!_isApplyingRemoteChange&&!_isLoadingTrip){currentEvent.updatedAt=new Date().toISOString();}}catch(e){}
   saveState(currentEvent); // always save locally
   if(_isApplyingRemoteChange){
     mpLog('SAVE','autosave: skipping Firebase write — remote change in progress');
@@ -3374,7 +3395,7 @@ async function addManualGroceryItem(){
   name=toTitleCaseIngredient(name);currentEvent.manualGroceryItems.push({id:makeId(),item:name,quantity:qty||'',unit:'',department:guessDept(name),store:guessStore(name,guessDept(name))});
   addAuditEntry('manual_grocery','added manual grocery item "'+name+'"');commitAndSync();buildGroceryList();showToast('Manual item added.','success');
 }
-function printGroceryList(){switchTabSilent('grocery');buildGroceryList();setTimeout(function(){window.print();},100);}
+
 
 /* ===== ASSIGN STORES — one source of truth ===== */
 function setGroceryMode(mode){
@@ -3409,10 +3430,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v43';
+var APP_VERSION='v45';
 var APP_BUILD_TIME='2026-05-31 14:00';
-var APP_BUILD_TIME_UNUSED='2026-05-29 14:02';
-var APP_VERSION_TAG='Meal Planner v43';
+
+var APP_VERSION_TAG='Meal Planner v45';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5191,7 +5212,7 @@ async function refreshCurrentTrip(showMessage){
   if(!currentCode){if(showMessage)showToast('No trip open.','error');return;}
   if(!db){buildGroceryList();if(showMessage)showToast('Offline/local refresh complete.','success');return;}
   setSyncStatus('syncing');
-  try{var found=await fetchTripAnyCase(currentCode);if(found&&found.snap){currentEvent=normalizeEvent(found.snap.val());currentEvent.code=currentEvent.code||found.code;currentCode=String(currentEvent.code||found.code).toLowerCase();saveToLocal(currentEvent);renderAll();setSyncStatus('synced');if(showMessage)showToast('Trip refreshed.','success');return;}}catch(e){console.warn('Refresh failed',e);}
+  try{var found=await fetchTripAnyCase(currentCode);if(found&&found.snap){var remote=normalizeEvent(found.snap.val());var resolvedCode=String(remote.code||found.code).toLowerCase();remote.code=resolvedCode;if(!TripStore.setTrip(remote,resolvedCode,'refreshCurrentTrip')){setSyncStatus('error');return;}saveToLocal(currentEvent);renderAll();setSyncStatus('synced');if(showMessage)showToast('Trip refreshed.','success');return;}}catch(e){console.warn('Refresh failed',e);}
   setSyncStatus('error');if(showMessage)showToast('Could not refresh from Firebase.','error');
 }
 function setupPullToRefresh(){

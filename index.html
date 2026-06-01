@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v50
+     Meal Planner v51
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1247,6 +1247,44 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 .recipe-step-num{font-size:12px;font-weight:800;color:var(--theme-accent);background:var(--theme-accent-soft);border:1.5px solid var(--theme-border);min-width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
 .recipe-detail-footer{padding:12px 16px;padding-bottom:max(12px,calc(env(safe-area-inset-bottom,0px)+12px));display:flex;gap:8px;background:#fff;border-top:1.5px solid var(--border-light);flex-shrink:0;}
 .recipe-detail-footer button{flex:1;font-size:13px;}
+
+/* ===== v51: RECIPE CARD IMAGES + DESKTOP MODALS ===== */
+
+/* Recipe card: image at top */
+.recipe-card-v2{padding:0!important;overflow:hidden;}
+.recipe-card-content{padding:14px;}
+.recipe-card-top{margin-bottom:10px;}
+.recipe-card-footer{margin-top:10px;}
+.recipe-card-img{height:140px;overflow:hidden;}
+.recipe-card-img img{width:100%;height:140px;object-fit:cover;display:block;transition:transform .35s;}
+.recipe-card-v2:hover .recipe-card-img img{transform:scale(1.04);}
+.recipe-card-no-img{height:4px;background:var(--theme-accent);opacity:.5;}
+.recipe-card-has-img .recipe-card-emoji{display:none;}
+
+/* Veg badge + paywall note in detail view */
+.recipe-veg-badge{display:inline-flex;align-items:center;gap:4px;background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;}
+.recipe-paywall-note{font-size:11.5px;color:var(--muted);font-style:italic;margin-top:5px;}
+
+/* Recipe detail panel — mobile fills screen */
+.recipe-detail-panel{display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden;background:#fff;}
+/* Library modal wrap — mobile fills screen */
+.library-modal-wrap{display:flex;flex-direction:column;width:100%;height:100%;overflow:hidden;}
+
+/* Desktop: both overlays become centered modals */
+@media(min-width:769px){
+  #recipeDetailOverlay{background:rgba(10,20,50,.5);backdrop-filter:blur(6px);align-items:center;justify-content:center;}
+  .recipe-detail-panel{width:90%;max-width:700px;max-height:88vh;height:auto;border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3);}
+  #recipeDetailOverlay .recipe-detail-body{overflow-y:auto;}
+  .recipe-detail-hero img{height:280px;}
+  #menuLibraryOverlay{background:rgba(10,20,50,.5);backdrop-filter:blur(6px);align-items:center;justify-content:center;}
+  .library-modal-wrap{width:90%;max-width:980px;max-height:88vh;border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.3);background:var(--bg);}
+}
+
+/* Mobile: reduce hero image height */
+@media(max-width:768px){
+  .recipe-detail-hero img{height:180px;}
+  .recipe-detail-name{font-size:22px;}
+}
 
 /* ===== v49: VIEW / EDIT MODE SYSTEM ===== */
 
@@ -3560,10 +3598,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v50';
+var APP_VERSION='v51';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v50';
+var APP_VERSION_TAG='Meal Planner v51';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4658,19 +4696,40 @@ function toggleRecipeSteps(id,btn){
 function renderRecipeCard(r){
   var hasSteps=(r.steps&&r.steps.length>0);
   var usageTxt=r.timesUsed>0?'Used '+r.timesUsed+'× · last '+r.lastUsed:'Not used yet';
-  var ratingStr=r.rating?'⭐'.repeat(r.rating):'';
+  var ratingStr=r.rating?'⭐'.repeat(Math.min(r.rating,5)):'';
   var metaParts=[];
-  if(r.url)metaParts.push('<a href="'+escAttr(r.url)+'" target="_blank" style="color:var(--theme-accent);text-decoration:none;">↗ '+(r.source||'Link')+'</a>');
-  if((r.ingredients||[]).length)metaParts.push((r.ingredients||[]).length+' ing');
-  if(r.servings)metaParts.push('serves '+escHtml(r.servings));
+  if((r.ingredients||[]).length)metaParts.push((r.ingredients||[]).length+' ingredients');
+  if(r.servings)metaParts.push('Serves '+escHtml(r.servings));
   if(r.cookTime)metaParts.push('⏱ '+escHtml(r.cookTime));
-  // Owner avatar
   var ownerName=r.owner||r.addedBy||'';
   var ownerUser=ownerName?getKnownUserByName(ownerName):null;
   var ownerAvatarHtml=ownerUser?renderAvatarFromProfile(ownerUser,18,'margin-right:4px;vertical-align:middle;'):'';
   var ownerHtml=ownerName?'<div class="recipe-owner-line" title="Owner: '+escAttr(ownerName)+'">'+ownerAvatarHtml+'<span style="font-size:11px;color:var(--muted);">'+escHtml(ownerName)+'</span></div>':'';
-  return'<div class="recipe-card-v2">'    +'<div class="recipe-card-top">'    +'<div class="recipe-card-emoji">'+getRecipeEmoji(r)+'</div>'    +'<div class="recipe-card-info">'    +'<div class="recipe-card-name" onclick="showRecipeDetail(\''+escAttr(r.id)+'\')" style="cursor:pointer;" title="View recipe">'+escHtml(r.name)+(r.isVegetarian?'<span style="margin-left:4px;">🌿</span>':'')+(ratingStr?' <span class="recipe-rating-stars">'+ratingStr+'</span>':'')+'</div>'    +(metaParts.length?'<div class="recipe-card-meta">'+metaParts.join(' · ')+'</div>':'')    +ownerHtml    +'<div class="recipe-added-by">'+escHtml(usageTxt)+'</div>'    +(function(){var trips=Object.values(r.usedInTrips||{}).map(function(t){return t.name||t.code||'';}).filter(Boolean);return trips.length?'<div class="recipe-added-by">📍 '+escHtml(trips.join(', '))+'</div>':'';})()
-    +(r.personalNotes?'<div class="recipe-card-meta" style="font-style:italic;">📝 '+escHtml(r.personalNotes)+'</div>':'')    +'</div>'    +'</div>'    +'<div class="recipe-card-footer">'    +'<button class="recipe-cook-btn" onclick="cookRecipe(\''+escAttr(r.id)+'\')" '+(hasSteps?'':'disabled title="Add steps to enable cooking mode"')+'>👨‍🍳 Cook</button>'    +'<button class="recipe-add-btn" onclick="addBankToPlanner(\''+escAttr(r.id)+'\')" >+ Plan</button>'    +'<button class="ghost" style="font-size:11px;padding:5px 10px;" onclick="duplicateBankRecipe(\''+escAttr(r.id)+'\')" title="Duplicate">⊕ Copy</button>'    +'<span class="recipe-steps-tag '+(hasSteps?'has-steps':'no-steps')+'">'+(hasSteps?'✓ '+r.steps.length+' steps':'No steps')+'</span>'    +'</div>'    +'</div>';
+  var hasImg=!!(r.imageUrl);
+  var imgHtml=hasImg
+    ?'<div class="recipe-card-img"><img src="'+escAttr(r.imageUrl)+'" alt="" loading="lazy" onerror="this.closest(\'.recipe-card-img\').style.display=\'none\'"></div>'
+    :'<div class="recipe-card-no-img"></div>';
+  return'<div class="recipe-card-v2'+(hasImg?' recipe-card-has-img':'')+'" onclick="showRecipeDetail(\''+escAttr(r.id)+'\')" style="cursor:pointer;">'
+    +imgHtml
+    +'<div class="recipe-card-content">'
+    +'<div class="recipe-card-top">'
+    +'<div class="recipe-card-emoji">'+getRecipeEmoji(r)+'</div>'
+    +'<div class="recipe-card-info">'
+    +'<div class="recipe-card-name">'+escHtml(r.name)+(r.isVegetarian?' 🌿':'')+(ratingStr?' <span class="recipe-rating-stars">'+ratingStr+'</span>':'')+'</div>'
+    +(r.url?'<div class="recipe-card-meta"><a href="'+escAttr(r.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--theme-accent);font-weight:600;text-decoration:none;">↗ '+escHtml(r.source||'Link')+'</a></div>':'')
+    +(metaParts.length?'<div class="recipe-card-meta" style="color:var(--muted);">'+metaParts.join(' · ')+'</div>':'')
+    +ownerHtml
+    +(r.personalNotes?'<div class="recipe-card-meta" style="font-style:italic;margin-top:3px;">📝 '+escHtml(r.personalNotes)+'</div>':'')
+    +'</div>'
+    +'</div>'
+    +'<div class="recipe-card-footer" onclick="event.stopPropagation()">'
+    +'<button class="recipe-cook-btn" onclick="cookRecipe(\''+escAttr(r.id)+'\')" '+(hasSteps?'':'disabled title="Add steps to enable cooking mode"')+'>👨‍🍳 Cook</button>'
+    +'<button class="recipe-add-btn" onclick="addBankToPlanner(\''+escAttr(r.id)+'\')">+ Plan</button>'
+    +'<button class="ghost" style="font-size:11px;padding:5px 10px;" onclick="duplicateBankRecipe(\''+escAttr(r.id)+'\')" title="Duplicate">⊕ Copy</button>'
+    +'<span class="recipe-steps-tag '+(hasSteps?'has-steps':'no-steps')+'">'+(hasSteps?'✓ '+r.steps.length+' steps':'No steps')+'</span>'
+    +'</div>'
+    +'</div>'
+    +'</div>';
 }
 
 function renderRecipeOwnerFilter(){
@@ -5334,6 +5393,8 @@ function executeDeleteBankRecipe(a){
 }
 async function deleteBankItem(id){if(!await confirmAction({message:'Delete this recipe from the Recipe Library?',confirmLabel:'Delete',danger:true}))return;closeRecipeDetail();deleteFromMenuLibrary(id);if(currentEvent){currentEvent.recipeBank=(currentEvent.recipeBank||[]).filter(function(r){return r.id!==id;});commitAndSync();}showToast('Recipe deleted.','success');}
 
+function isPaywalledSource(url){if(!url)return false;try{var h=new URL(url).hostname.replace('www.','');return['cooking.nytimes.com','nytimes.com','washingtonpost.com','latimes.com','wsj.com'].some(function(d){return h===d||h.endsWith('.'+d);});}catch(e){return false;}}
+
 /* ===== RECIPE DETAIL VIEW ===== */
 var _recipeDetailId=null;
 function showRecipeDetail(id){
@@ -5347,10 +5408,21 @@ function showRecipeDetail(id){
   if(r.imageUrl)html+='<div class="recipe-detail-hero"><img src="'+escAttr(r.imageUrl)+'" alt="'+escAttr(r.name||'')+'" onerror="this.closest(\'.recipe-detail-hero\').style.display=\'none\'"></div>';
   else html+='<div class="recipe-detail-accent"></div>';
   html+='<div class="recipe-detail-info">';
-  html+='<div class="recipe-detail-name">'+escHtml(r.name||'Untitled Recipe')+(r.isVegetarian?' <span title="Vegetarian">🌿</span>':'')+'</div>';
-  if(r.url||r.source)html+='<div class="recipe-detail-source">'+(r.url?'<a href="'+escAttr(r.url)+'" target="_blank">↗ '+escHtml(r.source||r.url)+'</a>':escHtml(r.source||''))+'</div>';
-  var meta=[];if(r.servings)meta.push('Serves '+escHtml(String(r.servings)));if(r.cookTime)meta.push('⏱ '+escHtml(r.cookTime));if(r.rating)meta.push('⭐'.repeat(Math.min(r.rating,5)));
-  if(meta.length)html+='<div class="recipe-detail-meta-row">'+meta.join('<span style="color:var(--border);margin:0 2px">·</span>')+'</div>';
+  html+='<div class="recipe-detail-name">'+escHtml(r.name||'Untitled Recipe')+'</div>';
+  if(r.url||r.source){
+    var srcLabel=r.source||(function(){try{return new URL(r.url).hostname.replace('www.','');}catch(e){return r.url;}}());
+    html+='<div class="recipe-detail-source">';
+    if(r.url)html+='<a href="'+escAttr(r.url)+'" target="_blank" rel="noopener">↗ '+escHtml(srcLabel)+'</a>';
+    else html+=escHtml(srcLabel);
+    if(isPaywalledSource(r.url))html+='<div class="recipe-paywall-note">Requires subscription or login to view full recipe</div>';
+    html+='</div>';
+  }
+  var meta=[];
+  if(r.servings)meta.push('Serves '+escHtml(String(r.servings)));
+  if(r.cookTime)meta.push('⏱ '+escHtml(r.cookTime));
+  if(r.rating)meta.push('⭐'.repeat(Math.min(r.rating,5)));
+  if(meta.length)html+='<div class="recipe-detail-meta-row">'+meta.join('<span style="color:var(--border);margin:0 3px">·</span>')+'</div>';
+  if(r.isVegetarian)html+='<div style="padding:10px 0 4px;"><span class="recipe-veg-badge">🌿 Vegetarian</span></div>';
   html+='</div>';
   if(r.personalNotes)html+='<div class="recipe-personal-notes">📝 '+escHtml(r.personalNotes)+'</div>';
   var ings=r.ingredients||[];
@@ -6520,6 +6592,7 @@ document.addEventListener('DOMContentLoaded',function(){
 </div>
 <!-- Recipe Library Standalone (accessible from landing) -->
 <div id="menuLibraryOverlay" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:9000;display:none;flex-direction:column;">
+  <div class="library-modal-wrap">
   <div style="display:flex;align-items:center;gap:12px;padding:max(16px,calc(env(safe-area-inset-top,0px) + 12px)) 20px 16px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0;">
     <button class="ghost" onclick="closeMenuLibraryFromLanding()" style="padding:6px 10px;">← Back</button>
     <h2 style="margin:0;font-size:17px;font-weight:800;">📖 Recipe Library</h2>
@@ -6533,16 +6606,19 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="recipe-search-wrap"><input id="recipeBankSearchLanding" placeholder="Search Recipe Library…" oninput="renderMenuLibraryOverlay()"></div>
     <div id="menuLibraryOverlayList"></div>
   </div>
+  </div>
 </div>
 <!-- Recipe Detail Overlay -->
 <div id="recipeDetailOverlay">
-  <div class="recipe-detail-header">
-    <button class="ghost" onclick="closeRecipeDetail()" style="padding:6px 10px;flex-shrink:0;">← Back</button>
-    <div class="recipe-detail-header-title" id="recipeDetailHeaderTitle"></div>
-    <button class="ghost" style="padding:6px 10px;flex-shrink:0;font-size:12px;font-weight:700;" onclick="recipeDetailEdit()">Edit</button>
+  <div class="recipe-detail-panel">
+    <div class="recipe-detail-header">
+      <button class="ghost" onclick="closeRecipeDetail()" style="padding:6px 10px;flex-shrink:0;">← Back</button>
+      <div class="recipe-detail-header-title" id="recipeDetailHeaderTitle"></div>
+      <button class="ghost" style="padding:6px 10px;flex-shrink:0;font-size:12px;font-weight:700;" onclick="recipeDetailEdit()">Edit</button>
+    </div>
+    <div class="recipe-detail-body" id="recipeDetailBody"></div>
+    <div class="recipe-detail-footer" id="recipeDetailFooter"></div>
   </div>
-  <div class="recipe-detail-body" id="recipeDetailBody"></div>
-  <div class="recipe-detail-footer" id="recipeDetailFooter"></div>
 </div>
 <!-- Auth Overlay -->
 <div id="authOverlay" class="auth-overlay" style="display:none;">

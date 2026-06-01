@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v48
+     Meal Planner v49
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1033,7 +1033,7 @@ button:active:not(:disabled){transform:scale(0.95);transition:transform .08s eas
 /* Day drag handle */
 .day-drag-handle{display:none;cursor:grab;font-size:20px;color:var(--muted);padding:2px 6px;touch-action:none;user-select:none;-webkit-user-select:none;align-items:center;flex-shrink:0;}
 .day-up-down{display:flex;gap:2px;}
-@media(max-width:768px){.day-drag-handle{display:flex;}.day-up-down{display:none!important;}}
+@media(max-width:768px){.day-up-down{display:none!important;}body.planner-edit-mode .day-up-down{display:flex!important;}}
 .day-card.drag-target{outline:2px dashed var(--theme-accent);background:var(--theme-accent-soft)!important;}
 /* Dish new entrance */
 .dish.drag-insert-after{outline:2px solid var(--theme-accent);outline-offset:2px;border-radius:12px;transition:outline .1s;}
@@ -1219,6 +1219,66 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
   .grocery-bottom-share button{width:100%;}
 }
 
+/* ===== v49: VIEW / EDIT MODE SYSTEM ===== */
+
+/* Toolbar layout */
+.planner-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.planner-edit-btns{display:none;gap:6px;}
+body.planner-edit-mode .planner-edit-btns{display:flex;}
+#editModeToggle{white-space:nowrap;font-weight:700;}
+body.planner-edit-mode #editModeToggle{background:var(--theme-accent);color:#fff;border-color:var(--theme-accent);}
+
+/* View mode: hide edit controls */
+.dish-footer-row{display:none;}
+.dish-ing-section{display:none;}
+.dish-drag-handle{display:none;}
+.day-drag-handle{display:none;}
+.day-up-down{display:none;}
+.day-copy-btn{display:none;}
+#planner .grocery-hint{display:none;}
+
+/* Edit mode: show controls */
+body.planner-edit-mode .dish-footer-row{display:flex;}
+body.planner-edit-mode .dish-ing-section{display:block;}
+body.planner-edit-mode .dish-drag-handle{display:block;}
+body.planner-edit-mode .day-drag-handle{display:block;}
+body.planner-edit-mode .day-up-down{display:flex;}
+body.planner-edit-mode .day-copy-btn{display:inline-flex;}
+body.planner-edit-mode #planner .grocery-hint{display:block;}
+
+/* Compact dish cards in view mode */
+.dish{padding:8px 10px;margin-bottom:5px;border-color:transparent;box-shadow:0 1px 4px rgba(20,16,12,.07);}
+.dish:hover{border-color:var(--theme-border);box-shadow:var(--shadow-sm);}
+body.planner-edit-mode .dish{padding:10px 12px;margin-bottom:6px;border-color:var(--border-light);}
+.dish-title{margin-bottom:2px;}
+body.planner-edit-mode .dish-title{margin-bottom:4px;}
+
+/* ===== VISUAL POLISH ===== */
+.day-header{padding:11px 14px 10px;}
+.day-title{font-size:15px;letter-spacing:-.02em;}
+.meal-head{background:rgba(255,255,255,.6)!important;}
+.meal-label{font-size:10.5px;font-weight:700;letter-spacing:.02em;text-transform:none;color:var(--text-secondary);}
+.meal-block{margin-bottom:7px;}
+.day-body{padding:9px;}
+
+/* ===== MOBILE DENSITY ===== */
+@media(max-width:768px){
+  #planner{padding:10px!important;}
+  .day-grid{gap:10px;}
+  .day-header{padding:9px 12px 8px;}
+  .day-body{padding:7px;}
+  .meal-head{padding:6px 10px;}
+  .meal-body{padding:5px;min-height:24px;}
+  .meal-block{margin-bottom:5px;}
+  .dish{padding:7px 9px;margin-bottom:4px;}
+  body.planner-edit-mode .dish{padding:9px 10px;}
+  .planner-actions{width:100%;flex-direction:column;gap:6px;}
+  .planner-edit-btns{width:100%;}
+  .planner-edit-btns button{flex:1;padding:9px 8px;font-size:12px;}
+  #editModeToggle{width:100%;padding:9px 12px;font-size:13px;}
+  #planner .toolbar{margin-bottom:8px;}
+}
+
 </style>
 </head>
 <body>
@@ -1349,9 +1409,12 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
       <section id="planner" class="page active">
         <div class="toolbar">
           <h2>Meal Plan</h2>
-          <div class="actions">
-            <button class="secondary" type="button" onclick="addCustomDay()">Add Day</button>
-            <button type="button" onclick="openDishModal()">+ Add Dish</button>
+          <div class="planner-actions">
+            <div class="planner-edit-btns">
+              <button class="secondary" type="button" onclick="addCustomDay()">Add Day</button>
+              <button type="button" onclick="openDishModal()">+ Add Dish</button>
+            </div>
+            <button id="editModeToggle" class="secondary" type="button" onclick="togglePlannerEditMode()">Edit Plan</button>
           </div>
         </div>
         <div class="grocery-hint">💡 Drag any dish to a different meal or day to move it.</div>
@@ -2101,6 +2164,8 @@ function unsubscribeCurrentTrip(){
 var TRIPS_KEY='mealPlanner.trips.v1',DEVICE_KEY='mealPlanner.deviceTrips.v1',GALLERY_KEY='mealPlanner.themeGallery.v1',API_KEY_STORAGE='mealPlanner.apiKey',USER_KEY='mealPlanner.user.v1';
 var currentEvent=null,currentCode=null,editingDishId=null,addToBankOnly=false,draggedDishId=null,dragOverDishId=null,shoppingMode=false,assignStoresMode=false,grocerySortMode=(function(){try{return localStorage.getItem('mealPlanner.grocerySort')||'department';}catch(e){return'department';}}()),groceryNeededOnly=false,appAdminLastTab='stores',themeAdminTab='larchmont',themePreviewIdx=-1,pendingTripCode=null;var pendingParsedRecipe=null;
 var dishModalDirty=false,dishModalHydrating=false,lastPresenceUsers=[];
+var _plannerEditMode=false;
+function togglePlannerEditMode(){_plannerEditMode=!_plannerEditMode;document.body.classList.toggle('planner-edit-mode',_plannerEditMode);var btn=safeEl('editModeToggle');if(btn)btn.textContent=_plannerEditMode?'Done Editing':'Edit Plan';haptic(8);}
 
 var tripLastBgTime=0; // tracks when app was last backgrounded for focus-sync logic
 
@@ -2681,7 +2746,7 @@ function renderPlanner(){var grid=safeEl('dayGrid');if(!grid)return;
     if(currentEvent.startDate&&currentEvent.endDate){try{var sd=new Date(currentEvent.startDate+'T12:00:00'),ed=new Date(currentEvent.endDate+'T12:00:00');dateStr=sd.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' – '+ed.toLocaleDateString(undefined,{month:'short',day:'numeric'});}catch(ex){}}
     hdr.innerHTML='<div class="plan-trip-meta">'+(dateStr?dateStr+' ':'')+(people?'· '+people+' people':'')+'</div>';
   }
-  if(!currentEvent.days.length){grid.innerHTML='<div class="empty"><div class="empty-icon">📅</div><h3>No days planned yet</h3><p>Add dates in Event Setup and click Create / Refresh Days.</p></div>';return;}grid.innerHTML=currentEvent.days.map(function(day,idx){var summary=getDaySummary(day);var dateLabel=day.date?formatDayDate(day.date):(day.label||'Day '+(idx+1));var emoji=getHolidayEmoji(day.date);return'<div class="day-card" data-day-idx="'+idx+'"><div class="day-header"><span class="day-drag-handle" data-day-idx="'+idx+'" title="Drag to reorder">⠿</span><div style="flex:1;min-width:0;"><div class="day-title">'+emoji+escHtml(dateLabel)+'</div>'+(summary?'<div class="meal-summary">'+escHtml(summary)+'</div>':'')+'</div><div class="day-tools"><div class="day-up-down"><button class="ghost" title="Move earlier" onclick="moveDay('+idx+',-1)">↑</button><button class="ghost" title="Move later" onclick="moveDay('+idx+',1)">↓</button></div><button class="ghost" title="Copy this day" onclick="copyDayMeals(\''+escAttr(day.id)+'\')">Copy</button><button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\')">+</button></div></div><div class="day-body">'+(day.meals||getDefaultMealTypes()).map(function(meal){return renderMealBlock(day,meal);}).join('')+'</div></div>';}).join('');}
+  if(!currentEvent.days.length){grid.innerHTML='<div class="empty"><div class="empty-icon">📅</div><h3>No days planned yet</h3><p>Add dates in Event Setup and click Create / Refresh Days.</p></div>';return;}grid.innerHTML=currentEvent.days.map(function(day,idx){var summary=getDaySummary(day);var dateLabel=day.date?formatDayDate(day.date):(day.label||'Day '+(idx+1));var emoji=getHolidayEmoji(day.date);return'<div class="day-card" data-day-idx="'+idx+'"><div class="day-header"><span class="day-drag-handle" data-day-idx="'+idx+'" title="Drag to reorder">⠿</span><div style="flex:1;min-width:0;"><div class="day-title">'+emoji+escHtml(dateLabel)+'</div>'+(summary?'<div class="meal-summary">'+escHtml(summary)+'</div>':'')+'</div><div class="day-tools"><div class="day-up-down"><button class="ghost" title="Move earlier" onclick="moveDay('+idx+',-1)">↑</button><button class="ghost" title="Move later" onclick="moveDay('+idx+',1)">↓</button></div><button class="ghost day-copy-btn" title="Copy this day" onclick="copyDayMeals(\''+escAttr(day.id)+'\')">Copy</button><button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\')">+</button></div></div><div class="day-body">'+(day.meals||getDefaultMealTypes()).map(function(meal){return renderMealBlock(day,meal);}).join('')+'</div></div>';}).join('');}
 function renderMealBlock(day,meal){var dishes=currentEvent.dishes.filter(function(d){return d.dayId===day.id&&d.meal===meal;});var icon=getMealIcon(meal);var hasCookable=(currentEvent.recipeBank||[]).some(function(r){return r.steps&&r.steps.length&&dishes.some(function(d){return d.name.toLowerCase()===r.name.toLowerCase()||d.bankRecipeId===r.id;});});var cookMealBtn=hasCookable?'<button class="cook-meal-btn" onclick="cookMeal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">👨‍🍳 Cook</button>':'';return'<div class="meal-block" data-meal="'+escAttr(meal)+'"><div class="meal-head"><div class="meal-label-wrap">'+icon+'<span class="meal-label">'+escHtml(meal)+'</span><button class="remove-meal-btn" onclick="removeMealFromDay(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" title="Remove this meal from day">×</button></div><div style="display:flex;align-items:center;gap:6px;">'+cookMealBtn+'<button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">+</button></div></div><div class="meal-body" data-day-id="'+escAttr(day.id)+'" data-meal="'+escAttr(meal)+'" ondragover="handleMealDragOver(event)" ondragleave="handleMealDragLeave(event)" ondrop="handleMealDrop(event)">'+(dishes.length?dishes.map(renderDish).join(''):'<div class="meal-empty" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" style="cursor:pointer;"></div>')+'</div></div>';}
 function renderDish(dish){
   if(dish.isEvent){
@@ -3466,10 +3531,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v48';
+var APP_VERSION='v49';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v48';
+var APP_VERSION_TAG='Meal Planner v49';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

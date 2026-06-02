@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v69
+     Meal Planner v70
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3298,7 +3298,7 @@ function editDish(id){
   var dish=currentEvent&&currentEvent.dishes.find(function(d){return d.id===id;}),isBank=false;
   if(!dish){dish=(currentEvent&&(currentEvent.recipeBank||[]).find(function(r){return r.id===id;}))||_menuLibrary.find(function(r){return r.id===id;});isBank=!!dish;}
   if(!dish)return;openDishModal(dish.dayId,dish.meal,id,isBank);if(dish.isEvent){var ec=safeEl('isEventCheck');if(ec)ec.checked=true;toggleEventMode();setValue('eventDay',dish.dayId||'');setValue('eventMeal',dish.meal||'Dinner');setValue('eventName2',dish.eventName||'');setValue('eventTime',dish.eventTime||'');setValue('eventAddress',dish.eventAddress||'');setValue('eventOtherNotes',dish.notes||'');}else{setValue('dishName',dish.name||'');setValue('dishUrl',dish.url||'');setValue('servings',dish.servings||'');setValue('peopleEating',dish.peopleEating||'');setValue('dishNotes',dish.notes||'');var vc=safeEl('isVegetarianCheck');if(vc)vc.checked=!!(dish.isVegetarian||(dish.tags||[]).some(function(t){return /veg|vegetarian/i.test(t);}));toggleImportCard(false);var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';(dish.ingredients||[]).forEach(function(i){addIngredientRow(i.quantity||i.displayedQuantity||'',i.unit||'',i.item||'');});if(!(dish.ingredients||[]).length)addIngredientRow();updateScaledIngredientDisplay();// Pre-fill steps
-populateSteps(dish.steps||[]);window._pendingLibraryRecipe=dish;setValue('dishOwner',isBank?(dish.owner||dish.addedBy||''):(dish.assignedTo||dish.owner||''));setTimeout(updateScaledIngredientDisplay,80);
+populateSteps(dish.steps||[]);window._pendingLibraryRecipe=dish;window._pendingBankRecipeId=dish.bankRecipeId||null;setValue('dishOwner',isBank?(dish.owner||dish.addedBy||''):(dish.assignedTo||dish.owner||''));setTimeout(updateScaledIngredientDisplay,80);
     // Add cook button if recipe has steps - check both library and dish directly
     var existCook=document.getElementById('modalCookBtn');if(existCook)existCook.remove();
     if(!isBank){
@@ -3641,10 +3641,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v69';
+var APP_VERSION='v70';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v69';
+var APP_VERSION_TAG='Meal Planner v70';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5525,7 +5525,13 @@ function showDishDetail(id){
   if(!overlay||!body||!footer)return;
   var title=d.isEvent?(d.eventName||'Going out'):(d.name||'Untitled Dish');
   if(ht)ht.textContent=title;
-  var html='<div class="recipe-detail-accent"></div><div class="recipe-detail-info">';
+  var html='';
+  if(!d.isEvent){
+    var imgUrl=d.imageUrl||'';
+    if(!imgUrl){var lib=null;if(d.bankRecipeId)lib=_menuLibrary.find(function(r){return r.id===d.bankRecipeId;});if(!lib&&d.name)lib=_menuLibrary.find(function(r){return (r.name||'').toLowerCase()===(d.name||'').toLowerCase();});if(!lib&&d.url)lib=_menuLibrary.find(function(r){return r.url&&r.url===d.url;});if(lib)imgUrl=lib.imageUrl||'';}
+    html+=imgUrl?'<div class="recipe-detail-hero"><img src="'+escAttr(imgUrl)+'" alt="'+escAttr(title)+'" referrerpolicy="no-referrer" onerror="recipeHeroImgFail(this)"></div>':'<div class="recipe-detail-accent"></div>';
+  }else{html+='<div class="recipe-detail-accent"></div>';}
+  html+='<div class="recipe-detail-info">';
   html+='<div class="recipe-detail-name"'+(d.isEvent?' style="color:var(--theme-accent-dark);"':'')+'>'+escHtml(title)+'</div>';
   var day=(currentEvent.days||[]).find(function(x){return x.id===d.dayId;});
   var ctx=[];if(day)ctx.push(escHtml(day.label||day.date||''));if(d.meal)ctx.push(escHtml(d.meal));
@@ -6953,7 +6959,7 @@ document.addEventListener('DOMContentLoaded',function(){
       </div>
       <div id="ingredientSection" class="detail-card">
         <div class="detail-card-header"><strong>Ingredients</strong><span>Final list — drag to reorder</span></div>
-        <div class="ingredient-row-labels"><span></span><span>Original</span><span>Adjusted</span><span>Unit</span><span>Ingredient</span><span></span></div><div class="ing-labels-mobile"><span></span><span>Recipe</span><span>For you</span><span>Unit</span><span></span></div><div id="ingredientRows" class="ingredient-list-editor"></div>
+        <div class="ingredient-row-labels"><span></span><span>Original</span><span>Adjusted</span><span>Unit</span><span>Ingredient</span><span></span></div><div class="ing-labels-mobile"><span></span><span>Original</span><span>Adjusted</span><span>Unit</span><span></span></div><div id="ingredientRows" class="ingredient-list-editor"></div>
         <button class="secondary" type="button" style="margin-top:10px;" onclick="addIngredientRow()">+ Add</button>
       </div>
       <div id="stepsSection" class="detail-card">

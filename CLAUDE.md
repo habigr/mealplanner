@@ -150,6 +150,9 @@ Browser console tests — run before every push:
 
 ### CLEANUP
 
+V. **Vegetarian indicator → VEG pill everywhere** — plan tab now uses a "VEG" pill (v60), but recipe Library cards still show the 🌿 emoji next to the recipe name (renderRecipeCard). Replace with the same VEG pill for consistency. Check all other spots that show the veg leaf too.
+
+
 11. **Owner field placeholder never appears** — the placeholder text for the owner field never shows up, needs investigation and fix.
 12. **URL import error message misleading on corporate networks** — currently says "Claude may not know this recipe" when the real issue is network blocking. Should say: "Could not fetch the page — this may be blocked by your network. Try on a different connection."
 13. **Meal type reappears at bottom after re-add** — see #9 above.

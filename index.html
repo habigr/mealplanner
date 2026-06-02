@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v72
+     Meal Planner v73
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -977,14 +977,14 @@ tr.swipe-checking{background:rgba(34,197,94,.12)!important;transition:background
 #dishModal input[readonly]{background:var(--panel-soft);border:1.5px dashed var(--border);cursor:pointer;color:var(--muted);}
 #dishModal input[readonly]:hover{border-color:var(--theme-accent);}
 /* AI Chat FAB */
-.ai-chat-fab{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);right:16px;width:54px;height:54px;border-radius:50%;background:var(--theme-accent);color:#fff;border:none;font-size:24px;cursor:pointer;z-index:9050;box-shadow:0 4px 20px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;animation:fabGlow 3s ease-in-out infinite;}
+.ai-chat-fab{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);right:16px;width:54px;height:54px;border-radius:50%;background:var(--theme-accent);color:#fff;border:none;font-size:24px;cursor:pointer;z-index:9150;box-shadow:0 4px 20px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;animation:fabGlow 3s ease-in-out infinite;}
 @keyframes fabGlow{0%,100%{box-shadow:0 4px 20px rgba(0,0,0,.3);}50%{box-shadow:0 4px 28px rgba(0,0,0,.4),0 0 16px rgba(26,50,96,.3);}}
 .ai-chat-fab svg{transition:transform .3s;}
 .ai-chat-fab:hover svg{transform:rotate(20deg) scale(1.1);}
 .ai-chat-fab.chat-open{background:var(--text);animation:none;}
 .ai-chat-fab.chat-open svg{transform:rotate(45deg);}
 /* AI Chat Panel */
-.ai-chat-panel{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 78px);right:16px;width:min(420px,calc(100vw - 32px));height:min(580px,calc(100dvh - 180px));background:var(--panel);border:1px solid var(--border);border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.20);z-index:9049;display:flex;flex-direction:column;transform:scale(.94) translateY(18px);opacity:0;pointer-events:none;transition:transform .22s cubic-bezier(.34,1.2,.64,1),opacity .18s ease;}
+.ai-chat-panel{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 78px);right:16px;width:min(420px,calc(100vw - 32px));height:min(580px,calc(100dvh - 180px));background:var(--panel);border:1px solid var(--border);border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.20);z-index:9151;display:flex;flex-direction:column;transform:scale(.94) translateY(18px);opacity:0;pointer-events:none;transition:transform .22s cubic-bezier(.34,1.2,.64,1),opacity .18s ease;}
 .ai-chat-panel.active{transform:scale(1) translateY(0);opacity:1;pointer-events:auto;}
 .ai-chat-header{padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:20px 20px 0 0;background:linear-gradient(135deg,var(--theme-accent-soft),var(--panel));}
 .ai-chat-title{font-size:14px;font-weight:800;color:var(--text);}
@@ -3649,10 +3649,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v72';
+var APP_VERSION='v73';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v72';
+var APP_VERSION_TAG='Meal Planner v73';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

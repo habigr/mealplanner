@@ -140,6 +140,7 @@ Browser console tests — run before every push:
 3. **Duplicate recipe imports from URL** — v47 added URL dedup by URL string, needs verification.
 4. **Meal type deletion/re-add flaky** — dishes added back to deleted meals disappear again when another meal is deleted on same day. Firebase listener applying stale snapshots after rapid sequential writes. Verify after v44 sync fix — may partially resolve.
 5. **Trip ID null in App Admin on mobile** — shows null on mobile but correct ID on desktop.
+6. **Cook photo never shows (avatar falls back to initials)** — ROOT CAUSE FOUND: `_knownUsers` is empty (`[]`). loadKnownUsers reads the whole `/users` collection, which returns nothing — almost certainly Firebase security rules allow reading your OWN `/users/{uid}` but not listing all of `/users`. Each user's photo IS in Firebase at `users/{uid}/profile.photo` and syncs to their own devices (top-right avatar works), but there's no readable global name→photo map. FIX (planned, needs build): capture the cook's photo onto the dish at assign time (self via getUser(); teammates via per-trip presence which carries name+photo) and store as assignedToPhoto, so it travels to all devices and the avatar reads it directly. Optionally also populate _knownUsers from presence as a display fallback. Touches save/assign path — isolate as its own build.
 
 ### IMPORTANT — UI Broken
 
@@ -150,7 +151,7 @@ Browser console tests — run before every push:
 
 ### CLEANUP
 
-V. **Vegetarian indicator → VEG pill everywhere** — plan tab now uses a "VEG" pill (v60), but recipe Library cards still show the 🌿 emoji next to the recipe name (renderRecipeCard). Replace with the same VEG pill for consistency. Check all other spots that show the veg leaf too.
+V. **Vegetarian indicator → VEG pill everywhere** — DONE on plan tab (v60), dish detail view, and dish edit form (green pill toggle, v69). REMAINING: recipe Library cards still show the 🌿 emoji next to the recipe name (renderRecipeCard). Swap for the VEG pill there too for full consistency.
 
 
 11. **Owner field placeholder never appears** — the placeholder text for the owner field never shows up, needs investigation and fix.
@@ -169,7 +170,7 @@ C1. Emojis still present in cooking mode (v56 only removed them from recipe libr
 ### NEW FEATURES — After all bugs fixed
 
 16. **Group by toggle on recipe library** — sections by category, owner, date added (most recent first).
-17. **View vs edit mode for dishes** — separate planning session needed before building.
+17. ~~**View vs edit mode for dishes**~~ — DONE (v64–v70): tap a plan dish → read-only view (showDishDetail) reusing recipe-detail format; Edit → existing form; edit form compacted (v67–v69); 2-row ingredients (v68); imported image shown (v70).
 18. **App Admin vs Trip Settings restructure** — universal settings must be separated from trip-specific settings. Collapsible sections. Clean separation required before building permissions.
 19. **User management tab in App Admin** — grid of all users who have logged in, which trips they have accessed, ability to manually add users to trips.
 20. **Admin permissions system** — admin roles, Firebase security rules. Build only after #18 is complete.
@@ -178,6 +179,17 @@ C1. Emojis still present in cooking mode (v56 only removed them from recipe libr
 
 ## CHANGELOG
 
+- v70 — ingredient column headers Original/Adjusted/Unit; dish detail view shows imported recipe photo (resolved via bankRecipeId → name/url); editDish preserves bankRecipeId so image/link survives edits
+- v69 — dish edit form: modal max-height + sticky footer so Save is always reachable on mobile; "Recipe serves" label; ingredient column headers; vegetarian → green pill toggle (:has)
+- v68 — compact 2-line ingredient rows on mobile (qty/cooks-for/unit on row 1, name row 2; thin separators so many fit); safe-area header; 15px inputs; pure CSS, collectIngredients untouched
+- v67 — dish edit form mobile compaction (modal padding, hide intro, Day/Meal side-by-side, smaller labels/cards)
+- v66 — unified Owner/Cook for plan dishes onto assignedTo (label dynamic: "Cook" plan / "Owner" library); kept owner for library attribution; back-compat fallbacks
+- v65 — dish view: hide Cook button when no steps; always show cook status (avatar+name or "No cook assigned"); events get no cook line
+- v64 — dish detail VIEW trial (showDishDetail): tap a plan dish → read-only view reusing recipe-detail format; Edit → existing form; backup branch backup-v63-pre-dish-view created
+- v63 — more meal-level depth (stronger shadow, bigger gap); event dish names render in theme accent color (pill removed)
+- v62 — meal-level depth: meal blocks raised cards + more gap; dishes flat bordered rows inside
+- v61 — event distinction via "Event" pill (later replaced by accent text in v63); meal labels bigger uppercase
+- v60 — plan tab de-clutter: removed meal-type icons + event emoji; event dishes toned down; VEG pill on meta row; dropped redundant "serves" when "For" shown; unified meal-head backgrounds
 - v59 — trimmed iPhone footer bottom gap (mobile additive 20px→8px)
 - v58 — FOOTER FIXED (real root cause): footer padding-bottom:max(…calc(env())…) was resolving to 0px in Chrome, so buttons sat flush at screen edge. v52–v57 all reused this same broken expression → no change ever. Replaced with plain literal padding:12px 16px 20px + simple calc for mobile safe-area. Diagnosed via live getComputedStyle measurements.
 - v57 — grid-template-rows 1fr→minmax(0,1fr) (correct but not the root cause); removed v56 position:fixed footer band-aid; mobile overlay 100dvh
@@ -232,3 +244,9 @@ C1. Emojis still present in cooking mode (v56 only removed them from recipe libr
 - v56 emoji removed from recipe cards (clean accent stripe for no-image) ✅
 - v56 reverted unrequested library-top mobile shift ✅
 - v58/v59 recipe detail footer cutoff — root cause was max()/env() padding-bottom resolving to 0px; fixed with literal padding ✅
+- v60–v63 plan tab de-clutter + meal-level depth (emojis removed, event accent text, VEG pill, unified backgrounds, raised meal cards) ✅
+- v64–v65 dish detail VIEW (view/edit split for plan dishes) ✅
+- v66 Owner/Cook unified onto assignedTo for plan dishes (owner kept for library) ✅
+- v67–v69 dish edit form mobile compaction + scroll-to-Save fix (sticky footer) + veg pill toggle ✅
+- v68 compact 2-line ingredient editor on mobile (Original/Adjusted/Unit + name) ✅
+- v70 dish view shows imported recipe photo (survives edits via preserved bankRecipeId) ✅

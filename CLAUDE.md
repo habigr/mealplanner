@@ -166,6 +166,11 @@ V. **Vegetarian indicator → VEG pill everywhere** — DONE on plan tab (v60), 
 ### COOKING MODE — revisit as a group later (per Robbie)
 
 C1. Emojis still present in cooking mode (v56 only removed them from recipe library cards). Cooking mode needs its own design pass — defer until we tackle cooking mode as a whole.
+C2. **Cooking mode may be broken** — Robbie suspects it stopped working after the view/edit mode + dish-view changes (v49/v64+). Needs a diagnostic when we tackle it: verify cookRecipe/cookMeal entry points (dish view Cook button → dishDetailCook → cookRecipe; plan meal "Cook" → cookMeal) actually launch and step through. Lower priority per Robbie but logged.
+
+### AI AGENT — wants a redesign (per Robbie)
+
+A1. **AI agent is clunky and ugly** — works well functionally but the UX/visual design needs work. Improve the chat panel look, input area, message styling, and overall interaction flow. Its own design session (like we did for the dish view). v73 raised its z-index so it's reachable over modals; this is the broader polish.
 
 ### NEW FEATURES — After all bugs fixed
 

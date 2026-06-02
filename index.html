@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v62
+     Meal Planner v63
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -230,9 +230,8 @@ main{background:var(--panel);border:1px solid var(--border);border-radius:var(--
 .dish.dish-event{background:var(--panel);border-color:var(--border-light);cursor:grab;}
 .dish.dish-event:hover{border-color:var(--theme-border);box-shadow:var(--shadow-sm);}
 .dish-event-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
-.dish-event-name{font-size:14px;font-weight:700;color:var(--text);}
+.dish-event-name{font-size:14px;font-weight:700;color:var(--theme-accent-dark);}
 .dish-veg-pill{display:inline-flex;align-items:center;background:#d1fae5;color:#065f46;border-radius:999px;padding:1px 7px;font-size:9px;font-weight:800;letter-spacing:.04em;}
-.dish-event-pill{display:inline-flex;align-items:center;background:var(--theme-accent-soft);color:var(--theme-accent-dark);border-radius:999px;padding:1px 7px;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;}
 .dish-event-detail{font-size:12px;color:#0369a1;display:flex;align-items:center;gap:4px;margin-top:3px;}
 .dish-title-row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;}
 .dish-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:4px;overflow-wrap:anywhere;}
@@ -929,7 +928,7 @@ tr.bought .grocery-check{opacity:1!important;}
 #appScreen{--bg:#c5cfd9;}
 .day-card{border-left:3px solid var(--theme-accent)!important;}
 .day-header{background:linear-gradient(135deg,var(--theme-accent-soft) 0%,var(--panel-warm) 60%,var(--panel) 100%)!important;}
-.meal-block{box-shadow:0 2px 10px rgba(20,16,12,.07)!important;}
+.meal-block{box-shadow:0 4px 16px rgba(20,16,12,.10)!important;}
 /* Meal type color coding */
 .meal-block[data-meal="Breakfast"] .meal-head{background:rgba(255,255,255,.6)!important;}
 .meal-block[data-meal="Dinner"] .meal-head{background:rgba(255,255,255,.6)!important;}
@@ -1331,7 +1330,7 @@ body.planner-edit-mode .dish-title{margin-bottom:4px;}
 .day-title{font-size:15px;letter-spacing:-.02em;}
 .meal-head{background:rgba(255,255,255,.6)!important;}
 .meal-label{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary);}
-.meal-block{margin-bottom:11px;}
+.meal-block{margin-bottom:13px;}
 .day-body{padding:9px;}
 
 /* ===== MOBILE DENSITY ===== */
@@ -2823,7 +2822,7 @@ function renderPlanner(){var grid=safeEl('dayGrid');if(!grid)return;
 function renderMealBlock(day,meal){var dishes=currentEvent.dishes.filter(function(d){return d.dayId===day.id&&d.meal===meal;});var icon=getMealIcon(meal);var hasCookable=(currentEvent.recipeBank||[]).some(function(r){return r.steps&&r.steps.length&&dishes.some(function(d){return d.name.toLowerCase()===r.name.toLowerCase()||d.bankRecipeId===r.id;});});var cookMealBtn=hasCookable?'<button class="cook-meal-btn" onclick="cookMeal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">👨‍🍳 Cook</button>':'';return'<div class="meal-block" data-meal="'+escAttr(meal)+'"><div class="meal-head"><div class="meal-label-wrap"><span class="meal-label">'+escHtml(meal)+'</span><button class="remove-meal-btn" onclick="removeMealFromDay(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" title="Remove this meal from day">×</button></div><div style="display:flex;align-items:center;gap:6px;">'+cookMealBtn+'<button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">+</button></div></div><div class="meal-body" data-day-id="'+escAttr(day.id)+'" data-meal="'+escAttr(meal)+'" ondragover="handleMealDragOver(event)" ondragleave="handleMealDragLeave(event)" ondrop="handleMealDrop(event)">'+(dishes.length?dishes.map(renderDish).join(''):'<div class="meal-empty" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" style="cursor:pointer;"></div>')+'</div></div>';}
 function renderDish(dish){
   if(dish.isEvent){
-    return'<div class="dish dish-event" draggable="true" data-dish-id="'+escAttr(dish.id)+'" ondragstart="handleDishDragStart(event,\''+escAttr(dish.id)+'\')" ondragend="handleDishDragEnd(event)" ondragover="event.preventDefault();dragOverDishId=this.dataset.dishId"><div class="dish-title-row"><span class="dish-drag-handle" title="Drag to move">⠿</span><div style="flex:1;min-width:0;"><div class="dish-event-name" onclick="event.stopPropagation();editDish(\''+escAttr(dish.id)+'\');" style="cursor:pointer;">'+escHtml(dish.eventName||'Going out')+'</div><div class="dish-meta"><span class="dish-event-pill">Event</span></div>'+(dish.notes?'<div class="dish-note">'+escHtml(dish.notes)+'</div>':'')+'</div></div></div>';
+    return'<div class="dish dish-event" draggable="true" data-dish-id="'+escAttr(dish.id)+'" ondragstart="handleDishDragStart(event,\''+escAttr(dish.id)+'\')" ondragend="handleDishDragEnd(event)" ondragover="event.preventDefault();dragOverDishId=this.dataset.dishId"><div class="dish-title-row"><span class="dish-drag-handle" title="Drag to move">⠿</span><div style="flex:1;min-width:0;"><div class="dish-event-name" onclick="event.stopPropagation();editDish(\''+escAttr(dish.id)+'\');" style="cursor:pointer;">'+escHtml(dish.eventName||'Going out')+'</div>'+(dish.notes?'<div class="dish-note">'+escHtml(dish.notes)+'</div>':'')+'</div></div></div>';
   }
   var parts=[];if(dish.peopleEating)parts.push('For '+escHtml(String(dish.peopleEating)));else if(dish.servings)parts.push('Serves '+escHtml(String(dish.servings)));var isVeg=dish.isVegetarian||(dish.tags||[]).some(function(t){return /veg|vegetarian/i.test(t);});var tags=(dish.tags&&dish.tags.length)?'<div class="dish-tags">'+dish.tags.map(function(t){return'<span class="dish-tag">'+escHtml(t)+'</span>';}).join('')+'</div>':'';
   var ingCount=(dish.ingredients||[]).length;if(ingCount)parts.push(ingCount+' ingredient'+(ingCount!==1?'s':''));
@@ -3604,10 +3603,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v62';
+var APP_VERSION='v63';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v62';
+var APP_VERSION_TAG='Meal Planner v63';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

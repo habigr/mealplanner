@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v74
+     Meal Planner v75
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -2058,6 +2058,36 @@ window.checkLibraryHealth=function(){
     return{localCount:_menuLibrary.length,fbCount:fbRecipes.length,missing:missing};
   }).catch(function(e){console.warn('[LibraryHealth] Firebase fetch failed:',e);});
 };
+// v75: console-triggered image backfill. Targeted writes (only menuLibrary/{id}/imageUrl) — never touches other recipe fields.
+window.backfillRecipeImages=async function(opts){
+  opts=opts||{};
+  var max=opts.max||30; // per-run cap (Microlink free tier rate-limits ~50/day)
+  if(!db){console.warn('[Backfill] No Firebase connection');return;}
+  if(!_menuLibrary||!_menuLibrary.length){console.warn('[Backfill] Library not loaded yet — open the Recipe Library first.');return;}
+  var targets=_menuLibrary.filter(function(r){return r.id&&r.url&&!r.imageUrl;});
+  console.log('[Backfill] '+targets.length+' recipe(s) have a link but no image. Processing up to '+max+' this run.');
+  if(!targets.length){console.log('[Backfill] Nothing to do — every recipe with a link already has an image.');return;}
+  var updated=0,noimg=0,failed=0,done=0;
+  for(var i=0;i<targets.length&&done<max;i++){
+    var r=targets[i];done++;
+    try{
+      var res=await fetch('https://api.microlink.io/?url='+encodeURIComponent(r.url)+'&meta=true',{signal:AbortSignal.timeout(9000)});
+      var data=await res.json();
+      var img=(data&&data.status==='success'&&data.data&&data.data.image&&data.data.image.url)||'';
+      if(img&&typeof img==='string'){
+        await db.ref('menuLibrary/'+r.id+'/imageUrl').set(img); // TARGETED — only imageUrl, nothing else
+        r.imageUrl=img; // keep local cache in sync
+        updated++;console.log('[Backfill] ✓ '+r.name+' → image set');
+      }else{noimg++;console.log('[Backfill] – '+r.name+' → no image at link');}
+    }catch(e){failed++;console.warn('[Backfill] ✗ '+r.name+' → fetch failed:',(e&&e.message)||e);}
+    await new Promise(function(rs){setTimeout(rs,600);}); // gentle pacing for Microlink
+  }
+  var remaining=targets.length-done;
+  console.log('[Backfill] Done. Updated '+updated+', no image '+noimg+', failed '+failed+(remaining>0?'. '+remaining+' left — run backfillRecipeImages() again.':'.'));
+  try{renderRecipeBank();renderMenuLibraryOverlay();}catch(e){}
+  showToast('Image backfill: '+updated+' added'+(remaining>0?', '+remaining+' left (run again)':''),'success');
+  return{updated:updated,noImage:noimg,failed:failed,remaining:remaining};
+};
 window.runSmokeTests=function(){
   var results=[],p=0,f=0;
   function test(name,fn){try{var ok=!!fn();results.push({name:name,pass:ok});if(ok)p++;else f++;}catch(e){results.push({name:name,pass:false,error:e.message});f++;}}
@@ -3665,10 +3695,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v74';
+var APP_VERSION='v75';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v74';
+var APP_VERSION_TAG='Meal Planner v75';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

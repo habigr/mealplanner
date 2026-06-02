@@ -138,7 +138,7 @@ Browser console tests — run before every push:
 0. ~~**Fabricated recipes from URL imports**~~ — FIXED v78 + v79. v78 stopped the no-title case. v79 fixed the ROOT cause: Microlink only returns title/image (never the recipe), so Claude was reconstructing recipes from training data + title → wrong/invented recipes (e.g. Rick Bayless al pastor returned a different al pastor). v79 now fetches the ACTUAL page content via Jina Reader (https://r.jina.ai/{url}) and the prompt forces Claude to extract ONLY from that content — no prior knowledge, no invention — returning {"error":...} if no real recipe is present; import stops (nothing saved) if the page can't be read or no recipe is found. CAVEAT: Jina Reader is a free third-party service; if it's slow/blocked, imports fail (by design — better than fabricating). Verify on the failing URLs.
 1. **Recipes reappearing after deletion** — subscribeToMenuLibrary has no guard, Firebase echoes deleted recipes back minutes later. Workaround: adding any dish forces a fresh write that wins over the echo. Same timestamp guard issue as trips but unfixed in library listener.
 2. **Recipe images inconsistent** — RENDERING FIXED in v56 (removed proxy, direct load, no emoji fallback). Confirmed working. REMAINING: many recipes have a link but no stored imageUrl (Flank Steak, Grilled Asparagus, Swordfish Kebabs, etc.) — these need a Firebase backfill that fetches the image from the link and writes ONLY the imageUrl field. Needs sign-off (Firebase write).
-3. **Duplicate recipe imports from URL** — v47 added URL dedup by URL string, needs verification.
+3. **DUPLICATE UPLOADS — TOP PRIORITY NEXT SESSION (per Robbie).** Still happening. v47's URL-dedup (matches normalized URL in _menuLibrary before import) is NOT sufficient: existing duplicates are already in the library (e.g. Souvlaki, Esquites appeared twice in checkLibraryHealth), and dups can be created via paths other than same-URL re-import (e.g. same recipe from different URLs, recipe-builder, AI add, or the same recipe saved without a URL). NEXT SESSION: (a) broaden dedup — match by URL AND by name+source before creating a new menuLibrary entry; (b) provide a way to clean up existing duplicates (merge/remove); (c) audit every write path into menuLibrary (confirmRecipeImport, saveDishFromModal bankOnly, executeAddBankRecipe, duplicateBankRecipe, addDishToTripInBackground) for dup creation.
 4. **Meal type deletion/re-add flaky** — dishes added back to deleted meals disappear again when another meal is deleted on same day. Firebase listener applying stale snapshots after rapid sequential writes. Verify after v44 sync fix — may partially resolve.
 5. **Trip ID null in App Admin on mobile** — shows null on mobile but correct ID on desktop.
 6. **Cook photo never shows (avatar falls back to initials)** — ROOT CAUSE FOUND: `_knownUsers` is empty (`[]`). loadKnownUsers reads the whole `/users` collection, which returns nothing — almost certainly Firebase security rules allow reading your OWN `/users/{uid}` but not listing all of `/users`. Each user's photo IS in Firebase at `users/{uid}/profile.photo` and syncs to their own devices (top-right avatar works), but there's no readable global name→photo map. FIX (planned, needs build): capture the cook's photo onto the dish at assign time (self via getUser(); teammates via per-trip presence which carries name+photo) and store as assignedToPhoto, so it travels to all devices and the avatar reads it directly. Optionally also populate _knownUsers from presence as a display fallback. Touches save/assign path — isolate as its own build.
@@ -187,6 +187,10 @@ A1. **AI agent is clunky and ugly** — works well functionally but the UX/visua
 
 ## CHANGELOG
 
+- v79 — URL import extracts from REAL page content via Jina Reader (r.jina.ai); prompt forbids prior knowledge/invention; stops (nothing saved) if page unreadable or no recipe. Verified working (correct recipe pulled).
+- v78 — stop URL import when no page title fetched (no fabrication from empty content)
+- v77 — Microlink cache-bust (&force=true) + confirm-the-page step before parsing
+- v76 — cook dropdown/assign picker include presence users via getAssignableUsers() (newly-joined teammates show when online); interim for the user-directory need (#19)
 - v75 — image backfill tool window.backfillRecipeImages() (console-triggered, targeted menuLibrary/{id}/imageUrl writes only, rate-limited); verified URL-import dedup (#7) intact
 - v74 — AI assistant polish: fixed unstyled recipe-builder/url-import messages (ai-msg-user/ai-msg-ai had no CSS), flatter header/cleaner bubbles/input; AI fab lifts above dish modal Save footer
 - v73 — AI chat fab+panel z-index raised (9150/9151) so the assistant is reachable over modals (dish edit, recipe detail, library)
@@ -268,4 +272,13 @@ A1. **AI agent is clunky and ugly** — works well functionally but the UX/visua
 - v73 AI chat reachable over modals (z-index) ✅
 - v74 AI assistant polish + fixed unstyled message bubbles ✅
 - v75 recipe image backfill (all linked library recipes filled with photos) ✅
-- #7 URL-import duplicate guard verified intact ✅
+- #7 URL-import duplicate guard verified intact ✅ (NOTE: insufficient — see #3, dup uploads still occur)
+- v76 cook dropdown includes presence users (interim) ✅
+- v77 Microlink cache-bust + confirm-page step ✅
+- v78 stop import when page unfetchable (no fabrication) ✅
+- v79 URL import reads REAL page content via Jina Reader, no fabrication — VERIFIED working ✅
+
+## NEXT SESSION — start here
+1. **Duplicate uploads (#3)** — Robbie's stated top priority. Broaden dedup + clean up existing dups + audit menuLibrary write paths.
+2. Orange juice quantity bug (#10/grocery) — never got the console diagnostic; run: currentEvent.dishes.forEach(d=>(d.ingredients||[]).forEach(i=>{if(/orange juice/i.test(i.item||''))console.log(d.name,i.quantity,i.unit,'serves',d.servings,'for',d.peopleEating)})) — likely unit mismatch + scaling.
+3. Then: meals in typical order (#9), recipes reappearing after deletion (#1), cooking mode (engine ok / hasCookable bug), AI agent deeper redesign, and the big user-mgmt/permissions cluster (#18-20).

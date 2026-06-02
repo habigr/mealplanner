@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v64
+     Meal Planner v65
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3603,10 +3603,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v64';
+var APP_VERSION='v65';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v64';
+var APP_VERSION_TAG='Meal Planner v65';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5498,7 +5498,7 @@ function showDishDetail(id){
   var isVeg=d.isVegetarian||(d.tags||[]).some(function(t){return /veg|vegetarian/i.test(t);});
   if(meta.length||isVeg)html+='<div class="recipe-detail-meta-row">'+meta.join('<span style="color:var(--border);margin:0 3px">·</span>')+(isVeg?(meta.length?' ':'')+'<span class="dish-veg-pill">VEG</span>':'')+'</div>';
   if(d.isEvent&&(d.eventTime||d.eventAddress)){var ev=[];if(d.eventTime)ev.push(escHtml(d.eventTime));if(d.eventAddress)ev.push(escHtml(d.eventAddress));html+='<div style="font-size:13px;color:var(--text-secondary);margin-top:8px;">'+ev.join(' · ')+'</div>';}
-  if(d.assignedTo&&d.assignedTo!=='undefined'&&d.assignedTo!=='null'){var ap=getKnownUserByName(d.assignedTo);var av=renderAvatarFromProfile(ap||{name:d.assignedTo,photo:d.assignedToPhoto||'',initials:d.assignedToInitials||d.assignedTo.slice(0,2)},22,'vertical-align:middle;margin-right:6px;');html+='<div style="display:flex;align-items:center;margin-top:10px;font-size:13px;color:var(--text-secondary);">'+av+'<span>'+escHtml(d.assignedTo)+'</span></div>';}
+  if(!d.isEvent){var cookName=(d.assignedTo&&d.assignedTo!=='undefined'&&d.assignedTo!=='null')?d.assignedTo:'';if(cookName){var ap=getKnownUserByName(cookName);var av=renderAvatarFromProfile(ap||{name:cookName,photo:d.assignedToPhoto||'',initials:d.assignedToInitials||cookName.slice(0,2)},22,'vertical-align:middle;margin-right:6px;');html+='<div style="display:flex;align-items:center;margin-top:10px;font-size:13px;color:var(--text-secondary);"><span style="color:var(--muted);margin-right:6px;">Cook:</span>'+av+'<span>'+escHtml(cookName)+'</span></div>';}else{html+='<div style="margin-top:10px;font-size:13px;color:var(--muted);">No cook assigned</div>';}}
   html+='</div>';
   if(d.notes)html+='<div class="recipe-personal-notes">📝 '+escHtml(d.notes)+'</div>';
   var ings=d.ingredients||[];
@@ -5508,7 +5508,7 @@ function showDishDetail(id){
   body.innerHTML=html;body.scrollTop=0;
   var hasSteps=steps.length>0;
   var fh='<button style="background:var(--theme-accent);color:#fff;border:none;font-weight:700;" onclick="dishDetailEdit()">Edit</button>';
-  fh+='<button class="secondary" onclick="dishDetailCook()" '+(hasSteps?'':'disabled title="No steps to cook"')+'>👨‍🍳 Cook</button>';
+  if(hasSteps)fh+='<button class="secondary" onclick="dishDetailCook()">👨‍🍳 Cook</button>';
   footer.innerHTML=fh;
   overlay.classList.add('visible');haptic(8);
 }

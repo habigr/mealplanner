@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v70
+     Meal Planner v71
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -2881,7 +2881,7 @@ function renderDish(dish){
   var planCookBtn=hasSteps?'<button class="dish-cook-plan-btn" onclick="event.stopPropagation();cookRecipe(\''+escAttr(libRecipe.id||dish.bankRecipeId||dish.id)+'\')" title="Cook this recipe">👨‍🍳</button>':'';
   // Assign avatar
   var assignHtml;
-  if(dish.assignedTo&&dish.assignedTo!=='undefined'&&dish.assignedTo!=='null'){var storedP={name:dish.assignedTo,photo:dish.assignedToPhoto||'',initials:dish.assignedToInitials||dish.assignedTo.slice(0,2)};var ap=getKnownUserByName(dish.assignedTo);var ava=renderAvatarFromProfile(ap||storedP,20,'vertical-align:middle;cursor:pointer;');assignHtml='<span title="'+escAttr(dish.assignedTo)+'" onclick="event.stopPropagation();assignDish(\''+escAttr(dish.id)+'\'" style="cursor:pointer;display:inline-flex;align-items:center;">'+ava+'</span>';}
+  if(dish.assignedTo&&dish.assignedTo!=='undefined'&&dish.assignedTo!=='null'){var storedP={name:dish.assignedTo,photo:dish.assignedToPhoto||'',initials:dish.assignedToInitials||dish.assignedTo.slice(0,2)};var ava=renderAvatarFromProfile(dish.assignedToPhoto?storedP:resolvePersonProfile(dish.assignedTo),20,'vertical-align:middle;cursor:pointer;');assignHtml='<span title="'+escAttr(dish.assignedTo)+'" onclick="event.stopPropagation();assignDish(\''+escAttr(dish.id)+'\'" style="cursor:pointer;display:inline-flex;align-items:center;">'+ava+'</span>';}
   else{assignHtml='<button class="dish-assigned" onclick="event.stopPropagation();assignDish(\''+escAttr(dish.id)+'\')">+ Assign</button>';}
   var libHtml=inLib?'<span style="font-size:10px;color:var(--muted);">📖 In Library</span>':'<button class="dish-assigned" onclick="event.stopPropagation();saveDishToLibrary(\''+escAttr(dish.id)+'\')">📖 Save</button>';
   // Ingredients section (collapsed)
@@ -3641,10 +3641,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v70';
+var APP_VERSION='v71';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v70';
+var APP_VERSION_TAG='Meal Planner v71';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5542,7 +5542,7 @@ function showDishDetail(id){
   var isVeg=d.isVegetarian||(d.tags||[]).some(function(t){return /veg|vegetarian/i.test(t);});
   if(meta.length||isVeg)html+='<div class="recipe-detail-meta-row">'+meta.join('<span style="color:var(--border);margin:0 3px">·</span>')+(isVeg?(meta.length?' ':'')+'<span class="dish-veg-pill">VEG</span>':'')+'</div>';
   if(d.isEvent&&(d.eventTime||d.eventAddress)){var ev=[];if(d.eventTime)ev.push(escHtml(d.eventTime));if(d.eventAddress)ev.push(escHtml(d.eventAddress));html+='<div style="font-size:13px;color:var(--text-secondary);margin-top:8px;">'+ev.join(' · ')+'</div>';}
-  if(!d.isEvent){var cookName=(d.assignedTo&&d.assignedTo!=='undefined'&&d.assignedTo!=='null')?d.assignedTo:(d.owner||'');if(cookName){var ap=getKnownUserByName(cookName);var av=renderAvatarFromProfile(ap||{name:cookName,photo:d.assignedToPhoto||'',initials:d.assignedToInitials||cookName.slice(0,2)},22,'vertical-align:middle;margin-right:6px;');html+='<div style="display:flex;align-items:center;margin-top:10px;font-size:13px;color:var(--text-secondary);"><span style="color:var(--muted);margin-right:6px;">Cook:</span>'+av+'<span>'+escHtml(cookName)+'</span></div>';}else{html+='<div style="margin-top:10px;font-size:13px;color:var(--muted);">No cook assigned</div>';}}
+  if(!d.isEvent){var cookName=(d.assignedTo&&d.assignedTo!=='undefined'&&d.assignedTo!=='null')?d.assignedTo:(d.owner||'');if(cookName){var prof=d.assignedToPhoto?{name:cookName,photo:d.assignedToPhoto,initials:d.assignedToInitials||cookName.slice(0,2)}:resolvePersonProfile(cookName);var av=renderAvatarFromProfile(prof,22,'vertical-align:middle;margin-right:6px;');html+='<div style="display:flex;align-items:center;margin-top:10px;font-size:13px;color:var(--text-secondary);"><span style="color:var(--muted);margin-right:6px;">Cook:</span>'+av+'<span>'+escHtml(cookName)+'</span></div>';}else{html+='<div style="margin-top:10px;font-size:13px;color:var(--muted);">No cook assigned</div>';}}
   html+='</div>';
   if(d.notes)html+='<div class="recipe-personal-notes">📝 '+escHtml(d.notes)+'</div>';
   var ings=d.ingredients||[];
@@ -6247,6 +6247,20 @@ function getKnownUsersList(){
 
 function getKnownUserByName(name){
   return Object.values(_knownUsers).find(function(u){return(u.name||'').toLowerCase()===(name||'').toLowerCase();});
+}
+// v71: resolve a person's avatar profile from the best LIVE source (no Firebase reads/writes).
+// /users isn't listable so _knownUsers is usually empty; getUser() has the current user's photo,
+// and per-trip presence carries photos for anyone who's been online. Returns {name,photo,initials}.
+function resolvePersonProfile(name){
+  if(!name)return{name:'',photo:'',initials:''};
+  var nl=String(name).toLowerCase();
+  var me=getUser();
+  if(me&&me.name&&me.name.toLowerCase()===nl&&me.photo)return{name:name,photo:me.photo,initials:me.initials||name.slice(0,2)};
+  var pres=(lastPresenceUsers||[]).find(function(p){return(p.name||'').toLowerCase()===nl&&p.photo;});
+  if(pres)return{name:name,photo:pres.photo,initials:pres.initials||name.slice(0,2)};
+  var ku=getKnownUserByName(name);
+  if(ku&&ku.photo)return{name:name,photo:ku.photo,initials:ku.initials||name.slice(0,2)};
+  return{name:name,photo:'',initials:(ku&&ku.initials)||(me&&me.initials&&me.name&&me.name.toLowerCase()===nl?me.initials:name.slice(0,2))};
 }
 
 /* ===== MENU LIBRARY (global, shared across all trips) ===== */

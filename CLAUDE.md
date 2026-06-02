@@ -166,7 +166,7 @@ V. **Vegetarian indicator → VEG pill everywhere** — DONE on plan tab (v60), 
 ### COOKING MODE — revisit as a group later (per Robbie)
 
 C1. Emojis still present in cooking mode (v56 only removed them from recipe library cards). Cooking mode needs its own design pass — defer until we tackle cooking mode as a whole.
-C2. **Cooking mode may be broken** — Robbie suspects it stopped working after the view/edit mode + dish-view changes (v49/v64+). Needs a diagnostic when we tackle it: verify cookRecipe/cookMeal entry points (dish view Cook button → dishDetailCook → cookRecipe; plan meal "Cook" → cookMeal) actually launch and step through. Lower priority per Robbie but logged.
+C2. **Cooking mode — engine works, entry buttons gone (diagnosed, not yet fixed).** The cooking engine (cookRecipe/cookMeal/_findRecipeForCook/#cookingMode/renderCookingStep) is intact and correctly wired; _findRecipeForCook even resolves a plan dish via bankRecipeId or its own steps. The "not working" is discoverability: (a) the per-dish cook button is in .dish-footer-row which v49 HIDES in view mode (only Edit mode shows it); (b) the meal-level "Cook" button has a real bug — its hasCookable check (renderMealBlock, ~line 2883) only scans currentEvent.recipeBank, but recipes now live in _menuLibrary, so it almost never appears. FIX when we do cooking mode: hasCookable should check (recipeBank ∪ _menuLibrary) AND the dish's own steps. Cooking still reachable today via the dish detail view's Cook button (if the dish has steps). Per Robbie: cooking mode deferred to its own later session.
 
 ### AI AGENT — wants a redesign (per Robbie)
 

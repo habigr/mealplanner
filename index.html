@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v67
+     Meal Planner v68
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -787,20 +787,27 @@ section#recipes{display:none!important;}
   .field-inline.field-stack-mobile{flex-direction:column;align-items:stretch;gap:4px;}
   .field-inline.field-stack-mobile>label{min-width:unset;font-size:11px;}
   .field-inline.field-stack-mobile>input{font-size:16px;padding:10px 12px;}
+  /* v68: compact 2-line ingredient rows — qty / cooks-for / unit on top, name below; minimal boxing so many fit */
+  #dishModal .ingredient-list-editor{max-height:none;}
   #dishModal .ingredient-row{
     display:grid!important;
-    grid-template-columns:18px 52px 58px 1fr 28px!important;
-    gap:4px 5px!important;
-    padding:7px 6px!important;
+    grid-template-columns:16px 1fr 1fr 1fr 24px!important;
+    grid-template-areas:"drag orig scaled unit rm" "name name name name name"!important;
+    gap:3px 6px!important;
+    padding:6px 2px!important;
+    margin:0!important;
+    border:none!important;border-bottom:1px solid var(--border-light)!important;border-radius:0!important;
+    background:transparent!important;
     align-items:center;
   }
-  #dishModal .ingredient-row>*:nth-child(3){display:none!important;}
-  #dishModal .ingredient-row .ing-qty{font-size:11px!important;padding:4px 5px!important;}
-  #dishModal .ingredient-row .ing-unit{font-size:11px!important;padding:4px 5px!important;}
-  #dishModal .ingredient-row .ing-item{font-size:14px!important;font-weight:600;padding:6px 7px!important;}
-  #dishModal .ingredient-row .remove-ingredient{font-size:16px!important;padding:2px!important;}
+  #dishModal .ingredient-row .drag-handle{grid-area:drag;font-size:13px!important;}
+  #dishModal .ingredient-row .ing-original{grid-area:orig;display:block!important;font-size:15px!important;padding:6px 4px!important;text-align:center;}
+  #dishModal .ingredient-row .ing-adjusted{grid-area:scaled;display:block!important;font-size:15px!important;padding:6px 4px!important;text-align:center;background:var(--theme-accent-soft)!important;color:var(--theme-accent-dark)!important;border-color:var(--theme-border)!important;font-weight:700;}
+  #dishModal .ingredient-row .ing-unit{grid-area:unit;display:block!important;font-size:15px!important;padding:6px 4px!important;text-align:center;}
+  #dishModal .ingredient-row .ing-item{grid-area:name;font-size:15px!important;font-weight:600;padding:6px 8px!important;width:100%;}
+  #dishModal .ingredient-row .remove-ingredient{grid-area:rm;font-size:18px!important;padding:0!important;color:var(--muted);}
   /* v67: compact the dish edit form on mobile (all fields kept) */
-  #dishModal.modal-backdrop{padding:8px;}
+  #dishModal.modal-backdrop{padding:8px;align-items:flex-start;padding-top:calc(8px + env(safe-area-inset-top,0px));}
   #dishModal .modal{padding:14px;border-radius:18px;max-height:95vh;}
   #dishModal h3{font-size:17px;margin-bottom:2px;}
   #dishModal>.modal>p{display:none;}
@@ -814,6 +821,7 @@ section#recipes{display:none!important;}
   #dishModal .final-details-heading{margin:10px 0 7px;}
   #dishModal .field-inline.field-stack-mobile>input{padding:8px 11px;}
   #dishModal #dishNotes{min-height:44px!important;}
+  #dishModal input:not([type=checkbox]):not([type=radio]),#dishModal select,#dishModal textarea{font-size:15px!important;}
 }
 
 /* ===== COOKING MODE ===== */
@@ -3619,10 +3627,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v67';
+var APP_VERSION='v68';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v67';
+var APP_VERSION_TAG='Meal Planner v68';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v68
+     Meal Planner v69
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1374,6 +1374,20 @@ body.planner-edit-mode .dish-title{margin-bottom:4px;}
   #planner .toolbar{margin-bottom:8px;}
 }
 
+/* ===== v69: edit-form clarity + scroll fix ===== */
+.veg-toggle{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;border:1.5px solid var(--border);background:var(--panel-soft);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.veg-toggle input{display:none;}
+.veg-toggle:has(input:checked){background:#d1fae5;border-color:#a7f3d0;color:#065f46;}
+.ing-labels-mobile{display:none;}
+@media(max-width:768px){
+  /* Modal fits below the notch; sticky footer keeps Save/Cancel reachable */
+  #dishModal .modal{max-height:calc(100dvh - env(safe-area-inset-top,0px) - 16px)!important;padding-bottom:0!important;}
+  #dishModal .modal-footer{position:sticky;bottom:0;background:var(--panel);margin-top:8px;padding:10px 0 max(12px,env(safe-area-inset-bottom,0px));border-top:1px solid var(--border-light);z-index:5;}
+  /* Ingredient column headers aligned to qty / cooks-for / unit */
+  #dishModal .ing-labels-mobile{display:grid;grid-template-columns:16px 1fr 1fr 1fr 24px;gap:3px 6px;padding:2px 2px 3px;}
+  #dishModal .ing-labels-mobile>span{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:center;}
+  #dishModal .ing-labels-mobile>span:nth-child(3){color:var(--theme-accent-dark);}
+}
 </style>
 </head>
 <body>
@@ -3627,10 +3641,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v68';
+var APP_VERSION='v69';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v68';
+var APP_VERSION_TAG='Meal Planner v69';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -6930,8 +6944,8 @@ document.addEventListener('DOMContentLoaded',function(){
         <div class="field-inline field-stack-mobile"><label for="dishName">Name</label><input id="dishName" placeholder="e.g., Lobster Rolls" /></div>
         <div class="field-inline field-stack-mobile"><label for="dishUrl">Link</label><input id="dishUrl" type="url" placeholder="https://…" /></div>
         <div class="field-inline"><label for="dishOwner" id="dishOwnerLabel">Cook</label><select id="dishOwner" style="font-size:14px;"><option value="">— unassigned —</option></select></div>
-        <div class="field-inline"><label for="servings" title="Base recipe serving size — changing this affects ingredient scaling">Serves <span style="font-size:10px;color:var(--muted);font-weight:400;">(base)</span></label><input id="servings" type="number" min="1" placeholder="e.g., 4" oninput="updateScaledIngredientDisplay()" title="Base serving size — affects ingredient quantity scaling" style="background:var(--panel-soft);border-style:dashed;" /></div>
-        <div class="field-inline" id="cookingForField" style="margin-bottom:0;display:flex;gap:16px;flex-wrap:wrap;align-items:center;"><label for="peopleEating" style="min-width:80px;">Cooking for</label><input id="peopleEating" type="number" min="1" placeholder="# people" oninput="updateScaledIngredientDisplay()" style="width:80px;flex-shrink:0;" /><label style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="isVegetarianCheck" style="width:16px;height:16px;"> 🌿 Vegetarian</label></div>
+        <div class="field-inline"><label for="servings" title="Base recipe serving size — changing this affects ingredient scaling">Recipe serves</label><input id="servings" type="number" min="1" placeholder="e.g., 4" oninput="updateScaledIngredientDisplay()" title="Base serving size — affects ingredient quantity scaling" style="background:var(--panel-soft);border-style:dashed;" /></div>
+        <div class="field-inline" id="cookingForField" style="margin-bottom:0;display:flex;gap:16px;flex-wrap:wrap;align-items:center;"><label for="peopleEating" style="min-width:80px;">Cooking for</label><input id="peopleEating" type="number" min="1" placeholder="# people" oninput="updateScaledIngredientDisplay()" style="width:80px;flex-shrink:0;" /><label class="veg-toggle"><input type="checkbox" id="isVegetarianCheck"> 🌿 Vegetarian</label></div>
         <button type="button" onclick="aiCheckVegetarian()" style="margin-top:6px;font-size:11px;padding:4px 10px;border-radius:8px;background:var(--panel-soft);border:1px solid var(--border);color:var(--muted);cursor:pointer;">✦ AI Check</button>
       </div>
       <div class="detail-card compact">
@@ -6939,7 +6953,7 @@ document.addEventListener('DOMContentLoaded',function(){
       </div>
       <div id="ingredientSection" class="detail-card">
         <div class="detail-card-header"><strong>Ingredients</strong><span>Final list — drag to reorder</span></div>
-        <div class="ingredient-row-labels"><span></span><span>Original</span><span>Adjusted</span><span>Unit</span><span>Ingredient</span><span></span></div><div id="ingredientRows" class="ingredient-list-editor"></div>
+        <div class="ingredient-row-labels"><span></span><span>Original</span><span>Adjusted</span><span>Unit</span><span>Ingredient</span><span></span></div><div class="ing-labels-mobile"><span></span><span>Recipe</span><span>For you</span><span>Unit</span><span></span></div><div id="ingredientRows" class="ingredient-list-editor"></div>
         <button class="secondary" type="button" style="margin-top:10px;" onclick="addIngredientRow()">+ Add</button>
       </div>
       <div id="stepsSection" class="detail-card">

@@ -178,6 +178,8 @@ A1. **AI agent is clunky and ugly** — works well functionally but the UX/visua
 17. ~~**View vs edit mode for dishes**~~ — DONE (v64–v70): tap a plan dish → read-only view (showDishDetail) reusing recipe-detail format; Edit → existing form; edit form compacted (v67–v69); 2-row ingredients (v68); imported image shown (v70).
 18. **App Admin vs Trip Settings restructure** — universal settings must be separated from trip-specific settings. Collapsible sections. Clean separation required before building permissions.
 19. **User management tab in App Admin** — grid of all users who have logged in, which trips they have accessed, ability to manually add users to trips.
+    - **Includes: "cook dropdown should list everyone who's ever logged in" (per Robbie).** This is the same need — a readable user directory. Root cause: Firebase rules let a user read their OWN /users/{uid} but NOT list /users, so _knownUsers is empty and the cook dropdown can only show current user + known + anyone in presence (v76 interim). The real fix is the user directory + the rules to read it — which belongs to this build (#19) plus permissions/rules (#20), NOT a one-off patch. DECISION (Robbie): fold the cook-dropdown fix into the bigger user-management/permissions architecture rather than band-aiding now.
+    - Foundation options to decide during build: (A) allow authenticated read on /users via rules, or (B) maintain a readable userDirectory node written on login. This also fixes cook photos app-wide.
 20. **Admin permissions system** — admin roles, Firebase security rules. Build only after #18 is complete.
 
 ---

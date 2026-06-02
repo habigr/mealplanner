@@ -146,7 +146,7 @@ Browser console tests — run before every push:
 
 7. **Recipe name cuts off in view mode when too long** — should wrap, header should expand with it.
 8. **AI button overlaps send button on mobile** — both need to be tappable.
-9. **Meal type reappears at bottom after re-add** — when a deleted meal type is recreated by adding a dish, it gets pushed to end of day.meals instead of inserted at correct position. Fix: insert at same relative position as in currentEvent.mealTypes order.
+9. **Meals should always display in typical order** (Robbie, for later) — meal sections should ALWAYS render in canonical order: Breakfast → Lunch → Dinner → Snack → Drinks → Dessert, regardless of how/when they were added. This also fixes the old "meal reappears at bottom after re-add" bug. Fix: sort each day's meals (or the render order in renderPlanner/renderMealBlock) by a canonical meal-order index (from getDefaultMealTypes / the dishMeal select order) instead of raw day.meals array order.
 10. **Grocery dedup broken** — Smart Dedup renames items but does not merge quantities with existing matching rows. Creates false duplicate flags and split quantities. Dedup rename and quantity merge must happen together using the same key.
 
 ### CLEANUP
@@ -184,6 +184,11 @@ A1. **AI agent is clunky and ugly** — works well functionally but the UX/visua
 
 ## CHANGELOG
 
+- v75 — image backfill tool window.backfillRecipeImages() (console-triggered, targeted menuLibrary/{id}/imageUrl writes only, rate-limited); verified URL-import dedup (#7) intact
+- v74 — AI assistant polish: fixed unstyled recipe-builder/url-import messages (ai-msg-user/ai-msg-ai had no CSS), flatter header/cleaner bubbles/input; AI fab lifts above dish modal Save footer
+- v73 — AI chat fab+panel z-index raised (9150/9151) so the assistant is reachable over modals (dish edit, recipe detail, library)
+- v72 — quick wins: recipe detail name wraps; AI "Build Recipe" icon-only on mobile (no send-button overlap); VEG pill on library cards (no more 🌿 emoji); network-aware URL import error message
+- v71 — cook avatar photos via live resolution (resolvePersonProfile: getUser → presence → known users → initials); no data writes/bloat
 - v70 — ingredient column headers Original/Adjusted/Unit; dish detail view shows imported recipe photo (resolved via bankRecipeId → name/url); editDish preserves bankRecipeId so image/link survives edits
 - v69 — dish edit form: modal max-height + sticky footer so Save is always reachable on mobile; "Recipe serves" label; ingredient column headers; vegetarian → green pill toggle (:has)
 - v68 — compact 2-line ingredient rows on mobile (qty/cooks-for/unit on row 1, name row 2; thin separators so many fit); safe-area header; 15px inputs; pure CSS, collectIngredients untouched
@@ -255,3 +260,9 @@ A1. **AI agent is clunky and ugly** — works well functionally but the UX/visua
 - v67–v69 dish edit form mobile compaction + scroll-to-Save fix (sticky footer) + veg pill toggle ✅
 - v68 compact 2-line ingredient editor on mobile (Original/Adjusted/Unit + name) ✅
 - v70 dish view shows imported recipe photo (survives edits via preserved bankRecipeId) ✅
+- v71 cook avatar photos (live resolution, self + online teammates) ✅
+- v72 quick wins (name wrap, AI/send button, VEG pill on library cards, import error wording) ✅
+- v73 AI chat reachable over modals (z-index) ✅
+- v74 AI assistant polish + fixed unstyled message bubbles ✅
+- v75 recipe image backfill (all linked library recipes filled with photos) ✅
+- #7 URL-import duplicate guard verified intact ✅

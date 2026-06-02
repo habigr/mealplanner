@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v76
+     Meal Planner v77
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -2071,7 +2071,7 @@ window.backfillRecipeImages=async function(opts){
   for(var i=0;i<targets.length&&done<max;i++){
     var r=targets[i];done++;
     try{
-      var res=await fetch('https://api.microlink.io/?url='+encodeURIComponent(r.url)+'&meta=true',{signal:AbortSignal.timeout(9000)});
+      var res=await fetch('https://api.microlink.io/?url='+encodeURIComponent(r.url)+'&meta=true&force=true',{signal:AbortSignal.timeout(9000)});
       var data=await res.json();
       var img=(data&&data.status==='success'&&data.data&&data.data.image&&data.data.image.url)||'';
       if(img&&typeof img==='string'){
@@ -3695,10 +3695,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v76';
+var APP_VERSION='v77';
 var APP_BUILD_TIME='2026-05-31 14:00';
 
-var APP_VERSION_TAG='Meal Planner v76';
+var APP_VERSION_TAG='Meal Planner v77';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5695,11 +5695,13 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
   showToast('⏳ Fetching recipe…','');
   var title='',description='',imageUrl='';
   try{
-    var mlRes=await fetch('https://api.microlink.io/?url='+encodeURIComponent(url)+'&meta=true',{signal:AbortSignal.timeout(8000)});
+    var mlRes=await fetch('https://api.microlink.io/?url='+encodeURIComponent(url)+'&meta=true&force=true',{signal:AbortSignal.timeout(8000)});
     var mlData=await mlRes.json();
     if(mlData.status==='success'&&mlData.data){title=mlData.data.title||'';description=mlData.data.description||'';imageUrl=(mlData.data.image&&mlData.data.image.url)||'';}
   }catch(e){/* continue without Microlink */}
   var source='';try{source=new URL(url).hostname.replace('www.','');}catch(e){}
+  // v77: confirm the fetched page before parsing — catches Microlink returning a cached/wrong page
+  if(title){var okPage=await confirmAction({title:'Confirm the recipe page',message:'Found this page: "'+title+'" (from '+source+'). Import it? If this looks like the wrong recipe, cancel and try again.',confirmLabel:'Yes, import'});if(!okPage){showToast('Import canceled.','');return;}}
   var prompt='You are a recipe extraction expert. Extract a COMPLETE recipe from this URL.\n\n'
     +'URL: '+url+'\nSite: '+source+'\nTitle: '+(title||'unknown')+'\nDescription: '+(description||'none')+'\n\n'
     +'Return ONLY valid JSON (no markdown, no explanation):\n'

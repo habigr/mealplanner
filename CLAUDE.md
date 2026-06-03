@@ -58,6 +58,18 @@ At the end of every session:
 
 ---
 
+## MEAL TYPES — ARCHITECTURE DECISION (LOCKED, Robbie)
+
+Three distinct layers — do NOT conflate them. Lock this in BEFORE touching the App Admin restructure (#18):
+
+- **App-level master list** — controls what meal types are AVAILABLE to select anywhere in the app.
+- **Trip-level (`currentEvent.mealTypes`)** — controls which meal types are ACTIVE on that specific trip, AND defines the canonical render order for that trip (see #9).
+- **Day-level (`day.meals`)** — controls which meals actually SHOW on each day.
+
+Rule: **removing a meal type from the app master list NEVER affects existing trip data.** Trips keep their own `mealTypes` and `day.meals` untouched. The master list only governs what's offered for new selection going forward.
+
+---
+
 ## HOW TO WORK WITH ROBBIE
 
 Before starting any fix:
@@ -135,7 +147,16 @@ Browser console tests — run before every push:
 
 ### CRITICAL — Fix these first
 
-0. ~~**Fabricated recipes from URL imports**~~ — FIXED v78 + v79. v78 stopped the no-title case. v79 fixed the ROOT cause: Microlink only returns title/image (never the recipe), so Claude was reconstructing recipes from training data + title → wrong/invented recipes (e.g. Rick Bayless al pastor returned a different al pastor). v79 now fetches the ACTUAL page content via Jina Reader (https://r.jina.ai/{url}) and the prompt forces Claude to extract ONLY from that content — no prior knowledge, no invention — returning {"error":...} if no real recipe is present; import stops (nothing saved) if the page can't be read or no recipe is found. CAVEAT: Jina Reader is a free third-party service; if it's slow/blocked, imports fail (by design — better than fabricating). Verify on the failing URLs.
+0. ~~**Fabricated recipes from URL imports**~~ — FIXED v78 + v79. v78 stopped the no-title case. v79 fixed the ROOT cause: Microlink only returns title/image (never the recipe), so Claude was reconstructing recipes from training data + title → wrong/invented recipes (e.g. Rick Bayless al pastor returned a different al pastor). v79 now fetches the ACTUAL page content via Jina Reader (https://r.jina.ai/{url}) and the prompt forces Claude to extract ONLY from that content — no prior knowledge, no invention — returning {"error":...} if no real recipe is present; import stops (nothing saved) if the page can't be read or no recipe is found. CAVEAT: Jina Reader is a free third-party service; if it's slow/blocked, imports fail (by design — better than fabricating). Verify on the failing URLs. NOTE: Robbie reports URL import is STILL broken — see C7/C8/C9 below for the live issues.
+
+**URL IMPORT — C7/C9 FIXED in v80; C8 confirmed already-blocked. Awaiting Robbie's live verification (NYT link + a normal recipe link).**
+
+C7. ~~**JSON parse error on AI response**~~ — FIXED v80. — Claude sometimes wraps the JSON in markdown code fences (```json … ```) which breaks JSON.parse and the import fails. FIX: strip markdown code fences (leading/trailing ``` and ```json) before JSON.parse EVERYWHERE an AI response is parsed — not just URL import. Audit all JSON.parse call sites on AI output (url-import, recipe-builder, AI add, any agent response) and apply a shared stripFences helper.
+
+C8. ~~**URL import still fabricates recipes when fetch fails**~~ — CONFIRMED ALREADY BLOCKED (v79 empty-page guard <200 chars + no-prior-knowledge prompt). The "fabrication" Robbie saw was actually paywalled pages returning >200 chars of teaser/login text, now caught by C9 (v80). Verify on the failing URLs.
+
+C9. ~~**Paywall detection missing**~~ — FIXED v80. Known hard-paywall hosts (cooking.nytimes.com, nytimes.com) stop up front; pages with paywall markers that yield no recipe show: "This page requires a subscription — copy the recipe text and paste it here instead." Never fabricates.
+
 1. **Recipes reappearing after deletion** — subscribeToMenuLibrary has no guard, Firebase echoes deleted recipes back minutes later. Workaround: adding any dish forces a fresh write that wins over the echo. Same timestamp guard issue as trips but unfixed in library listener.
 2. **Recipe images inconsistent** — RENDERING FIXED in v56 (removed proxy, direct load, no emoji fallback). Confirmed working. REMAINING: many recipes have a link but no stored imageUrl (Flank Steak, Grilled Asparagus, Swordfish Kebabs, etc.) — these need a Firebase backfill that fetches the image from the link and writes ONLY the imageUrl field. Needs sign-off (Firebase write).
 3. **DUPLICATE UPLOADS — TOP PRIORITY NEXT SESSION (per Robbie).** Still happening. v47's URL-dedup (matches normalized URL in _menuLibrary before import) is NOT sufficient: existing duplicates are already in the library (e.g. Souvlaki, Esquites appeared twice in checkLibraryHealth), and dups can be created via paths other than same-URL re-import (e.g. same recipe from different URLs, recipe-builder, AI add, or the same recipe saved without a URL). NEXT SESSION: (a) broaden dedup — match by URL AND by name+source before creating a new menuLibrary entry; (b) provide a way to clean up existing duplicates (merge/remove); (c) audit every write path into menuLibrary (confirmRecipeImport, saveDishFromModal bankOnly, executeAddBankRecipe, duplicateBankRecipe, addDishToTripInBackground) for dup creation.
@@ -147,7 +168,7 @@ Browser console tests — run before every push:
 
 7. **Recipe name cuts off in view mode when too long** — should wrap, header should expand with it.
 8. **AI button overlaps send button on mobile** — both need to be tappable.
-9. **Meals should always display in typical order** (Robbie, for later) — meal sections should ALWAYS render in canonical order: Breakfast → Lunch → Dinner → Snack → Drinks → Dessert, regardless of how/when they were added. This also fixes the old "meal reappears at bottom after re-add" bug. Fix: sort each day's meals (or the render order in renderPlanner/renderMealBlock) by a canonical meal-order index (from getDefaultMealTypes / the dishMeal select order) instead of raw day.meals array order.
+9. **Meals should always display in typical order** (Robbie) — meal sections must ALWAYS render following `currentEvent.mealTypes` order, even after a meal is removed and re-added (do NOT render in raw `day.meals` array order, which puts re-added meals at the bottom). Canonical order: Breakfast → Lunch → Dinner → Snack → Drinks → Dessert. This also fixes the old "meal reappears at bottom after re-add" bug (#13). Fix: sort each day's meals (or the render order in renderPlanner/renderMealBlock) by each meal's index in `currentEvent.mealTypes` (falling back to getDefaultMealTypes / the dishMeal select order) instead of raw day.meals array order.
 10. **Grocery dedup broken** — Smart Dedup renames items but does not merge quantities with existing matching rows. Creates false duplicate flags and split quantities. Dedup rename and quantity merge must happen together using the same key.
 
 ### CLEANUP
@@ -183,10 +204,13 @@ A1. **AI agent is clunky and ugly** — works well functionally but the UX/visua
     - Foundation options to decide during build: (A) allow authenticated read on /users via rules, or (B) maintain a readable userDirectory node written on login. This also fixes cook photos app-wide.
 20. **Admin permissions system** — admin roles, Firebase security rules. Build only after #18 is complete.
 
+21. **iOS Share Extension** (long-term roadmap, Robbie — NOT for now) — an iOS share-sheet extension to import paywalled recipes (NYT Cooking, etc.) by sharing the rendered page from Safari, where the content is already loaded and visible, bypassing the fetch/paywall problem. Future roadmap only; do not build yet.
+
 ---
 
 ## CHANGELOG
 
+- v80 — URL import hardening. (C7) shared stripJsonFences() helper applied to the two AI-parse sites that lacked it: <actions> parser and <recipe_draft> parser (URL-import parser already stripped fences). (C9) paywall handling in backgroundImportAndReview: known hard-paywall hosts (cooking.nytimes.com, nytimes.com) stop up front with "This page requires a subscription — copy the recipe text and paste it here instead."; and if Claude finds no recipe AND the page text has paywall markers, the same subscription message shows instead of the generic "no recipe." (C8) confirmed: v79's empty-page guard + no-prior-knowledge prompt already block pure fabrication; the apparent "fabrication" was paywalled pages returning >200 chars of teaser/login text — now caught by C9. No Firebase/sync/save logic touched (all changes are in the fetch/parse path before any write).
 - v79 — URL import extracts from REAL page content via Jina Reader (r.jina.ai); prompt forbids prior knowledge/invention; stops (nothing saved) if page unreadable or no recipe. Verified working (correct recipe pulled).
 - v78 — stop URL import when no page title fetched (no fabrication from empty content)
 - v77 — Microlink cache-bust (&force=true) + confirm-the-page step before parsing
@@ -279,6 +303,7 @@ A1. **AI agent is clunky and ugly** — works well functionally but the UX/visua
 - v79 URL import reads REAL page content via Jina Reader, no fabrication — VERIFIED working ✅
 
 ## NEXT SESSION — start here
-1. **Duplicate uploads (#3)** — Robbie's stated top priority. Broaden dedup + clean up existing dups + audit menuLibrary write paths.
+0. **URL IMPORT (C7/C8/C9) — fixed in v80, AWAITING LIVE VERIFICATION.** Robbie to test on the live site: (a) an NYT Cooking link → should show the subscription message, save nothing; (b) a normal free recipe link → should import as before; (c) confirm AI-agent actions / recipe-builder drafts no longer fail to parse. Also run window.runRegressionTests() (25/25) in the browser console. If a paywalled site is missed, add its host to PAYWALL_HOSTS in backgroundImportAndReview.
+1. **Duplicate uploads (#3)** — Robbie's prior top priority. Broaden dedup + clean up existing dups + audit menuLibrary write paths.
 2. Orange juice quantity bug (#10/grocery) — never got the console diagnostic; run: currentEvent.dishes.forEach(d=>(d.ingredients||[]).forEach(i=>{if(/orange juice/i.test(i.item||''))console.log(d.name,i.quantity,i.unit,'serves',d.servings,'for',d.peopleEating)})) — likely unit mismatch + scaling.
 3. Then: meals in typical order (#9), recipes reappearing after deletion (#1), cooking mode (engine ok / hasCookable bug), AI agent deeper redesign, and the big user-mgmt/permissions cluster (#18-20).

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v79
+     Meal Planner v80
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3695,10 +3695,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v79';
-var APP_BUILD_TIME='2026-05-31 14:00';
+var APP_VERSION='v80';
+var APP_BUILD_TIME='2026-06-02 12:00';
 
-var APP_VERSION_TAG='Meal Planner v79';
+var APP_VERSION_TAG='Meal Planner v80';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4186,7 +4186,7 @@ async function sendAiChat(){
     var am=!aam&&full.match(/<action>([\s\S]*?)<\/action>/);
     if(aam||am){
       try{
-        var rawJson=(aam?aam[1]:am[1]).trim();
+        var rawJson=stripJsonFences(aam?aam[1]:am[1]);
         // Clean common JSON issues: trailing commas, unquoted keys
         var cleanedJson=rawJson
           .replace(/,(\s*[}\]])/g,'$1')
@@ -4242,6 +4242,10 @@ function findDishByHint(name,day,meal){
   if(meal)candidates=candidates.filter(function(d){return(d.meal||'').toLowerCase().indexOf(meal.toLowerCase())>=0;});
   return candidates[0]||null;
 }
+
+// v80 (C7): strip markdown code fences before JSON.parse on any AI response.
+// Claude sometimes wraps JSON in ```json … ``` which breaks JSON.parse. Use everywhere AI output is parsed.
+function stripJsonFences(s){return String(s==null?'':s).replace(/```json/gi,'').replace(/```/g,'').trim();}
 
 function executeAiAction(action){
   if(!action||!action.type)return{ok:false,msg:'No action type'};
@@ -5415,7 +5419,7 @@ async function sendBuildRecipeMessage(text,input){
     var draftMatch=reply.match(/<recipe_draft>([\s\S]*?)<\/recipe_draft>/);
     var displayText=reply.replace(/<recipe_draft>[\s\S]*?<\/recipe_draft>/g,'').trim();
     thinkEl.textContent=displayText||'Let me think\u2026';
-    if(draftMatch){try{var draft=JSON.parse(draftMatch[1]);_buildingRecipe=draft;showRecipeDraftCard(draft,msgs);}catch(e){console.warn('Draft parse error:',e);}}
+    if(draftMatch){try{var draft=JSON.parse(stripJsonFences(draftMatch[1]));_buildingRecipe=draft;showRecipeDraftCard(draft,msgs);}catch(e){console.warn('Draft parse error:',e);}}
     if(msgs)msgs.scrollTop=msgs.scrollHeight;
   }catch(e){thinkEl.textContent='Error: '+(e.message||e);}
 }
@@ -5694,6 +5698,12 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
   var key=getApiKey();if(!key){showToast('Add API key in App Settings.','error');return;}
   showToast('⏳ Reading the recipe page…','');
   var source='';try{source=new URL(url).hostname.replace('www.','');}catch(e){}
+  // v80 (C9): known hard-paywall hosts return no usable recipe content — tell the user up front, never fabricate.
+  var PAYWALL_HOSTS=['cooking.nytimes.com','nytimes.com'];
+  if(PAYWALL_HOSTS.indexOf(source)>=0){
+    showToast('This page requires a subscription — copy the recipe text and paste it here instead.','error');
+    return;
+  }
   // v79 (DATA INTEGRITY): fetch the ACTUAL page content via Jina Reader so Claude extracts the real
   // recipe from the page — NOT a recipe reconstructed/fabricated from training data.
   var pageText='';
@@ -5705,6 +5715,9 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
     showToast('❌ Could not read that page (blocked, private, or unreachable). Import stopped — nothing was saved. Try a different connection, or use "Paste Full Recipe".','error');
     return;
   }
+  // v80 (C8/C9): some paywalled pages return non-empty login/teaser text (>200 chars) but no real recipe.
+  // Detect paywall markers so that if no recipe is found we show the subscription message — never fabricate.
+  var looksPaywalled=/subscrib|subscriber[- ]only|create a free account|log ?in to (save|view|continue)|this (recipe|content) is for subscribers|unlock (this )?recipe|members?[- ]only/i.test(pageText);
   // Image only (not recipe data) — fine if it fails
   var imageUrl='';
   try{var mlRes=await fetch('https://api.microlink.io/?url='+encodeURIComponent(url)+'&meta=true&force=true',{signal:AbortSignal.timeout(8000)});var mlData=await mlRes.json();if(mlData.status==='success'&&mlData.data){imageUrl=(mlData.data.image&&mlData.data.image.url)||'';}}catch(e){}
@@ -5732,8 +5745,14 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
       var cleanStr=jsonStr.replace(/,\s*([}\]])/g,'$1');
       try{recipe=JSON.parse(cleanStr);}catch(e2){recipe=JSON.parse(jsonStr);}
     }catch(e){showToast('❌ Could not parse a recipe from that page. Nothing was imported — try "Paste Full Recipe" instead.','error');console.error('Parse error:',text);return;}
-    if(recipe&&recipe.error){showToast('❌ '+(recipe.error||'No recipe found on that page')+'. Nothing was imported.','error');return;}
-    if(!recipe||!recipe.name||!(recipe.ingredients||[]).length){showToast('❌ No complete recipe found on that page. Nothing was imported.','error');return;}
+    if(recipe&&recipe.error){
+      if(looksPaywalled){showToast('This page requires a subscription — copy the recipe text and paste it here instead.','error');return;}
+      showToast('❌ '+(recipe.error||'No recipe found on that page')+'. Nothing was imported.','error');return;
+    }
+    if(!recipe||!recipe.name||!(recipe.ingredients||[]).length){
+      if(looksPaywalled){showToast('This page requires a subscription — copy the recipe text and paste it here instead.','error');return;}
+      showToast('❌ No complete recipe found on that page. Nothing was imported.','error');return;
+    }
     recipe.url=url;recipe.source=source;recipe.id=recipe.id||makeId();recipe.savedAt=getTodayStr();
     if(imageUrl)recipe.imageUrl=imageUrl;
     showRecipeReviewPanel(recipe,intendedDay,intendedMeal);

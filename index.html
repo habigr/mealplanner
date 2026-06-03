@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v80
+     Meal Planner v81
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3303,12 +3303,18 @@ function saveDishFromModal(){
       // Stamp who added it
       var u=getUser();
       if(!wasEditing){dish.addedBy=dish.addedBy||(u&&(u.name||u.initials))||'';dish.addedAt=dish.addedAt||getTodayStr();dish.savedAt=getTodayStr();}
-      // Write to global Firebase menuLibrary
-      if(db){db.ref('menuLibrary/'+dish.id).set(dish);}
-      // Also keep in trip bank for backward compat
-      if(currentEvent&&currentCode){
-        if(wasEditing){var bidx=(currentEvent.recipeBank||[]).findIndex(function(d){return String(d.id)===String(editingDishId);});if(bidx>=0)currentEvent.recipeBank[bidx]=dish;else currentEvent.recipeBank.push(dish);}
-        else currentEvent.recipeBank.push(dish);
+      // v81 (#3): on a NEW bank save, skip if an equivalent recipe already exists (prevention only — nothing deleted).
+      var dupLib=(!wasEditing)?findExistingLibraryRecipe({name:dish.name,url:dish.url,source:dish.source}):null;
+      if(dupLib){
+        showToast('"'+dish.name+'" is already in the Recipe Library — not adding a duplicate.','');
+      } else {
+        // Write to global Firebase menuLibrary
+        if(db){db.ref('menuLibrary/'+dish.id).set(dish);}
+        // Also keep in trip bank for backward compat
+        if(currentEvent&&currentCode){
+          if(wasEditing){var bidx=(currentEvent.recipeBank||[]).findIndex(function(d){return String(d.id)===String(editingDishId);});if(bidx>=0)currentEvent.recipeBank[bidx]=dish;else currentEvent.recipeBank.push(dish);}
+          else currentEvent.recipeBank.push(dish);
+        }
       }
       window._tempLibraryMode=false;
     }
@@ -3695,10 +3701,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v80';
-var APP_BUILD_TIME='2026-06-02 12:00';
+var APP_VERSION='v81';
+var APP_BUILD_TIME='2026-06-03 12:00';
 
-var APP_VERSION_TAG='Meal Planner v80';
+var APP_VERSION_TAG='Meal Planner v81';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5093,11 +5099,28 @@ function rateRecipe(id,stars){
   showToast('Rating saved!','success');
 }
 
+// v81 (#3 duplicate uploads): single source of truth for "is this recipe already in the library?".
+// Match = same normalized URL, OR same name AND same source. Conservative (name+source); prevention only — never deletes.
+function normLibUrl(u){return String(u||'').split('?')[0].replace(/\/+$/,'').toLowerCase().trim();}
+function findExistingLibraryRecipe(recipe,excludeId){
+  if(!recipe||!_menuLibrary||!_menuLibrary.length)return null;
+  var url=normLibUrl(recipe.url);
+  var name=String(recipe.name||'').trim().toLowerCase();
+  var source=String(recipe.source||'').trim().toLowerCase();
+  if(!url&&!name)return null;
+  return _menuLibrary.find(function(r){
+    if(excludeId&&r.id===excludeId)return false;
+    if(url&&normLibUrl(r.url)===url)return true;
+    if(name&&String(r.name||'').trim().toLowerCase()===name&&String(r.source||'').trim().toLowerCase()===source)return true;
+    return false;
+  })||null;
+}
+
 /* ===== DISH STATUS & ASSIGNMENT ===== */
 function saveDishToLibrary(id){
   var dish=currentEvent.dishes.find(function(d){return d.id===id;});if(!dish)return;
-  var exists=_menuLibrary.some(function(r){return r.name.toLowerCase()===dish.name.toLowerCase();});
-  if(exists){showToast('"'+dish.name+'" is already in the Recipe Library.','');return;}
+  var dup=findExistingLibraryRecipe({name:dish.name,url:dish.url,source:dish.source});
+  if(dup){showToast('"'+dish.name+'" is already in the Recipe Library.','');return;}
   var u=getUser();
   var recipe=normalizeDish(JSON.parse(JSON.stringify(dish)));
   recipe.id=makeId();recipe.addedBy=(u&&(u.name||u.initials))||'';recipe.addedAt=getTodayStr();recipe.savedAt=getTodayStr();recipe.timesUsed=0;recipe.lastUsed='';
@@ -5457,6 +5480,8 @@ function executeAddBankRecipe(a){
   if(!a.name)return{ok:false,msg:'Recipe name required'};
   var user=getUser();
   var recipe=normalizeDish({id:makeId(),name:a.name,url:a.url||'',source:a.source||extractSource(a.url),servings:String(a.servings||''),peopleEating:'',notes:a.notes||'',isVegetarian:!!a.isVegetarian,steps:Array.isArray(a.steps)?a.steps:[],ingredients:(a.ingredients||[]).map(function(line){var p=parseIngLine(String(line));return{quantity:p.quantity,displayedQuantity:p.quantity,unit:p.unit,item:p.item||String(line)};}),tags:Array.isArray(a.tags)?a.tags:[],timesUsed:0,lastUsed:'',savedAt:getTodayStr(),addedBy:(user&&(user.name||user.initials))||'AI',addedAt:getTodayStr(),cookTime:a.cookTime||'',rating:0});
+  var dup=findExistingLibraryRecipe(recipe); // v81 (#3): reuse existing instead of creating a duplicate
+  if(dup){setTimeout(function(){showAddToTripPrompt(dup);},400);return{ok:true,msg:'"'+dup.name+'" is already in your library — use the prompt below to add it to the plan.'};}
   if(db){db.ref('menuLibrary/'+recipe.id).set(recipe);}
   else if(currentEvent){currentEvent.recipeBank=currentEvent.recipeBank||[];currentEvent.recipeBank.push(recipe);commitAndSync();}
   // Show Add to Trip? prompt after a short delay
@@ -5682,6 +5707,8 @@ function saveImportedToLibrary(){
   if(!name){showToast('Add a name first.','error');return;}
   var u=getUser();
   var recipe=normalizeDish({id:makeId(),name:name,url:getValue('dishUrl').trim(),source:'',servings:getValue('servings').trim(),notes:getValue('dishNotes').trim(),isVegetarian:safeEl('isVegetarianCheck')?safeEl('isVegetarianCheck').checked:false,ingredients:collectIngredients(),steps:[],tags:[],addedBy:(u&&(u.name||u.initials))||'',addedAt:getTodayStr(),savedAt:getTodayStr(),timesUsed:0,lastUsed:'',rating:0});
+  var dup=findExistingLibraryRecipe(recipe); // v81 (#3): don't create a duplicate
+  if(dup){showToast('"'+name+'" is already in the Recipe Library.','');return;}
   if(db){db.ref('menuLibrary/'+recipe.id).set(recipe);showToast('"'+name+'" saved to Recipe Library.','success');}
 }
 
@@ -5797,21 +5824,28 @@ function confirmRecipeImport(){
   var el=document.getElementById('recipeReviewPanel');if(el)el.remove();
   if(!recipe)return;
   recipe=normalizeDish(recipe);
-  // Always save to Recipe Library first
-  if(db){
-    db.ref('menuLibrary/'+recipe.id).set(recipe).then(function(){
-      // Optimistic update - add to local cache immediately
-      if(!_menuLibrary.find(function(r){return r.id===recipe.id;})){
-        _menuLibrary.unshift(recipe);
-      }
-      renderMenuLibraryOverlay();renderRecipeBank();
-    }).catch(function(){showToast('❌ Failed to save to library — check connection.','error');});
+  // v81 (#3): if an equivalent recipe is already in the library, reuse it instead of creating a duplicate.
+  var dupLib=findExistingLibraryRecipe(recipe,recipe.id);
+  if(dupLib){
+    recipe=dupLib;window._pendingImportRecipe=recipe;
+    showToast('"'+recipe.name+'" is already in your library — not adding a duplicate.','');
   } else {
-    // Offline: add to local cache only
-    if(!_menuLibrary.find(function(r){return r.id===recipe.id;}))_menuLibrary.unshift(recipe);
-    renderMenuLibraryOverlay();renderRecipeBank();
+    // Always save to Recipe Library first
+    if(db){
+      db.ref('menuLibrary/'+recipe.id).set(recipe).then(function(){
+        // Optimistic update - add to local cache immediately
+        if(!_menuLibrary.find(function(r){return r.id===recipe.id;})){
+          _menuLibrary.unshift(recipe);
+        }
+        renderMenuLibraryOverlay();renderRecipeBank();
+      }).catch(function(){showToast('❌ Failed to save to library — check connection.','error');});
+    } else {
+      // Offline: add to local cache only
+      if(!_menuLibrary.find(function(r){return r.id===recipe.id;}))_menuLibrary.unshift(recipe);
+      renderMenuLibraryOverlay();renderRecipeBank();
+    }
+    showToast('✓ "'+recipe.name+'" saved — '+(recipe.ingredients||[]).length+' ingredients, '+(recipe.steps||[]).length+' steps.','success');
   }
-  showToast('✓ "'+recipe.name+'" saved — '+(recipe.ingredients||[]).length+' ingredients, '+(recipe.steps||[]).length+' steps.','success');
   // If dish modal is open, pre-fill it with the imported recipe so user can review/edit
   var modal=safeEl('dishModal');
   if(modal&&modal.classList.contains('active')){
@@ -6179,7 +6213,10 @@ function addDishToTripInBackground(recipe,tripCode,dayId,meal){
   var libRecipe=normalizeDish(JSON.parse(JSON.stringify(recipe)));
   if(!libRecipe.id)libRecipe.id=makeId();
   libRecipe.savedAt=libRecipe.savedAt||getTodayStr();
-  db.ref('menuLibrary/'+libRecipe.id).set(libRecipe);
+  // v81 (#3): don't create a duplicate library entry — reuse the existing one if present.
+  var dupLib=findExistingLibraryRecipe(libRecipe,libRecipe.id);
+  if(dupLib){libRecipe=dupLib;}
+  else{db.ref('menuLibrary/'+libRecipe.id).set(libRecipe);}
   // Add dish to trip
   var u=getUser();
   var dish=normalizeDish({id:makeId(),dayId:dayId,meal:meal,name:recipe.name||'',url:recipe.url||'',servings:recipe.servings||'',peopleEating:'',notes:recipe.notes||'',isVegetarian:!!recipe.isVegetarian,ingredients:(recipe.ingredients||[]),steps:(recipe.steps||[]),isEvent:false,bankRecipeId:libRecipe.id,addedBy:(u&&(u.name||u.initials))||''});

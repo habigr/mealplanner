@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v91
+     Meal Planner v92
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1843,6 +1843,20 @@ body.planner-edit-mode .dish-title{margin-bottom:4px;}
       <div class="small-note" style="margin-top:12px;">Get a key at <strong>console.anthropic.com</strong> → API Keys. Costs fractions of a cent per recipe parse.</div>
     </div>
     <div class="admin-card">
+      <h3>Recipe Image Key (Spoonacular)</h3>
+      <p class="card-desc">Auto-finds a photo for recipes that have none. The recipe's own URL photo is always preferred; this key is the fallback to find a similar dish online. Stored on this device only — found images save to Firebase so all devices see them.</p>
+      <div class="field" style="margin-bottom:10px;">
+        <label for="imageApiKeyInput">Image API Key</label>
+        <input id="imageApiKeyInput" type="password" placeholder="Spoonacular API key…" autocomplete="off" spellcheck="false" style="font-family:monospace;font-size:13px;width:100%;" />
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" onclick="saveImageApiKey()">Save</button>
+        <button type="button" class="secondary" onclick="clearImageApiKey()">Clear</button>
+        <button type="button" class="secondary" onclick="backfillMissingImages()">Backfill missing images</button>
+      </div>
+      <div class="small-note" style="margin-top:12px;">Free key at <strong>spoonacular.com/food-api</strong>. "Backfill" fills up to 25 image-less recipes at a time (paced to protect your quota).</div>
+    </div>
+    <div class="admin-card">
       <h3>AI Features</h3><p class="card-desc">Features that use your API key.</p>
       <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid var(--border-light);border-radius:var(--r-sm);margin-bottom:6px;">
         <span style="font-size:18px;">✦</span>
@@ -2389,6 +2403,12 @@ function renderAuditLog(){
 /* ===== API KEY ===== */
 var _apiKeyCache='';
 function getApiKey(){return localStorage.getItem(API_KEY_STORAGE)||_apiKeyCache||'';}
+// v92 (#5): image-search API key (Spoonacular). Stored on this device only — once images are found they persist to
+// Firebase (menuLibrary/{id}/imageUrl), so every device sees them and only one device needs the key.
+var IMG_API_KEY_STORAGE='mealPlanner.imageApiKey';
+function getImageApiKey(){try{return localStorage.getItem(IMG_API_KEY_STORAGE)||'';}catch(e){return '';}}
+function saveImageApiKey(){var v=getValue('imageApiKeyInput').trim();if(!v){showToast('Paste your image API key first.','error');return;}localStorage.setItem(IMG_API_KEY_STORAGE,v);showToast('Image API key saved on this device.','success');}
+function clearImageApiKey(){localStorage.removeItem(IMG_API_KEY_STORAGE);setValue('imageApiKeyInput','');showToast('Image API key cleared.','');}
 function saveApiKey(){
   var v=getValue('apiKeyInput').trim();
   if(!v){showToast('Paste your API key first.','error');return;}
@@ -3322,6 +3342,12 @@ function saveDishFromModal(){
         }
       }
       window._tempLibraryMode=false;
+      // v92 (#5): fill/refresh the recipe image. URL photo is preferred; if a URL was just added, force-update from it.
+      if(!dupLib&&dish.id&&db){
+        var _prevLib=(_menuLibrary||[]).find(function(x){return x.id===dish.id;})||((currentEvent&&currentEvent.recipeBank)||[]).find(function(x){return x.id===dish.id;});
+        var _urlAdded=!!(dish.url&&_prevLib&&typeof normLibUrl==='function'&&normLibUrl(_prevLib.url)!==normLibUrl(dish.url));
+        sourceRecipeImage(dish,{fromLibrary:true,force:_urlAdded});
+      }
     }
     else if(wasEditing){
       var idx=currentEvent.dishes.findIndex(function(d){return String(d.id)===String(editingDishId);});
@@ -3706,10 +3732,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v91';
-var APP_BUILD_TIME='2026-06-04 21:00';
+var APP_VERSION='v92';
+var APP_BUILD_TIME='2026-06-04 22:00';
 
-var APP_VERSION_TAG='Meal Planner v91';
+var APP_VERSION_TAG='Meal Planner v92';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4721,7 +4747,7 @@ function saveMealTypes(){
 }
 
 function saveStoresDepartments(){var stores=getValue('adminStores').split('\n').map(function(s){return s.trim();}).filter(Boolean),depts=getValue('adminDepartments').split('\n').map(function(d){return d.trim();}).filter(Boolean);if(!stores.length){showToast('Add at least one store.','error');return;}if(!depts.length){showToast('Add at least one department.','error');return;}currentEvent.stores=stores;currentEvent.departments=depts;if(currentEvent.activeStores)currentEvent.activeStores=currentEvent.activeStores.filter(function(s){return stores.indexOf(s)>=0;});populateGroceryFilters();renderStoreRules();renderActiveStoresList();autosave();showToast('Saved.','success');}
-function syncAdminInputs(){var ev=currentEvent||{};setValue('adminStores',(ev.stores||getDefaultStores()).join('\n'));setValue('adminDepartments',(ev.departments||getDefaultDepts()).join('\n'));setValue('adminMealTypes',(ev.mealTypes||['Breakfast','Lunch','Dinner']).join('\n'));renderDarkModeButton();}
+function syncAdminInputs(){var ev=currentEvent||{};setValue('adminStores',(ev.stores||getDefaultStores()).join('\n'));setValue('adminDepartments',(ev.departments||getDefaultDepts()).join('\n'));setValue('adminMealTypes',(ev.mealTypes||['Breakfast','Lunch','Dinner']).join('\n'));var ik=safeEl('imageApiKeyInput');if(ik)ik.value=getImageApiKey();renderDarkModeButton();}
 function switchAppAdminTab(tab){appAdminLastTab=tab;document.querySelectorAll('.app-admin-tab').forEach(function(b){b.classList.toggle('active',b.dataset.adminTab===tab);});document.querySelectorAll('.app-admin-tab-panel').forEach(function(p){p.classList.remove('active');});var panel=safeEl('adminTab'+tab.charAt(0).toUpperCase()+tab.slice(1));if(panel)panel.classList.add('active');if(tab==='themes'){themeAdminTab=(currentEvent&&currentEvent.theme)||'larchmont';document.querySelectorAll('.theme-inner-tab').forEach(function(b){b.classList.toggle('active',b.dataset.themeTab===themeAdminTab);});renderThemeGallery();var t=safeEl('themePreviewTitle');if(t)t.textContent=(currentEvent&&currentEvent.name)||themeDisplayName(themeAdminTab);}if(tab==='ai'){renderApiKeyStatus();}if(tab==='data'){renderAdminTripDataList();}if(tab==='about'){var av=safeEl('aboutVersion');if(av)av.textContent=APP_VERSION;var at=safeEl('aboutBuildTime');if(at)at.textContent=APP_BUILD_TIME;}}
 function toggleAppAdmin(open){var panel=safeEl('appAdminPanel'),bd=safeEl('appAdminBackdrop');if(!panel||!bd)return;var s=typeof open==='undefined'?!panel.classList.contains('active'):open;if(s){syncAdminInputs();renderStoreRules();switchAppAdminTab(appAdminLastTab);}panel.classList.toggle('active',s);bd.classList.toggle('active',s);}
 function toggleAdminPanel(open){var drawer=safeEl('adminDrawer'),bd=safeEl('adminBackdrop');if(!drawer||!bd)return;var s=typeof open==='undefined'?!drawer.classList.contains('active'):open;if(s&&!currentEvent){showToast('Load a trip first.','error');return;}drawer.classList.toggle('active',s);bd.classList.toggle('active',s&&!document.body.classList.contains('mobile-setup-mode'));if(!s)document.body.classList.remove('mobile-setup-mode');}
@@ -4818,6 +4844,53 @@ function toggleRecipeSteps(id,btn){
 // This DROPS data: URLs — uploaded screenshots must never be used as the recipe image — and never borrows
 // another recipe's photo. Online image sourcing (recipe URL first, then a similar dish online) is separate.
 function _displayImageUrl(recipe){var u=recipe&&recipe.imageUrl;return (u&&/^https?:\/\//i.test(String(u)))?u:'';}
+// v92 (#5): source a real image for a LIBRARY recipe that has none. Order: the recipe URL's own photo (Microlink),
+// else a similar dish via Spoonacular (needs image API key). Persists to menuLibrary/{id}/imageUrl once found
+// (targeted write, like v75 backfill). Only persists for library recipes — never writes a bogus entry for a plan dish id.
+var _imageFetchAttempted={};
+async function sourceRecipeImage(recipe,opts){
+  opts=opts||{};
+  if(!recipe||!recipe.id)return '';
+  if(!opts.force&&_displayImageUrl(recipe))return recipe.imageUrl;       // already has a real image
+  if(!opts.force&&_imageFetchAttempted[recipe.id])return '';             // don't retry same recipe this session
+  _imageFetchAttempted[recipe.id]=true;
+  var found='';
+  // 1) the recipe URL's own photo — preferred, it's the actual dish
+  if(recipe.url){
+    try{var mr=await fetch('https://api.microlink.io/?url='+encodeURIComponent(recipe.url)+'&meta=true',{signal:AbortSignal.timeout(8000)});var md=await mr.json();if(md&&md.status==='success'&&md.data&&md.data.image&&md.data.image.url)found=md.data.image.url;}catch(e){}
+  }
+  // 2) else a similar dish online (Spoonacular — recipe-specific photos)
+  if(!found){
+    var key=getImageApiKey();
+    if(key&&recipe.name){
+      try{var sr=await fetch('https://api.spoonacular.com/recipes/complexSearch?query='+encodeURIComponent(recipe.name)+'&number=1&apiKey='+encodeURIComponent(key),{signal:AbortSignal.timeout(8000)});var sd=await sr.json();if(sd&&sd.results&&sd.results[0]&&sd.results[0].image)found=sd.results[0].image;}catch(e){}
+    }
+  }
+  if(found&&/^https?:\/\//i.test(found)){
+    recipe.imageUrl=found;
+    var isLib=opts.fromLibrary||(_menuLibrary||[]).some(function(x){return x.id===recipe.id;});
+    if(db&&opts.persist!==false&&isLib){try{db.ref('menuLibrary/'+recipe.id+'/imageUrl').set(found);}catch(e){}}
+    return found;
+  }
+  return '';
+}
+// Console tool: fill images for library recipes that have none. Throttled to protect the API quota. backfillMissingImages()
+window.backfillMissingImages=async function(opts){
+  opts=opts||{};var cap=opts.max||25;
+  if(!_menuLibrary||!_menuLibrary.length){console.warn('[imgBackfill] Library not loaded — open the Recipe Library first.');return;}
+  var targets=_menuLibrary.filter(function(r){return r.id&&!_displayImageUrl(r)&&!_imageFetchAttempted[r.id];}).slice(0,cap);
+  if(!targets.length){console.log('[imgBackfill] No recipes need an image (or already attempted this session).');return;}
+  console.log('[imgBackfill] Sourcing images for '+targets.length+' recipe(s)…');
+  var n=0;
+  for(var i=0;i<targets.length;i++){
+    var got=await sourceRecipeImage(targets[i],{fromLibrary:true});
+    if(got)n++;
+    await new Promise(function(rs){setTimeout(rs,1200);}); // pace API + writes
+  }
+  if(typeof renderMenuLibraryOverlay==='function')renderMenuLibraryOverlay();
+  if(typeof renderRecipeBank==='function')renderRecipeBank();
+  console.log('[imgBackfill] Done — found '+n+'/'+targets.length+'.');
+};
 function renderRecipeCard(r){
   var hasSteps=(r.steps&&r.steps.length>0);
   var usageTxt=r.timesUsed>0?'Used '+r.timesUsed+'× · last '+r.lastUsed:'Not used yet';
@@ -5605,6 +5678,8 @@ function showRecipeDetail(id){
   fh+='<button class="secondary" onclick="cookRecipe(\''+escAttr(id)+'\')" '+(hasSteps?'':'disabled title="Add steps first"')+'>👨‍🍳</button>';
   footer.innerHTML=fh;
   overlay.classList.add('visible');haptic(8);
+  // v92 (#5): if this recipe has no image, source one (URL photo first, else similar dish) and refresh when found.
+  if(!_displayImageUrl(r)){sourceRecipeImage(r,{fromLibrary:true}).then(function(u){if(u&&_recipeDetailId===id)showRecipeDetail(id);});}
 }
 function closeRecipeDetail(){var o=safeEl('recipeDetailOverlay');if(o)o.classList.remove('visible');_recipeDetailId=null;_dishDetailId=null;}
 function recipeDetailEdit(){if(!_recipeDetailId)return;editDish(_recipeDetailId);}
@@ -5913,7 +5988,8 @@ async function extractRecipeFromPhotos(){
   }catch(e){setPhotoStatus('Import failed: '+(e.message||e),'error');}
 }
 // Core (shared by Photo tab AND the AI bot, v89): send N image data URLs to Claude vision, extract ONE recipe,
-// strict no-fabrication contract, then the existing review panel. First image becomes the recipe photo.
+// strict no-fabrication contract, then the existing review panel. v91: the uploaded photo is NOT used as the recipe
+// image; the image is sourced from the recipe URL or a similar dish online (sourceRecipeImage) instead.
 async function _extractRecipeFromImages(dataUrls,opts){
   opts=opts||{};var status=opts.statusFn||function(){};
   dataUrls=(dataUrls||[]).filter(Boolean);
@@ -6022,6 +6098,8 @@ function confirmRecipeImport(){
       renderMenuLibraryOverlay();renderRecipeBank();
     }
     showToast('✓ "'+recipe.name+'" saved — '+(recipe.ingredients||[]).length+' ingredients, '+(recipe.steps||[]).length+' steps.','success');
+    // v92 (#5): if the imported recipe has no image (e.g. a photo import), source one (URL photo / similar dish online).
+    if(!_displayImageUrl(recipe))sourceRecipeImage(recipe,{fromLibrary:true}).then(function(u){if(u){renderMenuLibraryOverlay();renderRecipeBank();}});
   }
   // If dish modal is open, pre-fill it with the imported recipe so user can review/edit
   var modal=safeEl('dishModal');

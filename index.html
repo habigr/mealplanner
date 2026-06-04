@@ -6512,12 +6512,23 @@ function resolvePersonProfile(name){
 /* ===== MENU LIBRARY (global, shared across all trips) ===== */
 var _menuLibrary=[],_menuLibraryLoaded=false;
 
+// BRANCH (#1): echo guard — Firebase sometimes re-sends a deleted recipe in a stale 'value' snapshot,
+// resurrecting it in the library. Track locally-deleted ids for a TTL and suppress them from incoming snapshots.
+var _recentlyDeletedRecipeIds={};
+var _RECIPE_DELETE_TTL_MS=30000;
+function _isRecentlyDeletedRecipe(id){
+  if(!id)return false;
+  var t=_recentlyDeletedRecipeIds[id];
+  if(!t)return false;
+  if(Date.now()-t>_RECIPE_DELETE_TTL_MS){delete _recentlyDeletedRecipeIds[id];return false;}
+  return true;
+}
 function subscribeToMenuLibrary(){
   if(!db)return;
   db.ref('menuLibrary').off();
   db.ref('menuLibrary').on('value',function(snap){
     var data=snap.val()||{};
-    _menuLibrary=Object.values(data).filter(Boolean).map(normalizeDish).sort(function(a,b){return(b.savedAt||'').localeCompare(a.savedAt||'');});
+    _menuLibrary=Object.values(data).filter(Boolean).filter(function(r){return !_isRecentlyDeletedRecipe(r&&r.id);}).map(normalizeDish).sort(function(a,b){return(b.savedAt||'').localeCompare(a.savedAt||'');});
     _menuLibraryLoaded=true;
     renderRecipeBank();
     renderMenuLibraryOverlay();
@@ -6542,6 +6553,8 @@ function saveToMenuLibrary(recipe){
 
 function deleteFromMenuLibrary(id){
   if(!db)return;
+  _recentlyDeletedRecipeIds[id]=Date.now(); // BRANCH (#1): mark so the echo snapshot can't resurrect it
+  _menuLibrary=(_menuLibrary||[]).filter(function(r){return r.id!==id;}); // remove locally now so UI is immediate
   db.ref('menuLibrary/'+id).remove();
 }
 

@@ -3612,6 +3612,31 @@ function buildGroceryList(){
   if(!rows.length){if(shoppingMode)shopOut.innerHTML=emptyHtml;else tableOut.innerHTML=emptyHtml;return;}
   if(shoppingMode)renderShoppingList(shopOut,rows);else renderGroceryTable(tableOut,rows);
 }
+// BRANCH (#10 diagnostic): NON-DESTRUCTIVE. Reports how a grocery item aggregates across dishes —
+// scaled qty/unit + the exact merge key normKey() produces — to pinpoint split-quantity / no-merge bugs
+// (e.g. orange juice). If the same item yields >1 merge key, that's the root cause. Never writes anything.
+// Usage in console: diagGroceryItem('orange juice')
+window.diagGroceryItem=function(needle){
+  needle=String(needle||'').toLowerCase();
+  if(!currentEvent){console.warn('[diag] No trip open.');return;}
+  var rows=[];
+  (currentEvent.dishes||[]).forEach(function(d){
+    if(d.isEvent)return;
+    var scale=(typeof getDishScale==='function')?getDishScale(d):1;
+    (d.ingredients||[]).forEach(function(i){
+      if(String(i.item||'').toLowerCase().indexOf(needle)<0)return;
+      var item=(typeof toTitleCaseIngredient==='function')?toTitleCaseIngredient((i.item||'').trim().replace(/^\d+[\s.\/]+/,'')):(i.item||'');
+      var key=(typeof normKey==='function')?normKey(item,(i.unit||'').trim()):'';
+      rows.push({dish:d.name,raw:i.item,qty:i.quantity,unit:i.unit,scale:scale,scaledQty:(typeof scaleQty==='function')?scaleQty(i.quantity,scale):i.quantity,serves:d.servings,eating:d.peopleEating,mergeItem:item,mergeKey:key});
+    });
+  });
+  if(!rows.length){console.log('[diag] No ingredient matching "'+needle+'".');return;}
+  if(console.table)console.table(rows);else console.log(rows);
+  var byKey={};rows.forEach(function(r){(byKey[r.mergeKey]=byKey[r.mergeKey]||[]).push(r);});
+  console.log('[diag] distinct merge keys for "'+needle+'":',Object.keys(byKey).length,'(if >1, that is why the quantity splits)');
+  Object.keys(byKey).forEach(function(k){console.log('   key',k,'→',byKey[k].map(function(r){return (r.scaledQty||'?')+' '+(r.unit||'');}).join('  +  '));});
+  return rows;
+};
 function launchConfetti(){var c=document.createElement('canvas');c.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999;';document.body.appendChild(c);var ctx=c.getContext('2d');c.width=window.innerWidth;c.height=window.innerHeight;var cols=['#22c55e','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899'];var ps=Array.from({length:90},function(){return{x:Math.random()*c.width,y:-10,vx:(Math.random()-.5)*7,vy:Math.random()*4+2,col:cols[Math.floor(Math.random()*cols.length)],sz:Math.random()*7+4,rot:Math.random()*360,rs:(Math.random()-.5)*12};});var f=0;function draw(){ctx.clearRect(0,0,c.width,c.height);ps.forEach(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.rot+=p.rs;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.col;ctx.fillRect(-p.sz/2,-p.sz/2,p.sz,p.sz*.6);ctx.restore();});f++;if(f<110)requestAnimationFrame(draw);else c.remove();}draw();}
 function updateGroceryProgress(rows){
   var el=safeEl('groceryProgress');if(!el)return;

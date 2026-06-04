@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v85
+     Meal Planner v86
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3704,10 +3704,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v85';
-var APP_BUILD_TIME='2026-06-04 15:00';
+var APP_VERSION='v86';
+var APP_BUILD_TIME='2026-06-04 16:00';
 
-var APP_VERSION_TAG='Meal Planner v85';
+var APP_VERSION_TAG='Meal Planner v86';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4740,6 +4740,8 @@ async function deleteTripEverywhere(code){if(!await confirmAction({title:'Delete
 var _recipeFilter='all';
 var _recipeSort='recent';
 var _recipeView='grid';
+var _recipeGroupBy='none'; // v86 (#16): library group-by — none | owner | date
+function setRecipeGroupBy(mode){_recipeGroupBy=(mode==='owner'||mode==='date')?mode:'none';renderMenuLibraryOverlay();}
 var _recipeOwnerFilter='';
 
 var RECIPE_CATEGORY_MAP={
@@ -6398,8 +6400,33 @@ function renderMenuLibraryOverlay(){
       ownerWrap.innerHTML='<select id="libraryOwnerSelect" style="width:100%;font-size:13px;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--panel);margin-bottom:8px;" onchange="setRecipeOwnerFilter(this.value);renderMenuLibraryOverlay()"><option value="">All chefs</option>'+allOwners.map(function(o){return'<option value="'+escAttr(o)+'"'+(_recipeOwnerFilter===o?' selected':'')+'>'+escHtml(o)+'</option>';}).join('')+'</select>';
     }else{ownerWrap.style.display='none';}
   }
-  if(!recipes.length){el.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--muted);">'+((!_menuLibraryLoaded)?'Loading…':'No recipes match.')+'</div>';return;}
-  el.innerHTML='<div class="recipe-bank-grid-v2">'+recipes.map(renderRecipeCard).join('')+'</div>';
+  // v86 (#16): group-by toggle (All / By chef / Recently added). Render-only.
+  var gbModes=[['none','All'],['owner','By chef'],['date','Recently added']];
+  var gbBar='<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">'+gbModes.map(function(m){
+    var on=_recipeGroupBy===m[0];
+    return'<button onclick="setRecipeGroupBy(\''+m[0]+'\')" style="font-size:11px;font-weight:700;padding:5px 11px;border-radius:999px;cursor:pointer;border:1.5px solid '+(on?'var(--theme-accent)':'var(--border)')+';background:'+(on?'var(--theme-accent)':'transparent')+';color:'+(on?'#fff':'var(--muted)')+';">'+escHtml(m[1])+'</button>';
+  }).join('')+'</div>';
+  if(!recipes.length){el.innerHTML=gbBar+'<div style="text-align:center;padding:40px 20px;color:var(--muted);">'+((!_menuLibraryLoaded)?'Loading…':'No recipes match.')+'</div>';return;}
+  if(_recipeGroupBy==='none'){
+    el.innerHTML=gbBar+'<div class="recipe-bank-grid-v2">'+recipes.map(renderRecipeCard).join('')+'</div>';
+    return;
+  }
+  var groups={},order=[];
+  recipes.forEach(function(r){
+    var key=(_recipeGroupBy==='owner')?(r.owner||r.addedBy||'Unknown chef'):((r.savedAt||r.addedAt||'').slice(0,7)||'Undated');
+    if(!groups[key]){groups[key]=[];order.push(key);}
+    groups[key].push(r);
+  });
+  if(_recipeGroupBy==='date')order.sort().reverse();else order.sort(function(a,b){return String(a).localeCompare(String(b));});
+  function gbLabel(k){
+    if(_recipeGroupBy!=='date')return k;
+    if(k==='Undated')return k;
+    var p=String(k).split('-');var mo=['','January','February','March','April','May','June','July','August','September','October','November','December'][parseInt(p[1],10)]||'';
+    return (mo?mo+' ':'')+(p[0]||'');
+  }
+  el.innerHTML=gbBar+order.map(function(k){
+    return'<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 8px;">'+escHtml(gbLabel(k))+' <span style="font-weight:600;opacity:.7;">('+groups[k].length+')</span></div><div class="recipe-bank-grid-v2">'+groups[k].map(renderRecipeCard).join('')+'</div>';
+  }).join('');
 }
 
 /* ===== UID-TRIP LINKAGE ===== */

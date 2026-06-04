@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v90
+     Meal Planner v91
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3706,10 +3706,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v90';
-var APP_BUILD_TIME='2026-06-04 20:00';
+var APP_VERSION='v91';
+var APP_BUILD_TIME='2026-06-04 21:00';
 
-var APP_VERSION_TAG='Meal Planner v90';
+var APP_VERSION_TAG='Meal Planner v91';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4814,22 +4814,10 @@ function toggleRecipeSteps(id,btn){
   if(btn)btn.textContent=show?'▾ Steps':'▸ Steps';
 }
 
-// v90 (#5): when a recipe has no image of its own, borrow a sensible one from another library recipe whose
-// name shares a significant word (e.g. a chicken dish with no photo borrows another chicken recipe's photo).
-// RENDER-TIME ONLY — never writes to Firebase, so nothing wrong is ever persisted and it's trivially reversible.
-function _fallbackRecipeImage(recipe){
-  if(!recipe||!_menuLibrary||!_menuLibrary.length)return '';
-  var name=String(recipe.name||'').toLowerCase();if(!name)return '';
-  var words=name.split(/[^a-z]+/).filter(function(w){return w.length>3;});
-  if(!words.length)return '';
-  for(var i=0;i<_menuLibrary.length;i++){
-    var r=_menuLibrary[i];
-    if(!r||!r.imageUrl||r.id===recipe.id)continue;
-    var rn=String(r.name||'').toLowerCase();
-    for(var j=0;j<words.length;j++){if(rn.indexOf(words[j])>=0)return r.imageUrl;}
-  }
-  return '';
-}
+// v91 (#5 revised, Robbie): only show a recipe's OWN image and only when it's a real web URL (http/https).
+// This DROPS data: URLs — uploaded screenshots must never be used as the recipe image — and never borrows
+// another recipe's photo. Online image sourcing (recipe URL first, then a similar dish online) is separate.
+function _displayImageUrl(recipe){var u=recipe&&recipe.imageUrl;return (u&&/^https?:\/\//i.test(String(u)))?u:'';}
 function renderRecipeCard(r){
   var hasSteps=(r.steps&&r.steps.length>0);
   var usageTxt=r.timesUsed>0?'Used '+r.timesUsed+'× · last '+r.lastUsed:'Not used yet';
@@ -4842,7 +4830,7 @@ function renderRecipeCard(r){
   var ownerUser=ownerName?getKnownUserByName(ownerName):null;
   var ownerAvatarHtml=ownerUser?renderAvatarFromProfile(ownerUser,18,'margin-right:4px;vertical-align:middle;'):'';
   var ownerHtml=ownerName?'<div class="recipe-owner-line" title="Owner: '+escAttr(ownerName)+'">'+ownerAvatarHtml+'<span style="font-size:11px;color:var(--muted);">'+escHtml(ownerName)+'</span></div>':'';
-  var imgUrl=r.imageUrl||_fallbackRecipeImage(r); // v90 (#5): borrow a sensible image when this recipe has none
+  var imgUrl=_displayImageUrl(r); // v91 (#5): own real-URL image only; no screenshots, no borrowing
   var hasImg=!!imgUrl;
   var imgHtml=hasImg
     ?'<div class="recipe-card-img"><img src="'+escAttr(imgUrl)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="recipeCardImgFail(this)"></div>'
@@ -5572,7 +5560,7 @@ function showRecipeDetail(id){
   if(!overlay||!body||!footer)return;
   if(ht)ht.textContent=r.name||'';
   var html='';
-  var heroUrl=r.imageUrl||_fallbackRecipeImage(r); // v90 (#5)
+  var heroUrl=_displayImageUrl(r); // v91 (#5): own real-URL image only
   if(heroUrl)html+='<div class="recipe-detail-hero"><img src="'+escAttr(heroUrl)+'" alt="'+escAttr(r.name||'')+'" referrerpolicy="no-referrer" onerror="recipeHeroImgFail(this)"></div>';
   else html+='<div class="recipe-detail-accent"></div>';
   html+='<div class="recipe-detail-info">';
@@ -5682,9 +5670,8 @@ function showDishDetail(id){
   if(ht)ht.textContent=title;
   var html='';
   if(!d.isEvent){
-    var imgUrl=d.imageUrl||'';
-    if(!imgUrl){var lib=null;if(d.bankRecipeId)lib=_menuLibrary.find(function(r){return r.id===d.bankRecipeId;});if(!lib&&d.name)lib=_menuLibrary.find(function(r){return (r.name||'').toLowerCase()===(d.name||'').toLowerCase();});if(!lib&&d.url)lib=_menuLibrary.find(function(r){return r.url&&r.url===d.url;});if(lib)imgUrl=lib.imageUrl||'';}
-    if(!imgUrl)imgUrl=_fallbackRecipeImage(d); // v90 (#5): last-resort borrow a sensible image
+    var imgUrl=_displayImageUrl(d); // v91 (#5): real-URL only, no screenshots
+    if(!imgUrl){var lib=null;if(d.bankRecipeId)lib=_menuLibrary.find(function(r){return r.id===d.bankRecipeId;});if(!lib&&d.name)lib=_menuLibrary.find(function(r){return (r.name||'').toLowerCase()===(d.name||'').toLowerCase();});if(!lib&&d.url)lib=_menuLibrary.find(function(r){return r.url&&r.url===d.url;});if(lib)imgUrl=_displayImageUrl(lib);}
     html+=imgUrl?'<div class="recipe-detail-hero"><img src="'+escAttr(imgUrl)+'" alt="'+escAttr(title)+'" referrerpolicy="no-referrer" onerror="recipeHeroImgFail(this)"></div>':'<div class="recipe-detail-accent"></div>';
   }else{html+='<div class="recipe-detail-accent"></div>';}
   html+='<div class="recipe-detail-info">';
@@ -5949,7 +5936,7 @@ async function _extractRecipeFromImages(dataUrls,opts){
     if(recipe&&recipe.error){status(recipe.error+' — nothing was saved (no recipe invented).','error');return;}
     if(!recipe||!recipe.name||!(recipe.ingredients||[]).length){status('No complete recipe found in those photos — nothing was saved (no recipe invented).','error');return;}
     recipe.id=recipe.id||makeId();recipe.source='photo';recipe.savedAt=getTodayStr();
-    if(dataUrls[0])recipe.imageUrl=dataUrls[0];
+    // v91: do NOT use the uploaded screenshot as the recipe image (Robbie). Leave imageUrl empty; image is sourced from the recipe URL or online later.
     status('✓ Read "'+recipe.name+'" — review below.','success');
     if(opts.onDone)opts.onDone();
     showRecipeReviewPanel(recipe,null,null);

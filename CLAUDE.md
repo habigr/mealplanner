@@ -309,6 +309,35 @@ A1. **AI agent is clunky and ugly** — works well functionally but the UX/visua
 - v78 stop import when page unfetchable (no fabrication) ✅
 - v79 URL import reads REAL page content via Jina Reader, no fabrication — VERIFIED working ✅
 
+## OVERNIGHT AUTONOMOUS RUN (2026-06-04) — SUMMARY
+
+Ran the agreed list (everything EXCEPT #18 App Admin restructure and #21 iOS Share Extension) unattended. Safe render-only work pushed to **live `main`**; data/sync/delete work committed to branch **`overnight-data-risk`** (NOT deployed — review before merge). Every build: `node --check` + static checks (version/tag/title agree, no NEW duplicate functions, guardrail flags present). **Browser `runRegressionTests()` 25/25, phone testing, and vision-extraction quality were NOT verifiable from here** — live builds are "landed, syntax-clean, not human-verified."
+
+**LIVE (main, deployed) — test on phone:**
+- v83 ingredient sort toggle (Section/Recipe/A–Z) + cooking blank fix (getCurrentCookingRecipe→_findRecipeForCook).
+- v84 meals in canonical order (display-only).
+- v85 **Import from Photo** (Claude vision, no-fabrication, photo→imageUrl) + import transparency wording.
+- v86 recipe library **group-by** (All/By chef/Recently added).
+- (v82 earlier: meal-level cook button, notes off cards, grouped ingredients, step-prefix strip.)
+- Stale list items verified already-done: #7 name-wrap + #8 AI/Send overlap (v72); #14/#15 cook photos (v71). Not re-done.
+
+**BRANCH `overnight-data-risk` (NOT deployed — review/test before merging; no APP_VERSION bump, set at merge):**
+- **#1** menuLibrary echo guard — `_recentlyDeletedRecipeIds` (30s TTL) so a stale snapshot can't resurrect a deleted recipe; `deleteFromMenuLibrary` records id + removes locally.
+- **#3** `window.cleanupDuplicateRecipes()` — DRY-RUN by default; lists dup groups (key = findExistingLibraryRecipe), keeps richest; deletes only on `cleanupDuplicateRecipes({apply:true})`.
+- **#6** cook photo stamped at assign time — `doAssignDish` uses `resolvePersonProfile` so `assignedToPhoto` travels to all devices.
+- **#10 (diag only)** `window.diagGroceryItem('orange juice')` — non-destructive; shows per-dish scaled qty/unit + the `normKey` merge key, and counts distinct keys (>1 = split-quantity root cause).
+
+**DEFERRED — built blind would be unsafe; need runtime testing / your input (NOT done):**
+- **#4** meal delete/re-add — sync-listener race (stale snapshot after rapid writes). Lives in the trip sync/timestamp path; needs reproduction + careful guard with live observation. Did NOT touch the sync path speculatively.
+- **#10 (real fix)** grocery key-migration: the merge key derives from the ingredient name; `reconcileGroceryMeta` (~line 3543) DELETES any `groceryMeta` key not in the current aggregation, so changing the name/key without a migration layer WIPES live store assignments. **Required design:** before changing any key, for each new row look up meta under new key → legacyKey → and a name-rename map (old normKey → new normKey carried on the ingredient), and make `reconcileGroceryMeta` MIGRATE (copy old→new) instead of delete on a recognized rename. Build + verify with real MDW 2026 data, post-trip. Use `diagGroceryItem` to confirm the split first.
+- **#19/#20** user directory + Firebase security rules — untested rules can lock out all users; needs careful design + staged testing, with you. (Excludes #18.)
+- **A1** AI agent redesign — you wanted this as its own design session.
+- **#5** trip-ID-null on mobile — not reproducible without your device.
+
+**AM checklist (live):** hard-refresh to v86. (1) cooking a plan dish with steps no longer blanks; (2) ingredient sort toggle works in detail view; (3) meals show in canonical order; (4) 📷 Photo import a recipe photo → review → saves with the photo as image; (5) library group-by toggle; (6) `window.runRegressionTests()` = 25/25. Then review the `overnight-data-risk` branch together before merging any of it.
+
+---
+
 ## NEXT SESSION — start here
 0. **URL IMPORT (C7/C8/C9) — fixed in v80, AWAITING LIVE VERIFICATION.** Robbie to test on the live site: (a) an NYT Cooking link → should show the subscription message, save nothing; (b) a normal free recipe link → should import as before; (c) confirm AI-agent actions / recipe-builder drafts no longer fail to parse. Also run window.runRegressionTests() (25/25) in the browser console. If a paywalled site is missed, add its host to PAYWALL_HOSTS in backgroundImportAndReview.
 1. **Duplicate uploads (#3)** — PREVENTION DONE v81 (awaiting live verification). REMAINING: cleanup of existing duplicates already in Firebase — its own signed-off build (deletes/merges data; preserve the richest entry). Verify v81 prevention live first: import the same recipe twice (same URL, different URL, and via "save to bank") → should say "already in your library", no second entry; confirm a genuinely new recipe still saves; confirm EDITING an existing bank recipe still updates it (not blocked).

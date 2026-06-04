@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v86
+     Meal Planner v87
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -449,8 +449,9 @@ async function deleteTripEverywhere(code){if(!await confirmAction({title:'Delete
 .import-chevron{font-size:12px;color:var(--theme-accent);transition:transform .18s;}
 .import-card.collapsed .import-chevron{transform:rotate(-90deg);}
 .import-card-body{padding:0 16px 16px;}
-.entry-tabs{display:flex;gap:4px;margin:10px 0 14px;padding:4px;background:var(--panel-soft);border:1px solid var(--border-light);border-radius:var(--r-sm);}
-.entry-tab{flex:1;background:transparent;color:var(--muted);border-radius:7px;padding:7px 12px;font-size:13px;font-weight:600;border:none;box-shadow:none;}
+.entry-tabs{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0 14px;padding:4px;background:var(--panel-soft);border:1px solid var(--border-light);border-radius:var(--r-sm);}
+.entry-tab{flex:1 1 auto;min-width:70px;background:transparent;color:var(--muted);border-radius:7px;padding:7px 10px;font-size:13px;font-weight:600;border:none;box-shadow:none;white-space:nowrap;}
+@media(max-width:560px){.entry-tab{flex:1 1 calc(50% - 4px);font-size:12px;padding:7px 6px;}}
 .entry-tab.active{background:var(--panel);color:var(--text);box-shadow:var(--shadow-sm);}
 .entry-tab:hover:not(.active){background:rgba(255,255,255,.6);transform:none;box-shadow:none;}
 .entry-panel{display:none;}
@@ -2994,6 +2995,7 @@ function switchEntryMode(mode){
     if(tab)tab.classList.toggle('active',m===mode);
     if(panel)panel.classList.toggle('active',m===mode);
   });
+  if(mode==='photo'&&typeof _ensurePhotoImportWired==='function')_ensurePhotoImportWired(); // v87: enable paste/drop
 }
 function clearDishModal(){setValue('dishName','');setValue('dishUrl','');setValue('servings','');setValue('peopleEating','');setValue('dishNotes','');setValue('bulkIngredients','');setValue('pasteRecipeText','');setValue('eventName2','');setValue('eventTime','');setValue('eventAddress','');setValue('eventOtherNotes','');var vc=safeEl('isVegetarianCheck');if(vc)vc.checked=false;var ec=safeEl('isEventCheck');if(ec){ec.checked=false;}var ef=safeEl('eventFields');if(ef)ef.style.display='none';var af=safeEl('assignmentFields'),ic=safeEl('importCard'),is=safeEl('ingredientSection'),fh=document.querySelector('.final-details-heading');[af,ic,is].forEach(function(el){if(el)el.style.display='';});if(fh)fh.style.display='';document.querySelectorAll('#dishModal .detail-card').forEach(function(el){el.style.display='';});setPasteStatus('Paste any recipe text — from any website, cookbook, or message.','');hideParsePreview();switchEntryMode('url');toggleImportCard(false);var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';addIngredientRow();populateSteps([]);var ownerSel=safeEl('dishOwner');if(ownerSel){if(!Object.keys(_knownUsers||{}).length)loadKnownUsers();var users=getAssignableUsers();ownerSel.innerHTML='<option value="">— unassigned —</option>'+users.map(function(u){return'<option value="'+escAttr(u.name)+'">'+escHtml(u.name)+'</option>';}).join('');}var olbl=safeEl('dishOwnerLabel');if(olbl)olbl.textContent=addToBankOnly?'Owner':'Cook';}
 function toggleImportCard(forceOpen){var c=safeEl('importCard');if(!c)return;var open=typeof forceOpen==='boolean'?forceOpen:c.classList.contains('collapsed');c.classList.toggle('collapsed',!open);}
@@ -3704,10 +3706,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v86';
-var APP_BUILD_TIME='2026-06-04 16:00';
+var APP_VERSION='v87';
+var APP_BUILD_TIME='2026-06-04 17:00';
 
-var APP_VERSION_TAG='Meal Planner v86';
+var APP_VERSION_TAG='Meal Planner v87';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5853,38 +5855,85 @@ function _downscaleImage(file,maxDim,quality){
     img.src=url;
   });
 }
-async function importFromImage(file){
-  if(!file)return;
-  if(!/^image\//.test(file.type||'')){setPhotoStatus('Please choose an image file.','error');return;}
-  var key=getApiKey();
-  if(!key){setPhotoStatus('Add your Anthropic API key in Setup → App Admin → AI & API first.','error');return;}
-  setPhotoStatus('Reading your photo…','');
+// v87: staging for multi-image import (a recipe can span several screenshots — ingredients in one, steps in another).
+var _photoImportFiles=[];
+function _isImageFile(f){return f&&/^image\//.test(f.type||'');}
+function addRecipePhotos(fileList){
+  if(!fileList)return;
+  var added=0;
+  Array.prototype.slice.call(fileList).forEach(function(f){if(_isImageFile(f)){_photoImportFiles.push(f);added++;}});
+  if(added)renderPhotoThumbs();
+  return added;
+}
+function removeRecipePhoto(idx){_photoImportFiles.splice(idx,1);renderPhotoThumbs();}
+function renderPhotoThumbs(){
+  var wrap=safeEl('photoThumbs');if(!wrap)return;
+  wrap.innerHTML=_photoImportFiles.map(function(f,i){
+    var u=URL.createObjectURL(f);
+    return'<div style="position:relative;width:62px;height:62px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0;"><img src="'+u+'" style="width:100%;height:100%;object-fit:cover;"><button type="button" onclick="removeRecipePhoto('+i+')" title="Remove" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:12px;line-height:1;cursor:pointer;padding:0;">×</button></div>';
+  }).join('');
+  var btn=safeEl('photoExtractBtn');if(btn)btn.style.display=_photoImportFiles.length?'block':'none';
+  if(_photoImportFiles.length)setPhotoStatus(_photoImportFiles.length+' photo'+(_photoImportFiles.length>1?'s':'')+' ready — tap Extract.','');
+}
+async function extractRecipeFromPhotos(){
+  if(!_photoImportFiles.length){setPhotoStatus('Add at least one photo first.','error');return;}
+  if(!getApiKey()){setPhotoStatus('Add your Anthropic API key in Setup → App Admin → AI & API first.','error');return;}
+  setPhotoStatus('Reading '+_photoImportFiles.length+' photo'+(_photoImportFiles.length>1?'s':'')+'…','');
   try{
-    var dataUrl=await _downscaleImage(file,900,0.72);
-    var b64=dataUrl.split(',')[1]||'';
-    if(!b64){setPhotoStatus('Could not read that image. Try a different photo.','error');return;}
-    setPhotoStatus('Extracting the recipe from your photo…','');
-    var prompt='Extract the recipe shown in this image. Use ONLY what is visible in the image. Do NOT use prior knowledge and do NOT invent, guess, or fill in anything that is not shown. If the image does not contain a real recipe, respond with EXACTLY: {"error":"No recipe found in this image"}\n\n'
-      +'Otherwise return ONLY valid JSON (no markdown, no explanation):\n'
-      +'{"name":"Recipe Name","servings":"4","isVegetarian":false,"cookTime":"30 min","ingredients":["2 lbs salmon","1 tbsp olive oil"],"steps":["Step 1...","Step 2..."]}\n\n'
-      +'Copy ingredient quantities exactly as written in the image. Do not add ingredients or steps that are not shown.';
-    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:prompt}]}]})});
+    var dataUrls=[];
+    for(var i=0;i<_photoImportFiles.length;i++){dataUrls.push(await _downscaleImage(_photoImportFiles[i],900,0.72));}
+    await _extractRecipeFromImages(dataUrls,{statusFn:setPhotoStatus,onDone:function(){_photoImportFiles=[];renderPhotoThumbs();}});
+  }catch(e){setPhotoStatus('Import failed: '+(e.message||e),'error');}
+}
+// Core (shared by Photo tab AND the AI bot, v89): send N image data URLs to Claude vision, extract ONE recipe,
+// strict no-fabrication contract, then the existing review panel. First image becomes the recipe photo.
+async function _extractRecipeFromImages(dataUrls,opts){
+  opts=opts||{};var status=opts.statusFn||function(){};
+  dataUrls=(dataUrls||[]).filter(Boolean);
+  if(!dataUrls.length){status('No images to read.','error');return;}
+  var key=getApiKey();if(!key){status('Add your Anthropic API key first.','error');return;}
+  status('Extracting the recipe…','');
+  var imgs=dataUrls.map(function(u){return{type:'image',source:{type:'base64',media_type:'image/jpeg',data:(u.split(',')[1]||'')}};});
+  var prompt='Extract the SINGLE recipe shown across the image(s). They may be multiple screenshots of the SAME recipe (e.g. ingredients in one, steps in another) — combine them into ONE recipe. Use ONLY what is visible. Do NOT use prior knowledge and do NOT invent, guess, or fill in anything not shown. If the images do not contain a real recipe, respond with EXACTLY: {"error":"No recipe found in these images"}\n\n'
+    +'Otherwise return ONLY valid JSON (no markdown):\n'
+    +'{"name":"Recipe Name","servings":"4","isVegetarian":false,"cookTime":"30 min","ingredients":["2 lbs salmon","1 tbsp olive oil"],"steps":["Step 1...","Step 2..."]}\n\n'
+    +'Copy ingredient quantities exactly as written. Do not add anything not shown.';
+  try{
+    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,messages:[{role:'user',content:imgs.concat([{type:'text',text:prompt}])}]})});
     var data=await res.json();
-    if(data&&data.error){setPhotoStatus('AI error: '+(data.error.message||'request failed')+'. Nothing was saved.','error');return;}
+    if(data&&data.error){status('AI error: '+(data.error.message||'request failed')+'. Nothing was saved.','error');return;}
     var text=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
     var recipe;
-    try{
-      var raw=stripJsonFences(text);
-      var jm=raw.match(/\{[\s\S]*\}/);
-      recipe=JSON.parse((jm?jm[0]:raw).replace(/,\s*([}\]])/g,'$1'));
-    }catch(e){setPhotoStatus('Could not read a recipe from that photo — nothing was saved (no recipe invented). Try a clearer, straight-on photo.','error');console.error('[importFromImage] parse error:',text);return;}
-    if(recipe&&recipe.error){setPhotoStatus(recipe.error+' — nothing was saved (no recipe invented).','error');return;}
-    if(!recipe||!recipe.name||!(recipe.ingredients||[]).length){setPhotoStatus('No complete recipe found in that photo — nothing was saved (no recipe invented).','error');return;}
+    try{var raw=stripJsonFences(text);var jm=raw.match(/\{[\s\S]*\}/);recipe=JSON.parse((jm?jm[0]:raw).replace(/,\s*([}\]])/g,'$1'));}
+    catch(e){status('Could not read a recipe from those photos — nothing was saved (no recipe invented). Try clearer, straight-on photos.','error');console.error('[photoImport] parse error:',text);return;}
+    if(recipe&&recipe.error){status(recipe.error+' — nothing was saved (no recipe invented).','error');return;}
+    if(!recipe||!recipe.name||!(recipe.ingredients||[]).length){status('No complete recipe found in those photos — nothing was saved (no recipe invented).','error');return;}
     recipe.id=recipe.id||makeId();recipe.source='photo';recipe.savedAt=getTodayStr();
-    recipe.imageUrl=dataUrl; // the captured photo becomes the recipe image (downscaled)
-    setPhotoStatus('✓ Read "'+recipe.name+'" from your photo — review below.','success');
+    if(dataUrls[0])recipe.imageUrl=dataUrls[0];
+    status('✓ Read "'+recipe.name+'" — review below.','success');
+    if(opts.onDone)opts.onDone();
     showRecipeReviewPanel(recipe,null,null);
-  }catch(e){setPhotoStatus('Import failed: '+(e.message||e),'error');}
+  }catch(e){status('Import failed: '+(e.message||e),'error');}
+}
+// Back-compat single-file entry (kept so any caller still works): stage one + extract immediately.
+function importFromImage(file){if(!file)return;_photoImportFiles=[file];extractRecipeFromPhotos();}
+// Wire paste + drag-drop once. Paste is scoped to when the Photo tab is open so it never hijacks text paste.
+var _photoPasteWired=false;
+function _ensurePhotoImportWired(){
+  if(_photoPasteWired)return;_photoPasteWired=true;
+  document.addEventListener('paste',function(e){
+    var panel=safeEl('photoEntryPanel');
+    if(!panel||!panel.classList.contains('active'))return; // only when the Photo tab is active
+    var items=(e.clipboardData&&e.clipboardData.items)||[];var imgs=[];
+    for(var i=0;i<items.length;i++){if(items[i].type&&items[i].type.indexOf('image')>=0){var f=items[i].getAsFile();if(f)imgs.push(f);}}
+    if(imgs.length){e.preventDefault();var n=addRecipePhotos(imgs);if(n)setPhotoStatus(n+' pasted — tap Extract.','');}
+  });
+  var dz=safeEl('photoDropZone');
+  if(dz){
+    dz.addEventListener('dragover',function(e){e.preventDefault();dz.style.borderColor='var(--theme-accent)';});
+    dz.addEventListener('dragleave',function(e){e.preventDefault();dz.style.borderColor='';});
+    dz.addEventListener('drop',function(e){e.preventDefault();dz.style.borderColor='';var f=e.dataTransfer&&e.dataTransfer.files;if(f&&f.length){var n=addRecipePhotos(f);if(n)setPhotoStatus(n+' added — tap Extract.','');}});
+  }
 }
 
 function showRecipeReviewPanel(recipe,intendedDay,intendedMeal){
@@ -7179,8 +7228,8 @@ document.addEventListener('DOMContentLoaded',function(){
         <div class="import-card-body">
           <div class="entry-tabs">
             <button id="urlImportTab" class="entry-tab active" type="button" onclick="switchEntryMode('url')">From URL</button>
-            <button id="pasteRecipeTab" class="entry-tab" type="button" onclick="switchEntryMode('paste')">Paste Full Recipe</button>
-            <button id="manualEntryTab" class="entry-tab" type="button" onclick="switchEntryMode('manual')">Paste Ingredients</button>
+            <button id="pasteRecipeTab" class="entry-tab" type="button" onclick="switchEntryMode('paste')">Paste Recipe</button>
+            <button id="manualEntryTab" class="entry-tab" type="button" onclick="switchEntryMode('manual')">Ingredients</button>
             <button id="photoEntryTab" class="entry-tab" type="button" onclick="switchEntryMode('photo')">📷 Photo</button>
           </div>
           <div id="urlImportPanel" class="entry-panel active">
@@ -7190,7 +7239,7 @@ document.addEventListener('DOMContentLoaded',function(){
             <button type="button" onclick="importRecipeFromUrl(getValue('dishModalImportUrl'))">✦ Import from URL</button>
             <div style="font-size:11px;color:var(--muted);margin-top:8px;">Works best with major recipe sites. Uses AI to extract ingredients and steps.</div>
           </div>
-          <div id="pasteRecipePanel" class="entry-panel active">
+          <div id="pasteRecipePanel" class="entry-panel">
             <div class="field" style="margin-bottom:8px;"><label for="pasteRecipeText">Full Recipe Text</label>
               <textarea id="pasteRecipeText" placeholder="Copy and paste the entire recipe — title, servings, ingredients, instructions." style="min-height:110px;"></textarea>
             </div>
@@ -7205,10 +7254,15 @@ document.addEventListener('DOMContentLoaded',function(){
             </div>
           </div>
           <div id="photoEntryPanel" class="entry-panel">
-            <div class="field" style="margin-bottom:8px;"><label for="recipePhotoInput">Photo of the recipe</label>
-              <input id="recipePhotoInput" type="file" accept="image/*" capture="environment" onchange="importFromImage(this.files&&this.files[0]);this.value='';" style="font-size:14px;">
+            <div id="photoDropZone" tabindex="0" onclick="document.getElementById('recipePhotoInput').click()" style="border:2px dashed var(--border);border-radius:12px;padding:16px 12px;text-align:center;cursor:pointer;background:var(--panel-soft);">
+              <div style="font-size:13px;font-weight:700;color:var(--text);">📷 Add recipe photo(s)</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;">Tap to choose from your album or camera · paste a screenshot (Ctrl/⌘+V) · or drag images here</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:3px;">Tip: snip with Win+Shift+S (⌘+Shift+4 on Mac), then paste</div>
             </div>
-            <div id="photoImportStatus" class="import-status" style="margin-top:8px;">Snap or upload a photo of a recipe — even from a paywalled site, a cookbook, or a handwritten card. The AI reads ONLY what's in the photo and never invents a recipe. The photo also becomes the recipe image.</div>
+            <input id="recipePhotoInput" type="file" accept="image/*" multiple onchange="addRecipePhotos(this.files);this.value='';" style="display:none;">
+            <div id="photoThumbs" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
+            <button id="photoExtractBtn" type="button" onclick="extractRecipeFromPhotos()" style="display:none;width:100%;margin-top:10px;">✶ Extract recipe from photos</button>
+            <div id="photoImportStatus" class="import-status" style="margin-top:8px;">Add one or more photos — even from a paywalled site, a cookbook, or a handwritten card. Multiple screenshots of the same recipe are combined. The AI reads ONLY what's in the photos and never invents a recipe. The first photo becomes the recipe image.</div>
           </div>
         </div>
       </div>

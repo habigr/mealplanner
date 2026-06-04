@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v81
+     Meal Planner v82
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -2910,7 +2910,10 @@ function renderPlanner(){var grid=safeEl('dayGrid');if(!grid)return;
     hdr.innerHTML='<div class="plan-trip-meta">'+(dateStr?dateStr+' ':'')+(people?'· '+people+' people':'')+'</div>';
   }
   if(!currentEvent.days.length){grid.innerHTML='<div class="empty"><div class="empty-icon">📅</div><h3>No days planned yet</h3><p>Add dates in Event Setup and click Create / Refresh Days.</p></div>';return;}grid.innerHTML=currentEvent.days.map(function(day,idx){var summary=getDaySummary(day);var dateLabel=day.date?formatDayDate(day.date):(day.label||'Day '+(idx+1));var emoji=getHolidayEmoji(day.date);return'<div class="day-card" data-day-idx="'+idx+'"><div class="day-header"><span class="day-drag-handle" data-day-idx="'+idx+'" title="Drag to reorder">⠿</span><div style="flex:1;min-width:0;"><div class="day-title">'+emoji+escHtml(dateLabel)+'</div>'+(summary?'<div class="meal-summary">'+escHtml(summary)+'</div>':'')+'</div><div class="day-tools"><div class="day-up-down"><button class="ghost" title="Move earlier" onclick="moveDay('+idx+',-1)">↑</button><button class="ghost" title="Move later" onclick="moveDay('+idx+',1)">↓</button></div><button class="ghost day-copy-btn" title="Copy this day" onclick="copyDayMeals(\''+escAttr(day.id)+'\')">Copy</button><button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\')">+</button></div></div><div class="day-body">'+(day.meals||getDefaultMealTypes()).map(function(meal){return renderMealBlock(day,meal);}).join('')+'</div></div>';}).join('');}
-function renderMealBlock(day,meal){var dishes=currentEvent.dishes.filter(function(d){return d.dayId===day.id&&d.meal===meal;});var icon=getMealIcon(meal);var hasCookable=(currentEvent.recipeBank||[]).some(function(r){return r.steps&&r.steps.length&&dishes.some(function(d){return d.name.toLowerCase()===r.name.toLowerCase()||d.bankRecipeId===r.id;});});var cookMealBtn=hasCookable?'<button class="cook-meal-btn" onclick="cookMeal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">👨‍🍳 Cook</button>':'';return'<div class="meal-block" data-meal="'+escAttr(meal)+'"><div class="meal-head"><div class="meal-label-wrap"><span class="meal-label">'+escHtml(meal)+'</span><button class="remove-meal-btn" onclick="removeMealFromDay(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" title="Remove this meal from day">×</button></div><div style="display:flex;align-items:center;gap:6px;">'+cookMealBtn+'<button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">+</button></div></div><div class="meal-body" data-day-id="'+escAttr(day.id)+'" data-meal="'+escAttr(meal)+'" ondragover="handleMealDragOver(event)" ondragleave="handleMealDragLeave(event)" ondrop="handleMealDrop(event)">'+(dishes.length?dishes.map(renderDish).join(''):'<div class="meal-empty" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" style="cursor:pointer;"></div>')+'</div></div>';}
+function renderMealBlock(day,meal){var dishes=currentEvent.dishes.filter(function(d){return d.dayId===day.id&&d.meal===meal;});var icon=getMealIcon(meal);
+  // v82 (P0): scan recipeBank ∪ _menuLibrary (same source cookMeal resolves from) so library recipes show the Cook button. Also count a dish's own steps.
+  var cookable=(currentEvent.recipeBank||[]).concat(_menuLibrary||[]);
+  var hasCookable=dishes.some(function(d){return(d.steps&&d.steps.length)||cookable.some(function(r){return r.steps&&r.steps.length&&(d.name.toLowerCase()===r.name.toLowerCase()||d.bankRecipeId===r.id);});});var cookMealBtn=hasCookable?'<button class="cook-meal-btn" onclick="cookMeal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">👨‍🍳 Cook</button>':'';return'<div class="meal-block" data-meal="'+escAttr(meal)+'"><div class="meal-head"><div class="meal-label-wrap"><span class="meal-label">'+escHtml(meal)+'</span><button class="remove-meal-btn" onclick="removeMealFromDay(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" title="Remove this meal from day">×</button></div><div style="display:flex;align-items:center;gap:6px;">'+cookMealBtn+'<button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">+</button></div></div><div class="meal-body" data-day-id="'+escAttr(day.id)+'" data-meal="'+escAttr(meal)+'" ondragover="handleMealDragOver(event)" ondragleave="handleMealDragLeave(event)" ondrop="handleMealDrop(event)">'+(dishes.length?dishes.map(renderDish).join(''):'<div class="meal-empty" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" style="cursor:pointer;"></div>')+'</div></div>';}
 function renderDish(dish){
   if(dish.isEvent){
     return'<div class="dish dish-event" draggable="true" data-dish-id="'+escAttr(dish.id)+'" ondragstart="handleDishDragStart(event,\''+escAttr(dish.id)+'\')" ondragend="handleDishDragEnd(event)" ondragover="event.preventDefault();dragOverDishId=this.dataset.dishId"><div class="dish-title-row"><span class="dish-drag-handle" title="Drag to move">⠿</span><div style="flex:1;min-width:0;"><div class="dish-event-name" onclick="event.stopPropagation();showDishDetail(\''+escAttr(dish.id)+'\');" style="cursor:pointer;">'+escHtml(dish.eventName||'Going out')+'</div>'+(dish.notes?'<div class="dish-note">'+escHtml(dish.notes)+'</div>':'')+'</div></div></div>';
@@ -2920,7 +2923,7 @@ function renderDish(dish){
   var hasNotes=!!(dish.notes);
   var conflicts=getDietaryConflicts(dish);
   var conflictBadge=conflicts.length?'<div class="dish-conflict">⚠️ '+escHtml(conflicts.join(' · '))+'</div>':'';
-  return'<div class="dish'+(hasNotes?' dish-expandable':'')+'" draggable="true" data-dish-id="'+escAttr(dish.id)+'" ondragstart="handleDishDragStart(event,\''+escAttr(dish.id)+'\')" ondragend="handleDishDragEnd(event)" ondragover="event.preventDefault();dragOverDishId=this.dataset.dishId"><div class="dish-title-row" onclick="toggleDishExpand(this)"><span class="dish-drag-handle" title="Drag to move" onclick="event.stopPropagation()">⠿</span><div style="flex:1;min-width:0;"><div class="dish-title" onclick="event.stopPropagation();showDishDetail(\''+escAttr(dish.id)+'\');" style="cursor:pointer;">'+escHtml(dish.name||'Untitled Dish')+'</div>'+((parts.length||dish.url||isVeg)?'<div class="dish-meta">'+parts.join(' · ')+(dish.url?(parts.length?' · ':'')+'<a href="'+escAttr(dish.url)+'" target="_blank" onclick="event.stopPropagation()">↗ Link</a>':'')+(isVeg?((parts.length||dish.url)?' ':'')+'<span class="dish-veg-pill">VEG</span>':'')+'</div>':'')+(hasNotes?'<div class="dish-tap-hint">tap for notes</div>':'')+tags+'</div></div>'+(hasNotes?'<div class="dish-expandable-body"><div class="dish-note">'+escHtml(dish.notes)+'</div></div>':'')+conflictBadge
+  return'<div class="dish" draggable="true" data-dish-id="'+escAttr(dish.id)+'" ondragstart="handleDishDragStart(event,\''+escAttr(dish.id)+'\')" ondragend="handleDishDragEnd(event)" ondragover="event.preventDefault();dragOverDishId=this.dataset.dishId"><div class="dish-title-row"><span class="dish-drag-handle" title="Drag to move" onclick="event.stopPropagation()">⠿</span><div style="flex:1;min-width:0;"><div class="dish-title" onclick="event.stopPropagation();showDishDetail(\''+escAttr(dish.id)+'\');" style="cursor:pointer;">'+escHtml(dish.name||'Untitled Dish')+'</div>'+((parts.length||dish.url||isVeg)?'<div class="dish-meta">'+parts.join(' · ')+(dish.url?(parts.length?' · ':'')+'<a href="'+escAttr(dish.url)+'" target="_blank" onclick="event.stopPropagation()">↗ Link</a>':'')+(isVeg?((parts.length||dish.url)?' ':'')+'<span class="dish-veg-pill">VEG</span>':'')+'</div>':'')+tags+'</div></div>'+conflictBadge
   +(function(){
   var st=dish.dishStatus||'';
   var stMap={'':'status-empty','Prepping':'status-prepping','Cooking':'status-cooking','Done':'status-done'};
@@ -3701,10 +3704,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v81';
-var APP_BUILD_TIME='2026-06-03 12:00';
+var APP_VERSION='v82';
+var APP_BUILD_TIME='2026-06-04 12:00';
 
-var APP_VERSION_TAG='Meal Planner v81';
+var APP_VERSION_TAG='Meal Planner v82';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5548,9 +5551,9 @@ function showRecipeDetail(id){
   html+='</div>';
   if(r.personalNotes)html+='<div class="recipe-personal-notes">📝 '+escHtml(r.personalNotes)+'</div>';
   var ings=r.ingredients||[];
-  if(ings.length){html+='<div class="recipe-detail-section"><div class="recipe-section-heading">Ingredients</div><ul class="recipe-ing-list">';ings.forEach(function(ing){if(typeof ing==='string'){html+='<li><span class="recipe-ing-qty"></span><span class="recipe-ing-item">'+escHtml(ing)+'</span></li>';}else{var qty=[ing.quantity||'',ing.unit||''].filter(Boolean).join(' ');html+='<li><span class="recipe-ing-qty">'+escHtml(qty)+'</span><span class="recipe-ing-item">'+escHtml(ing.item||'')+'</span></li>';}});html+='</ul></div>';}
+  if(ings.length){html+=renderGroupedIngredientsHtml(ings);}
   var steps=r.steps||[];
-  if(steps.length){html+='<div class="recipe-detail-section"><div class="recipe-section-heading">Instructions</div><ol class="recipe-steps-list">';steps.forEach(function(step,i){html+='<li><span class="recipe-step-num">'+(i+1)+'</span><span>'+escHtml(step)+'</span></li>';});html+='</ol></div>';}
+  if(steps.length){html+='<div class="recipe-detail-section"><div class="recipe-section-heading">Instructions</div><ol class="recipe-steps-list">';steps.forEach(function(step,i){html+='<li><span class="recipe-step-num">'+(i+1)+'</span><span>'+escHtml(cleanStepText(step))+'</span></li>';});html+='</ol></div>';}
   // Library info section
   var libParts=[];
   if(r.addedBy||r.owner)libParts.push('Added by <strong>'+escHtml(r.addedBy||r.owner)+'</strong>');
@@ -5589,6 +5592,35 @@ function recipeDetailAddToPlan(){
   }
 }
 
+// v82 (P1): strip a baked-in "Step 1:" / "1." / "1)" prefix from a step — the detail view renders its own number, so embedded ones double up. Delimiter-anchored so "2 eggs, beaten" is untouched.
+function cleanStepText(s){return String(s||'').replace(/^\s*step\s*\d+\s*[:.\)\-]\s*/i,'').replace(/^\s*\d+\s*[.\):]\s+/,'').trim();}
+// v82 (P1): group detail-view ingredients by grocery department (same guessDept the grocery list uses). Single-group recipes render flat (no header) to stay clean.
+function renderGroupedIngredientsHtml(ings){
+  ings=ings||[];if(!ings.length)return'';
+  var groups={},order=[];
+  ings.forEach(function(ing){
+    var itemName=(typeof ing==='string')?ing:(ing.item||'');
+    var dept=guessDept(itemName)||'Other';
+    if(!groups[dept]){groups[dept]=[];order.push(dept);}
+    groups[dept].push(ing);
+  });
+  function liFor(ing){
+    var qty,item;
+    if(typeof ing==='string'){qty='';item=ing;}
+    else{qty=[ing.quantity||ing.displayedQuantity||'',ing.unit||''].filter(Boolean).join(' ');item=ing.item||'';}
+    return'<li><span class="recipe-ing-qty">'+escHtml(qty)+'</span><span class="recipe-ing-item">'+escHtml(item)+'</span></li>';
+  }
+  var html='<div class="recipe-detail-section"><div class="recipe-section-heading">Ingredients</div>';
+  if(order.length<=1){
+    html+='<ul class="recipe-ing-list">'+ings.map(liFor).join('')+'</ul>';
+  } else {
+    order.forEach(function(dept){
+      html+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 4px;">'+getDeptIcon(dept)+' '+escHtml(dept)+'</div><ul class="recipe-ing-list">'+groups[dept].map(liFor).join('')+'</ul>';
+    });
+  }
+  html+='</div>';return html;
+}
+
 /* ===== DISH DETAIL VIEW (v64) — reuses recipe-detail format; edits the PLAN dish ===== */
 var _dishDetailId=null;
 function showDishDetail(id){
@@ -5621,9 +5653,9 @@ function showDishDetail(id){
   html+='</div>';
   if(d.notes)html+='<div class="recipe-personal-notes">📝 '+escHtml(d.notes)+'</div>';
   var ings=d.ingredients||[];
-  if(ings.length){html+='<div class="recipe-detail-section"><div class="recipe-section-heading">Ingredients</div><ul class="recipe-ing-list">';ings.forEach(function(ing){var qty=[ing.quantity||ing.displayedQuantity||'',ing.unit||''].filter(Boolean).join(' ');html+='<li><span class="recipe-ing-qty">'+escHtml(qty)+'</span><span class="recipe-ing-item">'+escHtml(ing.item||'')+'</span></li>';});html+='</ul></div>';}
+  if(ings.length){html+=renderGroupedIngredientsHtml(ings);}
   var steps=d.steps||[];
-  if(steps.length){html+='<div class="recipe-detail-section"><div class="recipe-section-heading">Instructions</div><ol class="recipe-steps-list">';steps.forEach(function(s,i){html+='<li><span class="recipe-step-num">'+(i+1)+'</span><span>'+escHtml(s)+'</span></li>';});html+='</ol></div>';}
+  if(steps.length){html+='<div class="recipe-detail-section"><div class="recipe-section-heading">Instructions</div><ol class="recipe-steps-list">';steps.forEach(function(s,i){html+='<li><span class="recipe-step-num">'+(i+1)+'</span><span>'+escHtml(cleanStepText(s))+'</span></li>';});html+='</ol></div>';}
   body.innerHTML=html;body.scrollTop=0;
   var hasSteps=steps.length>0;
   var fh='<button style="background:var(--theme-accent);color:#fff;border:none;font-weight:700;" onclick="dishDetailEdit()">Edit</button>';

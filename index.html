@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v83
+     Meal Planner v84
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -2909,7 +2909,7 @@ function renderPlanner(){var grid=safeEl('dayGrid');if(!grid)return;
     if(currentEvent.startDate&&currentEvent.endDate){try{var sd=new Date(currentEvent.startDate+'T12:00:00'),ed=new Date(currentEvent.endDate+'T12:00:00');dateStr=sd.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' – '+ed.toLocaleDateString(undefined,{month:'short',day:'numeric'});}catch(ex){}}
     hdr.innerHTML='<div class="plan-trip-meta">'+(dateStr?dateStr+' ':'')+(people?'· '+people+' people':'')+'</div>';
   }
-  if(!currentEvent.days.length){grid.innerHTML='<div class="empty"><div class="empty-icon">📅</div><h3>No days planned yet</h3><p>Add dates in Event Setup and click Create / Refresh Days.</p></div>';return;}grid.innerHTML=currentEvent.days.map(function(day,idx){var summary=getDaySummary(day);var dateLabel=day.date?formatDayDate(day.date):(day.label||'Day '+(idx+1));var emoji=getHolidayEmoji(day.date);return'<div class="day-card" data-day-idx="'+idx+'"><div class="day-header"><span class="day-drag-handle" data-day-idx="'+idx+'" title="Drag to reorder">⠿</span><div style="flex:1;min-width:0;"><div class="day-title">'+emoji+escHtml(dateLabel)+'</div>'+(summary?'<div class="meal-summary">'+escHtml(summary)+'</div>':'')+'</div><div class="day-tools"><div class="day-up-down"><button class="ghost" title="Move earlier" onclick="moveDay('+idx+',-1)">↑</button><button class="ghost" title="Move later" onclick="moveDay('+idx+',1)">↓</button></div><button class="ghost day-copy-btn" title="Copy this day" onclick="copyDayMeals(\''+escAttr(day.id)+'\')">Copy</button><button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\')">+</button></div></div><div class="day-body">'+(day.meals||getDefaultMealTypes()).map(function(meal){return renderMealBlock(day,meal);}).join('')+'</div></div>';}).join('');}
+  if(!currentEvent.days.length){grid.innerHTML='<div class="empty"><div class="empty-icon">📅</div><h3>No days planned yet</h3><p>Add dates in Event Setup and click Create / Refresh Days.</p></div>';return;}grid.innerHTML=currentEvent.days.map(function(day,idx){var summary=getDaySummary(day);var dateLabel=day.date?formatDayDate(day.date):(day.label||'Day '+(idx+1));var emoji=getHolidayEmoji(day.date);return'<div class="day-card" data-day-idx="'+idx+'"><div class="day-header"><span class="day-drag-handle" data-day-idx="'+idx+'" title="Drag to reorder">⠿</span><div style="flex:1;min-width:0;"><div class="day-title">'+emoji+escHtml(dateLabel)+'</div>'+(summary?'<div class="meal-summary">'+escHtml(summary)+'</div>':'')+'</div><div class="day-tools"><div class="day-up-down"><button class="ghost" title="Move earlier" onclick="moveDay('+idx+',-1)">↑</button><button class="ghost" title="Move later" onclick="moveDay('+idx+',1)">↓</button></div><button class="ghost day-copy-btn" title="Copy this day" onclick="copyDayMeals(\''+escAttr(day.id)+'\')">Copy</button><button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\')">+</button></div></div><div class="day-body">'+orderedDayMeals(day.meals||getDefaultMealTypes()).map(function(meal){return renderMealBlock(day,meal);}).join('')+'</div></div>';}).join('');}
 function renderMealBlock(day,meal){var dishes=currentEvent.dishes.filter(function(d){return d.dayId===day.id&&d.meal===meal;});var icon=getMealIcon(meal);
   // v82 (P0): scan recipeBank ∪ _menuLibrary (same source cookMeal resolves from) so library recipes show the Cook button. Also count a dish's own steps.
   var cookable=(currentEvent.recipeBank||[]).concat(_menuLibrary||[]);
@@ -3704,10 +3704,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v83';
-var APP_BUILD_TIME='2026-06-04 13:00';
+var APP_VERSION='v84';
+var APP_BUILD_TIME='2026-06-04 14:00';
 
-var APP_VERSION_TAG='Meal Planner v83';
+var APP_VERSION_TAG='Meal Planner v84';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4695,6 +4695,13 @@ function applyDarkMode(){document.body.classList.toggle('dark-mode',isDarkMode()
 function renderDarkModeButton(){var b=safeEl('darkModeButton');if(b)b.textContent=isDarkMode()?'Light Mode':'Dark Mode';}
 function toggleDarkMode(){try{localStorage.setItem('mealPlanner.darkMode',isDarkMode()?'0':'1');}catch(e){}applyDarkMode();haptic(10);}
 function getDefaultMealTypes(){return currentEvent&&currentEvent.mealTypes&&currentEvent.mealTypes.length?currentEvent.mealTypes:['Breakfast','Lunch','Dinner'];}
+// v84 (#9/#13): canonical display order for a day's meals. Primary = trip's currentEvent.mealTypes order (per locked meal-types architecture); secondary = canonical Breakfast→Lunch→Dinner→Snack→Drinks→Dessert for ad-hoc meals not in the trip list. Returns a SORTED COPY — never mutates day.meals (display-only, no data write). Fixes "re-added meal jumps to bottom".
+function orderedDayMeals(meals){
+  var canon=['Breakfast','Lunch','Dinner','Snack','Drinks','Dessert'];
+  var trip=(currentEvent&&Array.isArray(currentEvent.mealTypes))?currentEvent.mealTypes:[];
+  function idx(m){var ti=trip.indexOf(m);if(ti>=0)return ti;var ci=canon.indexOf(m);if(ci>=0)return trip.length+ci;return trip.length+canon.length+1;}
+  return (meals||[]).slice().sort(function(a,b){return idx(a)-idx(b);});
+}
 function saveMealTypes(){
   if(!currentEvent){showToast('Load a trip first.','error');return;}
   var meals=getValue('adminMealTypes').split('\n').map(function(s){return s.trim();}).filter(Boolean);

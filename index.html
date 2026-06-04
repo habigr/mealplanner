@@ -6558,6 +6558,46 @@ function deleteFromMenuLibrary(id){
   db.ref('menuLibrary/'+id).remove();
 }
 
+// BRANCH (#3): clean up EXISTING duplicate library recipes. Console-triggered, NEVER auto-runs.
+// DRY RUN by default — lists duplicate groups + which entry it would keep. To actually delete, review then run:
+//   cleanupDuplicateRecipes({apply:true})
+// Grouping = same dedup key as findExistingLibraryRecipe (normalized URL, else name+source). Keeps the RICHEST
+// entry per group (most ingredients/steps, has image, used in trips, rating; ties → oldest savedAt = the original).
+window.cleanupDuplicateRecipes=function(opts){
+  opts=opts||{};
+  if(!_menuLibrary||!_menuLibrary.length){console.warn('[dupCleanup] Library not loaded — open the Recipe Library first.');return;}
+  function keyOf(r){
+    var url=(typeof normLibUrl==='function')?normLibUrl(r.url):String(r.url||'').toLowerCase();
+    if(url)return 'u:'+url;
+    return 'n:'+String(r.name||'').trim().toLowerCase()+'|'+String(r.source||'').trim().toLowerCase();
+  }
+  function score(r){
+    return (r.ingredients||[]).length*2 + (r.steps||[]).length*2 + (r.imageUrl?5:0) + (Object.keys(r.usedInTrips||{}).length*3) + (r.rating||0);
+  }
+  var groups={};
+  _menuLibrary.forEach(function(r){if(!r||!r.id)return;var k=keyOf(r);(groups[k]=groups[k]||[]).push(r);});
+  var dupGroups=Object.keys(groups).map(function(k){return groups[k];}).filter(function(g){return g.length>1;});
+  if(!dupGroups.length){console.log('[dupCleanup] No duplicate groups found. Nothing to do.');return;}
+  var plan=dupGroups.map(function(g){
+    var sorted=g.slice().sort(function(a,b){return score(b)-score(a) || String(a.savedAt||'').localeCompare(String(b.savedAt||''));});
+    return {name:sorted[0].name,keep:sorted[0],remove:sorted.slice(1)};
+  });
+  console.log('[dupCleanup] '+plan.length+' duplicate group(s) found:');
+  plan.forEach(function(p){console.log('  • "'+p.name+'": KEEP id='+p.keep.id+' (score '+score(p.keep)+'), REMOVE '+p.remove.length+' → ['+p.remove.map(function(r){return r.id;}).join(', ')+']');});
+  if(!opts.apply){
+    console.log('[dupCleanup] DRY RUN — nothing deleted. Review the plan above, then run: cleanupDuplicateRecipes({apply:true})');
+    return plan;
+  }
+  if(!db){console.warn('[dupCleanup] No Firebase connection — cannot apply.');return;}
+  var toRemove=[];plan.forEach(function(p){p.remove.forEach(function(r){toRemove.push(r.id);});});
+  console.warn('[dupCleanup] APPLYING — deleting '+toRemove.length+' duplicate(s), keeping the richest in each group.');
+  toRemove.forEach(function(id){_recentlyDeletedRecipeIds[id]=Date.now();db.ref('menuLibrary/'+id).remove();});
+  _menuLibrary=(_menuLibrary||[]).filter(function(r){return toRemove.indexOf(r.id)<0;});
+  if(typeof renderMenuLibraryOverlay==='function')renderMenuLibraryOverlay();
+  if(typeof renderRecipeBank==='function')renderRecipeBank();
+  console.log('[dupCleanup] Done — removed '+toRemove.length+' duplicate(s).');
+};
+
 function migrateRecipeBankToLibrary(){
   if(!db||!currentEvent||!(currentEvent.recipeBank||[]).length)return;
   var u=getUser();

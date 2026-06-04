@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v89
+     Meal Planner v90
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1402,7 +1402,7 @@ body.planner-edit-mode .dish-title{margin-bottom:4px;}
 @media(max-width:768px){
   /* AI chat: icon-only Build Recipe so it stops crowding the send button */
   #buildRecipeBtn .brb-label{display:none;}
-  #buildRecipeBtn{padding:0;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;}
+  #buildRecipeBtn,#aiPhotoBtn{padding:0;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;}
 }
 @media(max-width:768px){
   /* Modal fits below the notch; sticky footer keeps Save/Cancel reachable */
@@ -3706,10 +3706,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v89';
-var APP_BUILD_TIME='2026-06-04 19:00';
+var APP_VERSION='v90';
+var APP_BUILD_TIME='2026-06-04 20:00';
 
-var APP_VERSION_TAG='Meal Planner v89';
+var APP_VERSION_TAG='Meal Planner v90';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4814,6 +4814,22 @@ function toggleRecipeSteps(id,btn){
   if(btn)btn.textContent=show?'▾ Steps':'▸ Steps';
 }
 
+// v90 (#5): when a recipe has no image of its own, borrow a sensible one from another library recipe whose
+// name shares a significant word (e.g. a chicken dish with no photo borrows another chicken recipe's photo).
+// RENDER-TIME ONLY — never writes to Firebase, so nothing wrong is ever persisted and it's trivially reversible.
+function _fallbackRecipeImage(recipe){
+  if(!recipe||!_menuLibrary||!_menuLibrary.length)return '';
+  var name=String(recipe.name||'').toLowerCase();if(!name)return '';
+  var words=name.split(/[^a-z]+/).filter(function(w){return w.length>3;});
+  if(!words.length)return '';
+  for(var i=0;i<_menuLibrary.length;i++){
+    var r=_menuLibrary[i];
+    if(!r||!r.imageUrl||r.id===recipe.id)continue;
+    var rn=String(r.name||'').toLowerCase();
+    for(var j=0;j<words.length;j++){if(rn.indexOf(words[j])>=0)return r.imageUrl;}
+  }
+  return '';
+}
 function renderRecipeCard(r){
   var hasSteps=(r.steps&&r.steps.length>0);
   var usageTxt=r.timesUsed>0?'Used '+r.timesUsed+'× · last '+r.lastUsed:'Not used yet';
@@ -4826,9 +4842,10 @@ function renderRecipeCard(r){
   var ownerUser=ownerName?getKnownUserByName(ownerName):null;
   var ownerAvatarHtml=ownerUser?renderAvatarFromProfile(ownerUser,18,'margin-right:4px;vertical-align:middle;'):'';
   var ownerHtml=ownerName?'<div class="recipe-owner-line" title="Owner: '+escAttr(ownerName)+'">'+ownerAvatarHtml+'<span style="font-size:11px;color:var(--muted);">'+escHtml(ownerName)+'</span></div>':'';
-  var hasImg=!!(r.imageUrl);
+  var imgUrl=r.imageUrl||_fallbackRecipeImage(r); // v90 (#5): borrow a sensible image when this recipe has none
+  var hasImg=!!imgUrl;
   var imgHtml=hasImg
-    ?'<div class="recipe-card-img"><img src="'+escAttr(r.imageUrl)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="recipeCardImgFail(this)"></div>'
+    ?'<div class="recipe-card-img"><img src="'+escAttr(imgUrl)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="recipeCardImgFail(this)"></div>'
     :'<div class="recipe-card-no-img"></div>';
   return'<div class="recipe-card-v2'+(hasImg?' recipe-card-has-img':'')+'" onclick="showRecipeDetail(\''+escAttr(r.id)+'\')" style="cursor:pointer;">'
     +imgHtml
@@ -5555,7 +5572,8 @@ function showRecipeDetail(id){
   if(!overlay||!body||!footer)return;
   if(ht)ht.textContent=r.name||'';
   var html='';
-  if(r.imageUrl)html+='<div class="recipe-detail-hero"><img src="'+escAttr(r.imageUrl)+'" alt="'+escAttr(r.name||'')+'" referrerpolicy="no-referrer" onerror="recipeHeroImgFail(this)"></div>';
+  var heroUrl=r.imageUrl||_fallbackRecipeImage(r); // v90 (#5)
+  if(heroUrl)html+='<div class="recipe-detail-hero"><img src="'+escAttr(heroUrl)+'" alt="'+escAttr(r.name||'')+'" referrerpolicy="no-referrer" onerror="recipeHeroImgFail(this)"></div>';
   else html+='<div class="recipe-detail-accent"></div>';
   html+='<div class="recipe-detail-info">';
   html+='<div class="recipe-detail-name">'+escHtml(r.name||'Untitled Recipe')+'</div>';
@@ -5666,6 +5684,7 @@ function showDishDetail(id){
   if(!d.isEvent){
     var imgUrl=d.imageUrl||'';
     if(!imgUrl){var lib=null;if(d.bankRecipeId)lib=_menuLibrary.find(function(r){return r.id===d.bankRecipeId;});if(!lib&&d.name)lib=_menuLibrary.find(function(r){return (r.name||'').toLowerCase()===(d.name||'').toLowerCase();});if(!lib&&d.url)lib=_menuLibrary.find(function(r){return r.url&&r.url===d.url;});if(lib)imgUrl=lib.imageUrl||'';}
+    if(!imgUrl)imgUrl=_fallbackRecipeImage(d); // v90 (#5): last-resort borrow a sensible image
     html+=imgUrl?'<div class="recipe-detail-hero"><img src="'+escAttr(imgUrl)+'" alt="'+escAttr(title)+'" referrerpolicy="no-referrer" onerror="recipeHeroImgFail(this)"></div>':'<div class="recipe-detail-accent"></div>';
   }else{html+='<div class="recipe-detail-accent"></div>';}
   html+='<div class="recipe-detail-info">';

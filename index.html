@@ -5264,7 +5264,7 @@ async function assignDish(id){
   drop.addEventListener('click',function(e){if(e.target===drop)drop.remove();});
 }
 
-function doAssignDish(id,name){var dish=currentEvent.dishes.find(function(d){return d.id===id;});if(!dish)return;if(name==='undefined'||name==='null')name='';dish.assignedTo=name||'';if(name){var ap=getKnownUserByName(name);dish.assignedToPhoto=ap?ap.photo||'':'';dish.assignedToInitials=ap?ap.initials||name.slice(0,2):name.slice(0,2);}else{dish.assignedToPhoto='';dish.assignedToInitials='';}commitAndSync();renderAll();}
+function doAssignDish(id,name){var dish=currentEvent.dishes.find(function(d){return d.id===id;});if(!dish)return;if(name==='undefined'||name==='null')name='';dish.assignedTo=name||'';if(name){/* BRANCH (#6): resolve photo from self/presence/known (not just _knownUsers, which is often empty) and STAMP it onto the dish so the cook avatar travels to all devices */var prof=resolvePersonProfile(name);dish.assignedToPhoto=(prof&&prof.photo)||'';dish.assignedToInitials=(prof&&prof.initials)||name.slice(0,2);}else{dish.assignedToPhoto='';dish.assignedToInitials='';}commitAndSync();renderAll();}
 
 /* ===== RECIPE DUPLICATE ===== */
 function duplicateBankRecipe(id){

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v104
+     Meal Planner v105
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -2821,7 +2821,7 @@ function getDefaultThemeGallery(){return{larchmont:[{url:'https://westchesterwom
 function normalizeEvent(e){e=e&&typeof e==='object'?e:{};e.id=e.id||makeId();e.code=String(e.code||makeId()).toLowerCase();e.name=e.name||'';e.location=e.location||'';e.theme=e.theme||'larchmont';e.startDate=e.startDate||'';e.endDate=e.endDate||'';
   if(e.dishes&&!Array.isArray(e.dishes)&&typeof e.dishes==='object'){mpLog('NORMALIZE','dishes was Firebase object map — converting to array',{code:e.code,keys:Object.keys(e.dishes).length});}
   e.days=Array.isArray(e.days)?e.days:(e.days&&typeof e.days==="object"?Object.values(e.days).filter(Boolean):[]);e.dishes=Array.isArray(e.dishes)?e.dishes:(e.dishes&&typeof e.dishes==="object"?Object.values(e.dishes).filter(Boolean):[]);e.recipeBank=Array.isArray(e.recipeBank)?e.recipeBank:(e.recipeBank&&typeof e.recipeBank==="object"?Object.values(e.recipeBank).filter(Boolean):[]);e.manualGroceryItems=Array.isArray(e.manualGroceryItems)?e.manualGroceryItems:[];e.stores=Array.isArray(e.stores)?e.stores:getDefaultStores();e.departments=Array.isArray(e.departments)?e.departments:getDefaultDepts();e.groceryMeta=e.groceryMeta&&typeof e.groceryMeta==='object'?e.groceryMeta:{};e.auditLog=e.auditLog&&typeof e.auditLog==='object'?e.auditLog:{};e.storeRules=Array.isArray(e.storeRules)?e.storeRules:getDefaultRules();e.activeStores=Array.isArray(e.activeStores)?e.activeStores:null;e.mealTypes=Array.isArray(e.mealTypes)&&e.mealTypes.length?e.mealTypes:['Breakfast','Lunch','Dinner'];e.tripMemory=e.tripMemory&&typeof e.tripMemory==='object'?e.tripMemory:{preferences:[],restrictions:{},notes:[]};e.dismissedDups=Array.isArray(e.dismissedDups)?e.dismissedDups:[];e.dishes.forEach(normalizeDish);e.recipeBank.forEach(normalizeDish);e.manualGroceryItems=e.manualGroceryItems.map(function(i){return{id:i.id||makeId(),item:i.item||'',quantity:i.quantity||'',unit:i.unit||'',department:i.department||'Pantry',store:i.store||'Unassigned'};}).filter(function(i){return i.item;});return e;}
-function normalizeDish(d){d.id=d.id||makeId();d.servings=d.servings||'';d.peopleEating=d.peopleEating||'';d.imageUrl=d.imageUrl||'';d.tags=Array.isArray(d.tags)?d.tags:[];d.ingredients=Array.isArray(d.ingredients)?d.ingredients:[];d.isEvent=!!d.isEvent;d.isVegetarian=!!d.isVegetarian;d.steps=Array.isArray(d.steps)?d.steps:[];d.timesUsed=d.timesUsed||0;d.lastUsed=d.lastUsed||'';d.source=d.source||'';d.savedAt=d.savedAt||'';d.addedBy=d.addedBy||'';d.addedAt=d.addedAt||'';d.cookTime=d.cookTime||'';d.personalNotes=d.personalNotes||'';d.rating=d.rating||0;d.dishStatus=d.dishStatus||'';d.assignedTo=d.assignedTo||'';d.assignedToPhoto=d.assignedToPhoto||'';d.assignedToInitials=d.assignedToInitials||'';d.owner=d.owner||'';d.usedInTrips=d.usedInTrips&&typeof d.usedInTrips==='object'?d.usedInTrips:{};d.ingredients=d.ingredients.map(function(i){try{if(typeof i==='string'){var s=i.trim();if(!s)return{quantity:'',displayedQuantity:'',unit:'',item:''};var p=parseIngLine(s);return{quantity:p.quantity||'',displayedQuantity:p.quantity||'',unit:p.unit||'',item:p.item||s,originalQuantity:p.quantity||''};}return{quantity:String(i.quantity||i.displayedQuantity||''),displayedQuantity:String(i.displayedQuantity||i.quantity||''),unit:String(i.unit||''),item:String(i.item||i.name||''),originalQuantity:String(i.originalQuantity||i.quantity||''),groceryName:String(i.groceryName||'')};    }catch(e){return{quantity:'',displayedQuantity:'',unit:'',item:String(i||'')};}
+function normalizeDish(d){d.id=d.id||makeId();d.servings=d.servings||'';d.peopleEating=d.peopleEating||'';d.imageUrl=d.imageUrl||'';d.tags=Array.isArray(d.tags)?d.tags:[];d.ingredients=Array.isArray(d.ingredients)?d.ingredients:[];d.isEvent=!!d.isEvent;d.isVegetarian=!!d.isVegetarian;d.steps=Array.isArray(d.steps)?d.steps:[];d.timesUsed=d.timesUsed||0;d.lastUsed=d.lastUsed||'';d.source=d.source||'';d.savedAt=d.savedAt||'';d.addedBy=d.addedBy||'';d.addedAt=d.addedAt||'';d.cookTime=d.cookTime||'';d.personalNotes=d.personalNotes||'';d.rating=d.rating||0;d.dishStatus=d.dishStatus||'';d.assignedTo=d.assignedTo||'';d.assignedToPhoto=d.assignedToPhoto||'';d.assignedToInitials=d.assignedToInitials||'';d.owner=d.owner||'';d.usedInTrips=d.usedInTrips&&typeof d.usedInTrips==='object'?d.usedInTrips:{};d.ingredients=d.ingredients.map(function(i){try{if(typeof i==='string'){var s=i.trim();if(!s)return{quantity:'',displayedQuantity:'',unit:'',item:''};var p=parseIngLine(s);return{quantity:p.quantity||'',displayedQuantity:p.quantity||'',unit:p.unit||'',item:p.item||s,originalQuantity:p.quantity||''};}return{quantity:String(i.quantity||i.displayedQuantity||''),displayedQuantity:String(i.displayedQuantity||i.quantity||''),unit:String(i.unit||''),item:String(i.item||i.name||''),originalQuantity:String(i.originalQuantity||i.quantity||''),groceryName:String(i.groceryName||''),groceryDept:String(i.groceryDept||'')};    }catch(e){return{quantity:'',displayedQuantity:'',unit:'',item:String(i||'')};}
   });return d;}
 
 /* ===== TOAST + DIALOGS ===== */
@@ -3440,30 +3440,33 @@ function groceryDisplayName(ing){
   n=n.replace(/\s*\([^)]*\)\s*$/,'');                 // drop a trailing parenthetical
   return n.trim()||String((ing&&ing.item)||'').trim();
 }
-// v96: AI-clean ingredient names to their core grocery item in ONE batched call. Only SIMPLIFIES each given name —
-// never invents or adds ingredients. Returns an array aligned 1:1 to the input; '' for any it can't clean.
+// v96/v105: in ONE batched call, AI returns for each ingredient {grocery: core shopping name, dept: aisle}.
+// Only SIMPLIFIES the name (never invents/adds/merges). dept is one of GROCERY_DEPTS. Returns array aligned 1:1.
 async function cleanGroceryNames(items){
   items=(items||[]).map(function(s){return String(s||'');});
   if(!items.length)return [];
-  var key=getApiKey();if(!key)return items.map(function(){return '';});
-  var prompt='For each ingredient line below, return its core GROCERY name — what you would write on a shopping list. '
-    +'Remove quantities, package sizes, brand names, and prep words (diced, sliced, drained, chopped, minced, melted, to taste, for serving, etc.). '
-    +'KEEP meaningful product distinctions: "crushed tomatoes" stays "crushed tomatoes"; "extra-virgin olive oil" -> "olive oil"; '
-    +'"1 (14 oz) can black beans, drained" -> "black beans"; "2 boneless skinless chicken thighs" -> "chicken thighs"; "kosher salt" -> "salt". '
-    +'Do NOT invent, add, or merge ingredients. Return ONLY a JSON array of strings, SAME length and order as the input.\n\nINGREDIENTS:\n'
+  var key=getApiKey();if(!key)return items.map(function(){return null;});
+  var prompt='For EACH ingredient line below, return an object {"grocery":"...","dept":"..."}.\n'
+    +'"grocery" = the core GROCERY name you would write on a shopping list. Remove quantities, package sizes, brand names, and prep words (diced, sliced, drained, chopped, minced, melted, to taste, for serving, etc.). '
+    +'KEEP meaningful product distinctions: "crushed tomatoes" stays "crushed tomatoes"; "extra-virgin olive oil" -> "olive oil"; "1 (14 oz) can black beans, drained" -> "black beans"; "2 boneless skinless chicken thighs" -> "chicken thighs"; "kosher salt" -> "salt". Do NOT invent, add, or merge ingredients.\n'
+    +'"dept" = the grocery-store aisle, EXACTLY one of: '+GROCERY_DEPTS.join(', ')+'. Examples: salt/black pepper/cumin/spices -> Spices & Seasonings; oils/vinegars/soy sauce/ketchup/condiments -> Condiments & Oils; bell pepper/jalapeno -> Produce; flour/rice/pasta/bread -> Bakery & Pantry; canned beans/broth/sugar -> Pantry.\n'
+    +'Return ONLY a JSON array of these objects, SAME length and order as the input.\n\nINGREDIENTS:\n'
     +JSON.stringify(items);
   try{
-    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1800,messages:[{role:'user',content:prompt}]})});
+    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2500,messages:[{role:'user',content:prompt}]})});
     var data=await res.json();
     var text=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
     var mm=stripJsonFences(text).match(/\[[\s\S]*\]/);
     var arr=mm?JSON.parse(mm[0]):null;
-    if(Array.isArray(arr)&&arr.length===items.length)return arr.map(function(s){return String(s||'').trim();});
+    if(Array.isArray(arr)&&arr.length===items.length)return arr.map(function(o){
+      if(o&&typeof o==='object')return {grocery:String(o.grocery||'').trim(),dept:(GROCERY_DEPTS.indexOf(o.dept)>=0?o.dept:'')};
+      return {grocery:String(o||'').trim(),dept:''}; // tolerate a bare string
+    });
   }catch(e){console.warn('[groceryNames] failed',e);}
-  return items.map(function(){return '';});
+  return items.map(function(){return null;});
 }
-// v99: clean grocery names for ONE ingredient list (mutates in place, sets groceryName on any missing it). Returns # changed.
-function _ingNeedsGroceryName(i){return i&&i.item&&!(i.groceryName&&String(i.groceryName).trim());}
+// v99/v105: an ingredient needs cleaning if it's missing a grocery NAME or a grocery DEPT (so already-named items get a dept too).
+function _ingNeedsGroceryName(i){return !!(i&&i.item&&(!(i.groceryName&&String(i.groceryName).trim())||!(i.groceryDept&&GROCERY_DEPTS.indexOf(i.groceryDept)>=0)));}
 async function _cleanIngredientNames(ings){
   ings=ings||[];
   var needIdx=[],items=[];
@@ -3471,7 +3474,7 @@ async function _cleanIngredientNames(ings){
   if(!items.length)return 0;
   var cleaned=await cleanGroceryNames(items);
   var changed=0;
-  needIdx.forEach(function(idx,k){if(cleaned[k]){ings[idx].groceryName=cleaned[k];changed++;}});
+  needIdx.forEach(function(idx,k){var c=cleaned[k];if(!c)return;if(c.grocery){ings[idx].groceryName=c.grocery;}if(c.dept){ings[idx].groceryDept=c.dept;}if(c.grocery||c.dept)changed++;});
   return changed;
 }
 // Apply to one LIBRARY recipe + persist (targeted write to ingredients only).
@@ -3616,7 +3619,8 @@ function aggregateRows(){
     (dish.ingredients||[]).forEach(function(ing){
       var item=toTitleCaseIngredient(groceryDisplayName(ing).replace(/^\d+[\s.\/]+/,''));if(!item)return; // v94 (#10): merge on the cleaned name
       var unit=(ing.unit||'').trim(),sqty=scaleQty(ing.quantity,scale),legacyKey=legacyNormKey(item,unit),key=normKey(item,unit);
-      if(!grouped[key])grouped[key]={key:key,legacyKey:legacyKey,item:item,unit:unit,quantityTotal:0,quantityText:'',numeric:true,dishes:[],usedFor:[],isManual:false};
+      if(!grouped[key])grouped[key]={key:key,legacyKey:legacyKey,item:item,unit:unit,quantityTotal:0,quantityText:'',numeric:true,dishes:[],usedFor:[],isManual:false,aiDept:''};
+      if(!grouped[key].aiDept&&ing.groceryDept&&GROCERY_DEPTS.indexOf(ing.groceryDept)>=0)grouped[key].aiDept=ing.groceryDept; // v105 (#27B): carry the AI department
       var pq=parseFrac(sqty);
       if(pq==null)grouped[key].numeric=false;else grouped[key].quantityTotal+=pq;
       if(grouped[key].dishes.indexOf(dish.name)<0)grouped[key].dishes.push(dish.name);
@@ -3636,7 +3640,7 @@ function aggregateRows(){
       currentEvent.groceryMeta[row.key]=meta; // migrate old unsafe keys to Firebase-safe keys
     }
     if(!row.isManual)row.quantityText=row.numeric?fmtQty(row.quantityTotal):row.usedFor.map(function(u){return[u.quantity,u.unit].filter(Boolean).join(' ');}).join(' + ');
-    row.department=meta.department||row.manualDept||guessDept(row.item);
+    row.department=meta.department||row.manualDept||row.aiDept||guessDept(row.item); // v105 (#27B): prefer the AI department
     row.store=primaryStore(meta);
     if(row.store==='Unassigned'&&row.manualStore)row.store=row.manualStore;
     row.status=meta.status||'Need';
@@ -3693,18 +3697,28 @@ function saveGroceryStateNow(failureMessage){
 
 
 function getDeptIcon(dept){var d=String(dept||'').toLowerCase();if(/produce|veg|fruit|herb/.test(d))return'🥬';if(/meat|beef|pork|poultry|chicken|fish|seafood|butcher/.test(d))return'🥩';if(/dairy|cheese|egg|milk/.test(d))return'🥛';if(/bakery|bread|baked/.test(d))return'🍞';if(/frozen/.test(d))return'🧊';if(/pantry|dry|canned|can|grain|pasta|rice|cereal|oil|vinegar|sauce/.test(d))return'🥫';if(/spice|condiment|baking/.test(d))return'🧂';if(/snack|chip|nut/.test(d))return'🍿';if(/beverage|drink|juice|water|soda|wine|beer/.test(d))return'🧃';if(/clean|paper|household/.test(d))return'🧹';if(/deli|prepared/.test(d))return'🥙';return'🛒';}
+// v105 (#27B): canonical grocery departments — the AI categorizer picks from these; guessDept is the offline fallback.
+var GROCERY_DEPTS=['Produce','Meat & Seafood','Dairy','Bakery & Pantry','Condiments & Oils','Spices & Seasonings','Frozen','Beverages','Alcohol','Pantry'];
 function guessDept(name){
   name=(name||'').toLowerCase();
-  // v101: condiments/oils/vinegars FIRST so "red wine vinegar", "rice wine", "cooking wine" don't get mis-filed as Alcohol.
+  // v105: spices/seasonings BEFORE produce so "salt and pepper", "black pepper" don't get mis-filed as Produce.
+  if(/\bsalt\b|black pepper|peppercorn|\bcumin|paprika|oregano|cinnamon|chili powder|chili flake|red pepper flake|garlic powder|onion powder|bay leaf|nutmeg|turmeric|cayenne|\bthyme|rosemary|coriander|cardamom|allspice|seasoning|\bspice/.test(name))return 'Spices & Seasonings';
+  // v101: condiments/oils/vinegars before Alcohol so "red wine vinegar", "rice wine", "cooking wine" aren't mis-filed.
   if(/vinegar|olive oil|vegetable oil|canola|sesame oil|cooking oil|\boil\b|soy sauce|fish sauce|hoisin|sriracha|hot sauce|ketchup|mustard|dijon|mayo|mayonnaise|honey|maple syrup|\bsyrup\b|peanut butter|salsa|worcestershire|cooking wine|rice wine/.test(name))return 'Condiments & Oils';
   if(/milk|yogurt|yoghurt|butter|cream|cheese|feta|mozzarella|parmesan|parmigiano|ricotta|cheddar|gouda|brie|provolone|goat cheese|sour cream|\begg/.test(name))return 'Dairy';
   if(/beef|chicken|pork|turkey|steak|sausage|bacon|salmon|fish|shrimp|tuna|\bcod\b|tilapia|lamb|prosciutto|\bham\b|tofu/.test(name))return 'Meat & Seafood';
-  if(/apple|banana|lettuce|onion|garlic|tomato|lime(?!ade)|lemon(?!ade)|herb|cilantro|parsley|basil|mint|avocado|pepper|broccoli|spinach|carrot|celery|cucumber|zucchini|mushroom|potato|kale|cabbage|berr|grape|melon|mango|ginger|scallion|shallot|\bcorn\b/.test(name))return 'Produce';
+  if(/frozen|ice cream|popsicle/.test(name))return 'Frozen';
+  if(/apple|banana|lettuce|onion|garlic|tomato|lime(?!ade)|lemon(?!ade)|cilantro|parsley|basil|\bmint\b|avocado|bell pepper|red pepper|green pepper|jalapeno|chili pepper|broccoli|spinach|carrot|celery|cucumber|zucchini|mushroom|potato|kale|cabbage|berr|grape|melon|mango|ginger|scallion|shallot|\bcorn\b/.test(name))return 'Produce';
   if(/bread|bun|bagel|tortilla|pita|naan|rice|pasta|noodle|flour|oats|cereal|cracker/.test(name))return 'Bakery & Pantry';
   if(/\b(beer|wine|vodka|whiskey|bourbon|tequila|liquor|champagne|prosecco|rum|gin|brandy|cognac)\b/.test(name))return 'Alcohol';
   if(/soda|\bjuice\b|sparkling|coffee|\btea\b|lemonade|cola|kombucha|smoothie|gatorade|powerade|seltzer|cider/.test(name))return 'Beverages';
 
   return 'Pantry';
+}
+// v105 (#27B): the department for an ingredient — the AI-set groceryDept if valid, else the keyword fallback.
+function groceryDeptFor(ing){
+  if(ing&&ing.groceryDept&&GROCERY_DEPTS.indexOf(ing.groceryDept)>=0)return ing.groceryDept;
+  return guessDept((ing&&(ing.groceryName||ing.item))||'');
 }
 
 function guessStore(name,dept){
@@ -3853,10 +3867,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v104';
-var APP_BUILD_TIME='2026-06-05 20:00';
+var APP_VERSION='v105';
+var APP_BUILD_TIME='2026-06-05 21:00';
 
-var APP_VERSION_TAG='Meal Planner v104';
+var APP_VERSION_TAG='Meal Planner v105';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5864,7 +5878,7 @@ function renderGroupedIngredientsHtml(ings,ctx){
     listHtml='<ul class="recipe-ing-list">'+ings.map(liFor).join('')+'</ul>';
   } else { // section (default)
     var groups={},order=[];
-    ings.forEach(function(ing){var nm=(typeof ing==='string')?ing:(ing.item||'');var dept=guessDept(nm)||'Other';if(!groups[dept]){groups[dept]=[];order.push(dept);}groups[dept].push(ing);});
+    ings.forEach(function(ing){var dept=(typeof ing==='string')?(guessDept(ing)||'Other'):(groceryDeptFor(ing)||'Other');if(!groups[dept]){groups[dept]=[];order.push(dept);}groups[dept].push(ing);}); // v105 (#27B): AI dept
     if(order.length<=1){listHtml='<ul class="recipe-ing-list">'+ings.map(liFor).join('')+'</ul>';}
     else{order.forEach(function(dept){listHtml+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 4px;">'+getDeptIcon(dept)+' '+escHtml(dept)+'</div><ul class="recipe-ing-list">'+groups[dept].map(liFor).join('')+'</ul>';});}
   }

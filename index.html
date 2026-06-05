@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v103
+     Meal Planner v104
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3326,7 +3326,7 @@ function saveDishFromModal(){
       var dishMeal=wasBankOnly?null:(getValue('dishMeal')||((currentEvent.days[0]&&currentEvent.days[0].meals&&currentEvent.days[0].meals[0])||'Dinner'));
       var vegCheck=safeEl('isVegetarianCheck');
         var pSel=getValue('dishOwner')||'';var pPhoto='',pInit='';if(pSel){var pu=getKnownUserByName(pSel);pPhoto=pu?pu.photo||'':'';pInit=pu?(pu.initials||pSel.slice(0,2)):pSel.slice(0,2);}var oldD=editingDishId?currentEvent.dishes.find(function(d){return String(d.id)===String(editingDishId);}):null;
-        dish=normalizeDish({id:editingDishId||makeId(),dayId:dishDayId,meal:dishMeal,name:name,url:getValue('dishUrl').trim(),servings:getValue('servings').trim(),peopleEating:getValue('peopleEating')||getValue('peopleEatingPlan')||'',notes:getValue('dishNotes').trim(),tags:[],isVegetarian:vegCheck?vegCheck.checked:false,ingredients:collectIngredients(),steps:collectSteps(),isEvent:false,bankRecipeId:window._pendingBankRecipeId||'',owner:wasBankOnly?pSel:((oldD&&oldD.owner)||''),assignedTo:wasBankOnly?'':pSel,assignedToPhoto:wasBankOnly?'':pPhoto,assignedToInitials:wasBankOnly?'':pInit});if(window._pendingBankRecipeId&&!wasBankOnly)recordRecipeUsedInTrip(window._pendingBankRecipeId);window._pendingBankRecipeId=null;window._pendingLibraryRecipe=null;
+        dish=normalizeDish({id:editingDishId||makeId(),dayId:dishDayId,meal:dishMeal,name:name,url:getValue('dishUrl').trim(),servings:getValue('servings').trim(),peopleEating:getValue('peopleEating')||getValue('peopleEatingPlan')||'',notes:getValue('dishNotes').trim(),tags:[],isVegetarian:vegCheck?vegCheck.checked:false,ingredients:collectIngredients(),steps:collectSteps(),isEvent:false,cookTime:(oldD&&oldD.cookTime)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.cookTime)||'',bankRecipeId:window._pendingBankRecipeId||'',owner:wasBankOnly?pSel:((oldD&&oldD.owner)||''),assignedTo:wasBankOnly?'':pSel,assignedToPhoto:wasBankOnly?'':pPhoto,assignedToInitials:wasBankOnly?'':pInit});if(window._pendingBankRecipeId&&!wasBankOnly)recordRecipeUsedInTrip(window._pendingBankRecipeId);window._pendingBankRecipeId=null;window._pendingLibraryRecipe=null;
     }
     savedDishName=dish.eventName||dish.name||'Dish';
     if(wasBankOnly){
@@ -3853,10 +3853,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v103';
-var APP_BUILD_TIME='2026-06-05 19:00';
+var APP_VERSION='v104';
+var APP_BUILD_TIME='2026-06-05 20:00';
 
-var APP_VERSION_TAG='Meal Planner v103';
+var APP_VERSION_TAG='Meal Planner v104';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5912,6 +5912,7 @@ function showDishDetail(id){
   if(d.url){var srcLabel=(function(){try{return new URL(d.url).hostname.replace('www.','');}catch(e){return 'Link';}}());html+='<div class="recipe-detail-source"><a href="'+escAttr(d.url)+'" target="_blank" rel="noopener">↗ '+escHtml(srcLabel)+'</a></div>';}
   var meta=[];if(d.peopleEating)meta.push('For '+escHtml(String(d.peopleEating)));else if(d.servings)meta.push('Serves '+escHtml(String(d.servings)));
   var ic=(d.ingredients||[]).length;if(ic)meta.push(ic+' ingredient'+(ic!==1?'s':''));
+  if(d.cookTime)meta.push('⏱ '+escHtml(d.cookTime)); // v104 (#23): cook time on the meal-plan dish view
   var isVeg=d.isVegetarian||(d.tags||[]).some(function(t){return /veg|vegetarian/i.test(t);});
   if(meta.length||isVeg)html+='<div class="recipe-detail-meta-row">'+meta.join('<span style="color:var(--border);margin:0 3px">·</span>')+(isVeg?(meta.length?' ':'')+'<span class="dish-veg-pill">VEG</span>':'')+'</div>';
   if(d.isEvent&&(d.eventTime||d.eventAddress)){var ev=[];if(d.eventTime)ev.push(escHtml(d.eventTime));if(d.eventAddress)ev.push(escHtml(d.eventAddress));html+='<div style="font-size:13px;color:var(--text-secondary);margin-top:8px;">'+ev.join(' · ')+'</div>';}
@@ -6631,7 +6632,7 @@ function addDishToTripInBackground(recipe,tripCode,dayId,meal){
   else{db.ref('menuLibrary/'+libRecipe.id).set(libRecipe);}
   // Add dish to trip
   var u=getUser();
-  var dish=normalizeDish({id:makeId(),dayId:dayId,meal:meal,name:recipe.name||'',url:recipe.url||'',servings:recipe.servings||'',peopleEating:'',notes:recipe.notes||'',isVegetarian:!!recipe.isVegetarian,ingredients:(recipe.ingredients||[]),steps:(recipe.steps||[]),isEvent:false,bankRecipeId:libRecipe.id,addedBy:(u&&(u.name||u.initials))||''});
+  var dish=normalizeDish({id:makeId(),dayId:dayId,meal:meal,name:recipe.name||'',url:recipe.url||'',servings:recipe.servings||'',peopleEating:'',notes:recipe.notes||'',isVegetarian:!!recipe.isVegetarian,cookTime:recipe.cookTime||'',ingredients:(recipe.ingredients||[]),steps:(recipe.steps||[]),isEvent:false,bankRecipeId:libRecipe.id,addedBy:(u&&(u.name||u.initials))||''}); // v104 (#23): carry cookTime
   if(tripCode===currentCode){
     // Same trip — add directly to live state and write full trip
     currentEvent.dishes.push(dish);

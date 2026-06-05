@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v107
+     Meal Planner v108
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3870,10 +3870,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v107';
-var APP_BUILD_TIME='2026-06-05 23:00';
+var APP_VERSION='v108';
+var APP_BUILD_TIME='2026-06-06 10:00';
 
-var APP_VERSION_TAG='Meal Planner v107';
+var APP_VERSION_TAG='Meal Planner v108';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4987,6 +4987,18 @@ function _displayImageUrl(recipe){var u=recipe&&recipe.imageUrl;return (u&&/^htt
 // else a similar dish via Spoonacular (needs image API key). Persists to menuLibrary/{id}/imageUrl once found
 // (targeted write, like v75 backfill). Only persists for library recipes — never writes a bogus entry for a plan dish id.
 var _imageFetchAttempted={};
+// v108 (#25): reduce a recipe title to its core dish for image search ("Best Easy Peach, Arugula & Burrata Salad" -> "arugula burrata salad").
+function _simplifyDishQuery(name){
+  var s=String(name||'').toLowerCase().replace(/&/g,' ').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+  var stop={with:1,and:1,the:1,a:1,an:1,of:1,'in':1,'for':1,'on':1,fresh:1,easy:1,best:1,homemade:1,quick:1,simple:1,classic:1,creamy:1,crispy:1,roasted:1,grilled:1,baked:1,sauteed:1,minute:1,style:1,perfect:1,ultimate:1,delicious:1,spicy:1,sweet:1,savory:1,my:1,our:1};
+  var words=s.split(' ').filter(function(w){return w&&w.length>1&&!stop[w];});
+  if(words.length<=3)return words.join(' ');
+  return words.slice(-3).join(' '); // the dish noun is usually at the end
+}
+async function _spoonacularImage(query,key){
+  try{var sr=await fetch('https://api.spoonacular.com/recipes/complexSearch?query='+encodeURIComponent(query)+'&number=1&apiKey='+encodeURIComponent(key),{signal:AbortSignal.timeout(8000)});var sd=await sr.json();if(sd&&sd.results&&sd.results[0]&&sd.results[0].image)return sd.results[0].image;}catch(e){}
+  return '';
+}
 async function sourceRecipeImage(recipe,opts){
   opts=opts||{};
   if(!recipe||!recipe.id)return '';
@@ -4998,11 +5010,13 @@ async function sourceRecipeImage(recipe,opts){
   if(recipe.url){
     try{var mr=await fetch('https://api.microlink.io/?url='+encodeURIComponent(recipe.url)+'&meta=true',{signal:AbortSignal.timeout(8000)});var md=await mr.json();if(md&&md.status==='success'&&md.data&&md.data.image&&md.data.image.url)found=md.data.image.url;}catch(e){}
   }
-  // 2) else a similar dish online (Spoonacular — recipe-specific photos)
+  // 2) else a similar dish online (Spoonacular). v108 (#25): try the full title first (simple dishes), then a
+  // simplified core-dish query (e.g. "Peach, Arugula & Burrata Salad" -> "arugula burrata salad") so specific titles still match.
   if(!found){
     var key=getImageApiKey();
     if(key&&recipe.name){
-      try{var sr=await fetch('https://api.spoonacular.com/recipes/complexSearch?query='+encodeURIComponent(recipe.name)+'&number=1&apiKey='+encodeURIComponent(key),{signal:AbortSignal.timeout(8000)});var sd=await sr.json();if(sd&&sd.results&&sd.results[0]&&sd.results[0].image)found=sd.results[0].image;}catch(e){}
+      found=await _spoonacularImage(recipe.name,key);
+      if(!found){var q=_simplifyDishQuery(recipe.name);if(q&&q!==String(recipe.name).toLowerCase().trim())found=await _spoonacularImage(q,key);}
     }
   }
   if(found&&/^https?:\/\//i.test(found)){

@@ -209,6 +209,8 @@ A2. **AI agent input doesn't clear after send (desktop) — FIX NEXT ITERATION (
 
 21. **iOS Share Extension** (long-term roadmap, Robbie — NOT for now) — an iOS share-sheet extension to import paywalled recipes (NYT Cooking, etc.) by sharing the rendered page from Safari, where the content is already loaded and visible, bypassing the fetch/paywall problem. Future roadmap only; do not build yet.
 
+23. **Cook time end-to-end (Robbie, list only — do NOT build yet)** — cooking time from recipe import must persist to the LIBRARY and travel to the MEAL PLAN dish, and show on the DISPLAY/detail view of BOTH for every recipe. Current state to verify/finish: a `cookTime` field already exists (normalizeDish keeps it; URL/photo import extracts it; renderRecipeCard shows ⏱ and showRecipeDetail shows it in the meta row). Gaps likely: (a) confirm cookTime is copied onto the plan dish when a recipe is added (addDishToTripInBackground / addBankToPlanner / saveDishFromModal) and preserved on edit; (b) confirm showDishDetail (the meal-plan dish view) renders cookTime in its meta row like showRecipeDetail does; (c) confirm imports reliably populate it. Make it visible and consistent in both places.
+
 22. **Archive trips + "Past trips" view** (Robbie, requested — list only, do NOT build yet) — let the user archive a trip and easily see past/archived trips separately from active ones. Likely an `archived` flag on the trip + an "Archived/Past trips" section or toggle on the landing/trip-picker. Must not delete trip data — archiving only hides from the active list. Decide: per-trip archive action, where past trips surface (landing section vs filter), and whether archived trips still sync/count.
 
 ---

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v108
+     Meal Planner v109
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3619,7 +3619,7 @@ function aggregateRows(){
     if(dish.isEvent)return;
     if(!visibleDishIds[dish.id])return;
     var scale=getDishScale(dish);
-    (dish.ingredients||[]).forEach(function(ing){
+    (dish.ingredients||[]).forEach(function(ing,ingIdx){
       var item=toTitleCaseIngredient(groceryDisplayName(ing).replace(/^\d+[\s.\/]+/,''));if(!item)return; // v94 (#10): merge on the cleaned name
       var unit=(ing.unit||'').trim(),sqty=scaleQty(ing.quantity,scale),legacyKey=legacyNormKey(item,unit),key=normKey(item,unit);
       if(!grouped[key])grouped[key]={key:key,legacyKey:legacyKey,item:item,unit:unit,quantityTotal:0,quantityText:'',numeric:true,dishes:[],usedFor:[],isManual:false,aiDept:''};
@@ -3627,7 +3627,7 @@ function aggregateRows(){
       var pq=parseFrac(sqty);
       if(pq==null)grouped[key].numeric=false;else grouped[key].quantityTotal+=pq;
       if(grouped[key].dishes.indexOf(dish.name)<0)grouped[key].dishes.push(dish.name);
-      grouped[key].usedFor.push({dish:dish.name,quantity:sqty,unit:unit});
+      grouped[key].usedFor.push({dish:dish.name,dishId:dish.id,ingIdx:ingIdx,quantity:sqty,unit:unit}); // v109 (#26): track source dish + ingredient index
     });
   });
   (currentEvent.manualGroceryItems||[]).forEach(function(mi){
@@ -3805,6 +3805,42 @@ function updateNavBadges(){
   if(gb){try{var rows=aggregateRows(),nc=rows.filter(function(r){return r.status==='Need';}).length;gb.textContent=nc>99?'99+':nc;gb.style.display=nc?'block':'none';}catch(e){}}
 }
 function updateSortButtons(){var c=safeEl('grocerySortControl');if(c)c.querySelectorAll('button[data-sort]').forEach(function(b){b.classList.toggle('active',b.dataset.sort===grocerySortMode);});var n=safeEl('neededOnlyBtn');if(n)n.classList.toggle('active',groceryNeededOnly);updateNavBadges();}
+// v109 (#26): from a grocery row's dish pill — edit that dish's ingredient inline. idxsStr = the ingredient indices in that dish feeding this row.
+function pickDishIngredient(dishId,idxsStr){
+  var idxs=String(idxsStr||'').split(',').filter(function(s){return s!=='';}).map(Number);
+  var d=currentEvent&&(currentEvent.dishes||[]).find(function(x){return x.id===dishId;});if(!d)return;
+  if(idxs.length<=1){editDishIngredient(dishId,idxs.length?idxs[0]:0);return;}
+  // Q2: this dish has 2+ ingredients in this row — tiny picker (human-readable, no ids)
+  showPickerSheet('Which item to edit?',idxs.map(function(i){var ing=(d.ingredients||[])[i]||{};return{label:[ing.quantity,ing.unit,ing.item].filter(Boolean).join(' ')||(ing.item||'item'),value:String(i)};}),function(val){editDishIngredient(dishId,parseInt(val,10));});
+}
+function editDishIngredient(dishId,ingIdx){
+  var d=currentEvent&&(currentEvent.dishes||[]).find(function(x){return x.id===dishId;});if(!d)return;
+  var ing=(d.ingredients||[])[ingIdx];if(!ing)return;
+  var ex=document.getElementById('ingEditModal');if(ex)ex.remove();
+  var gname=ing.groceryName||groceryDisplayName(ing);
+  var ov=document.createElement('div');ov.id='ingEditModal';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9996;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML='<div style="background:var(--panel);border-radius:18px;padding:20px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.3);">'
+    +'<div style="font-size:15px;font-weight:800;margin-bottom:4px;">Edit ingredient</div>'
+    +'<div style="font-size:12px;color:var(--muted);margin-bottom:14px;">In “'+escHtml(d.name||'this dish')+'” — saves to the dish and the grocery list.</div>'
+    +'<div style="display:flex;gap:8px;margin-bottom:10px;"><input id="ingEditQty" placeholder="Qty" value="'+escAttr(ing.quantity||'')+'" style="width:64px;"><input id="ingEditUnit" placeholder="Unit" value="'+escAttr(ing.unit||'')+'" style="width:78px;"><input id="ingEditItem" placeholder="Ingredient" value="'+escAttr(ing.item||'')+'" style="flex:1;min-width:0;"></div>'
+    +'<div class="field" style="margin-bottom:14px;"><label style="font-size:12px;color:var(--muted);">🛒 Grocery-list name</label><input id="ingEditGrocery" placeholder="grocery name" value="'+escAttr(gname)+'" style="width:100%;"></div>'
+    +'<div style="display:flex;gap:8px;"><button onclick="saveDishIngredientEdit(\''+escAttr(dishId)+'\','+ingIdx+')" style="flex:1;background:var(--theme-accent);color:#fff;border:none;border-radius:10px;padding:11px;font-weight:700;cursor:pointer;">Save</button><button onclick="document.getElementById(\'ingEditModal\').remove()" style="background:var(--panel-soft);border:1px solid var(--border);border-radius:10px;padding:11px 16px;cursor:pointer;color:var(--text);">Cancel</button></div>'
+    +'</div>';
+  document.body.appendChild(ov);ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+}
+function saveDishIngredientEdit(dishId,ingIdx){
+  var d=currentEvent&&(currentEvent.dishes||[]).find(function(x){return x.id===dishId;});if(!d)return;
+  var ing=(d.ingredients||[])[ingIdx];if(!ing)return;
+  ing.quantity=getValue('ingEditQty').trim();ing.displayedQuantity=ing.quantity;
+  ing.unit=getValue('ingEditUnit').trim();
+  ing.item=toTitleCaseIngredient(getValue('ingEditItem').trim());
+  ing.groceryName=getValue('ingEditGrocery').trim();
+  var el=document.getElementById('ingEditModal');if(el)el.remove();
+  commitAndSync();
+  if(typeof buildGroceryList==='function')buildGroceryList();
+  if(typeof renderAll==='function')renderAll();
+  showToast('Ingredient updated.','success');
+}
 function renderGroceryTable(out,rows){
   updateGroceryProgress(rows);updateSortButtons();
   var last='',trows=rows.map(function(r){
@@ -3816,7 +3852,12 @@ function renderGroceryTable(out,rows){
     var maybeDup=!!r.possibleDuplicate;
     var status=r.status||'Need';
     // Dish pills shown under ingredient name on mobile
-    var dishPills=(r.dishes||[]).filter(function(d){return d&&d!=='Manual item';}).map(function(d){return'<span class="grocery-dish-pill">'+escHtml(d)+'</span>';}).join('');
+    // v109 (#26): build the dish pills from usedFor so each pill knows its dish + the ingredient indices feeding this row → tap to edit.
+    var _byDish={},_dishOrder=[];
+    (r.usedFor||[]).forEach(function(u){if(!u||!u.dishId||u.dish==='Manual item')return;if(!_byDish[u.dishId]){_byDish[u.dishId]={name:u.dish,idxs:[]};_dishOrder.push(u.dishId);}if(u.ingIdx!=null&&_byDish[u.dishId].idxs.indexOf(u.ingIdx)<0)_byDish[u.dishId].idxs.push(u.ingIdx);});
+    var dishPills=_dishOrder.length
+      ?_dishOrder.map(function(did){var info=_byDish[did];return'<span class="grocery-dish-pill" style="cursor:pointer;" onclick="pickDishIngredient(\''+escAttr(did)+'\',\''+escAttr(info.idxs.join(','))+'\')" title="Tap to edit this dish’s item">'+escHtml(info.name)+'</span>';}).join('')
+      :(r.dishes||[]).filter(function(d){return d&&d!=='Manual item';}).map(function(d){return'<span class="grocery-dish-pill">'+escHtml(d)+'</span>';}).join('');
     var dishPillsHtml=dishPills?'<div class="grocery-dish-pills">'+dishPills+'</div>':'';
     return secRow+'<tr class="'+(status==='Bought'||status==='Have'?'bought':'')+'"><td><span class="grocery-item-name">'+escHtml(dispPlural(r.item,r.quantityText))+'</span>'+(maybeDup?'<span class="dup-badge" title="May be duplicate ingredient with another row that uses a different unit or wording">May be dup</span>':'')+(multiStore?'<span class="dup-badge" title="Assigned to more than one store">Multi-store</span>':'')+(r.isManual?'<span class="manual-badge">Manual</span><button class="icon-button" style="font-size:12px;padding:2px 7px;margin-left:4px;vertical-align:middle;" onclick="editManualGroceryItem(\''+r.manualId+'\')" title="Edit">✎</button><button class="icon-button" style="font-size:12px;padding:2px 7px;color:#ef4444;vertical-align:middle;" onclick="deleteManualGroceryItem(\''+r.manualId+'\')" title="Remove">×</button>':'')+dishPillsHtml+'</td><td><div class="grocery-item-sub" style="margin-bottom:4px;">'+storeTags+'</div><span class="grocery-qty">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'as needed')+'</span></td><td class="mobile-hide"><div class="grocery-dishes">'+escHtml(r.dishes.join(', '))+'</div></td><td class="mobile-hide"><select class="grocery-status-select" data-key="'+escAttr(r.key)+'"><option '+(status==='Need'?'selected':'')+'>Need</option><option '+(status==='Bought'?'selected':'')+'>Bought</option><option '+(status==='Have'?'selected':'')+'>Have</option></select></td><td class="got-col"><input type="checkbox" class="grocery-check" data-key="'+escAttr(r.key)+'" '+(status==='Bought'||status==='Have'?'checked':'')+' /></td></tr>';
   }).join('');
@@ -3870,10 +3911,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v108';
-var APP_BUILD_TIME='2026-06-06 10:00';
+var APP_VERSION='v109';
+var APP_BUILD_TIME='2026-06-06 11:00';
 
-var APP_VERSION_TAG='Meal Planner v108';
+var APP_VERSION_TAG='Meal Planner v109';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

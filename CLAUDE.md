@@ -172,11 +172,11 @@ Browser console tests — run before every push:
 
 ## RECENT VERSIONS (last 5 — full history in CHANGELOG.md)
 
+- v113 — **cooking-mode quick wins.** Pill badge shows full mm:ss + live-updates (was "30m"); overview screen gets safe-area top padding (C0g, no longer under the clock); overview shows the dish photo not the emoji (C0d); Back button on the pre-cook overview (C0f, via exitCookingMode(true) skipRating). Render/CSS only. Live test pending.
 - v112 — **C0a cooking timers persist + run in parallel** (cooking-mode redesign pt 1). Wall-clock timers (correct through phone sleep), survive leaving cooking mode, persistent bottom strip (tap-resume / ✕ cancel / Clear all), beep+haptic+red DONE chip, Back vs endCookingSession split. Local UI state only — no Firebase/sync/save. **Built, awaiting Robbie's live test + runRegressionTests 25/25 before it's considered confirmed.** Lock-screen live timer = iOS-native-only → parked on #21.
 - v111 — image fallback switched to PEXELS (Google Custom Search deprecating). Order: recipe URL → Spoonacular → Google(if keys) → Pexels. Pexels key syncs with trip. VERIFIED working by Robbie.
 - v110 — Google image fallback (superseded by v111) + image keys (Spoonacular/Google/Pexels) now stick with the TRIP (#29).
 - v109 — #26 edit a dish's item from the grocery row's dish pill (full ingredient editor; picker when a dish feeds a row via >1 ingredient; no ids shown).
-- v108 — #25 smarter image search: _simplifyDishQuery reduces a title to its core dish before Spoonacular. URL still first.
 
 ---
 

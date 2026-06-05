@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v112
+     Meal Planner v113
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -829,7 +829,7 @@ section#recipes{display:none!important;}
 .dish-cook-plan-btn{background:none;border:1px solid var(--border-light);border-radius:6px;padding:2px 7px;font-size:13px;cursor:pointer;color:var(--muted);}
 .dish-cook-plan-btn:hover{background:var(--text);color:var(--panel);}
 /* Cooking overview */
-.cooking-overview{position:absolute;inset:0;background:linear-gradient(160deg,#0a0a0a 0%,#111827 100%);z-index:2;display:flex;flex-direction:column;padding:24px;}
+.cooking-overview{position:absolute;inset:0;background:linear-gradient(160deg,#0a0a0a 0%,#111827 100%);z-index:2;display:flex;flex-direction:column;padding:calc(24px + env(safe-area-inset-top,0px)) 24px 24px;}
 .cooking-overview-title{font-size:20px;font-weight:900;color:#fff;margin-bottom:2px;letter-spacing:-.02em;}
 .cooking-overview-sub{font-size:12px;color:rgba(255,255,255,.45);margin-bottom:20px;}
 .cooking-overview-section{background:rgba(255,255,255,.07);border-radius:12px;padding:12px 14px;margin-bottom:10px;}
@@ -839,6 +839,10 @@ section#recipes{display:none!important;}
 .cooking-overview-list li{font-size:13px;color:rgba(255,255,255,.85);padding:4px 0;border-bottom:none;display:flex;gap:8px;align-items:flex-start;line-height:1.4;}
 .cooking-overview-list li:last-child{border-bottom:none;}
 .cooking-start-btn{width:100%;background:#fff;color:#0f0f0f;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;margin-top:12px;flex-shrink:0;}
+/* v113: overview back button (C0f) + dish image instead of emoji (C0d) */
+.cooking-overview-back{align-self:flex-start;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:14px;font-weight:700;padding:8px 14px;border-radius:999px;cursor:pointer;margin-bottom:14px;flex-shrink:0;}
+.cooking-overview-thumb{width:56px;height:56px;border-radius:12px;background-size:cover;background-position:center;background-color:#222;flex-shrink:0;}
+.cooking-overview-thumb--blank{background:linear-gradient(135deg,var(--theme-accent),#0a0a0a);}
 .cooking-start-btn:active{transform:scale(.98);}
 /* Large tap zones */
 .cooking-tap-prev{position:absolute;left:0;top:0;bottom:0;width:38%;z-index:3;cursor:pointer;display:flex;align-items:center;justify-content:flex-start;padding-left:12px;}
@@ -3942,10 +3946,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v112';
+var APP_VERSION='v113';
 var APP_BUILD_TIME='2026-06-06 13:00';
 
-var APP_VERSION_TAG='Meal Planner v112';
+var APP_VERSION_TAG='Meal Planner v113';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5331,6 +5335,7 @@ function _startGlobalTimer(){
     });
     // Sync current dish display
     if(_cookId&&_cookDishState[_cookId]&&_cookDishState[_cookId].timerRunning){_cookTimerSec=_cookDishState[_cookId].timerSec;updateCookingTimerDisplay();}
+    _updatePillTimers();
     renderTimerStrip();
     if(changed)renderDishSwitcher();
     if(!anyActive)_stopGlobalTimer();
@@ -5420,7 +5425,10 @@ function cookRecipe(id,fromMeal){
 async function showCookingOverview(recipe){
   var ov=document.getElementById('cookingOverlay');if(ov)ov.remove();
   var overlay=document.createElement('div');overlay.id='cookingOverlay';overlay.className='cooking-overview';
-  overlay.innerHTML='<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-shrink:0;"><div style="font-size:40px;flex-shrink:0;">'+getRecipeEmoji(recipe)+'</div><div><div class="cooking-overview-title">'+escHtml(recipe.name)+'</div><div class="cooking-overview-sub">'+escHtml(String((recipe.steps||[]).length))+' steps'+(recipe.servings?' \u00b7 serves '+escHtml(String(recipe.servings)):'')+' </div></div></div>'
+  var _img=_displayImageUrl(recipe);
+  var _thumb=_img?'<div class="cooking-overview-thumb" style="background-image:url(\''+escAttr(_img)+'\');"></div>':'<div class="cooking-overview-thumb cooking-overview-thumb--blank"></div>';
+  overlay.innerHTML='<button class="cooking-overview-back" onclick="exitCookingMode(true)" aria-label="Back">\u2190 Back</button>'
+    +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-shrink:0;">'+_thumb+'<div><div class="cooking-overview-title">'+escHtml(recipe.name)+'</div><div class="cooking-overview-sub">'+escHtml(String((recipe.steps||[]).length))+' steps'+(recipe.servings?' \u00b7 serves '+escHtml(String(recipe.servings)):'')+' </div></div></div>'
     +'<div id="cookingOverviewContent" style="flex:1;overflow-y:auto;margin-bottom:16px;"><div style="color:rgba(255,255,255,.35);font-size:13px;font-style:italic;">Generating your briefing\u2026</div></div>'
     +'<button class="cooking-start-btn" onclick="var o=document.getElementById(\'cookingOverlay\');if(o)o.remove();_initCookingSwipe();">Start Cooking \u2192</button>';
   var cm=safeEl('cookingMode');if(cm)cm.appendChild(overlay);
@@ -5475,7 +5483,23 @@ function switchCookingDish(idx){
 function renderDishSwitcher(){
   var sw=safeEl('cookingDishSwitcher');if(!sw)return;
   sw.style.display='flex';
-  sw.innerHTML=_cookDishList.map(function(rid,idx){var name=_getCookDishName(rid);var s=_cookDishState[rid];var timerBadge=(s&&s.timerRunning&&s.timerSec>0)?'<span class="cook-pill-timer">'+Math.ceil(s.timerSec/60)+'m</span>':'';return'<button class="cooking-dish-pill'+(idx===_cookDishListIdx?' active':'')+' " onclick="switchCookingDish('+idx+')">'+escHtml(name)+timerBadge+'</button>';}).join('')+'<button class="cooking-dish-pill" onclick="addDishToCookingSession()" style="opacity:.65;flex-shrink:0;">+ Add</button>';
+  sw.innerHTML=_cookDishList.map(function(rid,idx){
+    var name=_getCookDishName(rid);var s=_cookDishState[rid];
+    var active=!!(s&&((s.timerRunning&&s.endsAt)||s.fired));// v113: show full mm:ss, not just "30m"
+    var label=(s&&s.fired)?'done':_fmtMMSS(_cookRemaining(s));
+    var timerBadge='<span class="cook-pill-timer'+((s&&s.fired)?' done':'')+'" data-ptimer="'+idx+'"'+(active?'':' style="display:none;"')+'>'+label+'</span>';
+    return'<button class="cooking-dish-pill'+(idx===_cookDishListIdx?' active':'')+' " onclick="switchCookingDish('+idx+')">'+escHtml(name)+timerBadge+'</button>';
+  }).join('')+'<button class="cooking-dish-pill" onclick="addDishToCookingSession()" style="opacity:.65;flex-shrink:0;">+ Add</button>';
+}
+// v113: live-update the per-dish pill countdowns each second without rebuilding the switcher.
+function _updatePillTimers(){
+  var sw=safeEl('cookingDishSwitcher');if(!sw)return;
+  _cookDishList.forEach(function(rid,idx){
+    var el=sw.querySelector('[data-ptimer="'+idx+'"]');if(!el)return;
+    var s=_cookDishState[rid];
+    if(s&&((s.timerRunning&&s.endsAt)||s.fired)){el.style.display='';el.textContent=s.fired?'done':_fmtMMSS(_cookRemaining(s));if(s.fired)el.classList.add('done');else el.classList.remove('done');}
+    else{el.style.display='none';}
+  });
 }
 function addDishToCookingSession(){var avail=_menuLibrary.concat(currentEvent?(currentEvent.recipeBank||[]):[]).filter(function(r){return(r.steps||[]).length>0&&_cookDishList.indexOf(r.id)<0;});if(!avail.length){showToast('No other recipes with steps.','error');return;}showPickerSheet('Add to cooking session',avail.map(function(r){return{label:r.name,value:r.id};}),function(id){_cookDishList.push(id);_cookDishState[id]={step:0,timerSec:0,timerRunning:false};renderDishSwitcher();showToast('Added to session.','success');});}
 
@@ -5488,7 +5512,7 @@ function _initCookingSwipe(){
     if(Math.abs(dx)>55&&dy<50){if(dx>0)nextCookingStep();else prevCookingStep();}
   },{passive:true});
 }
-function exitCookingMode(){
+function exitCookingMode(skipRating){
   var cm=safeEl('cookingMode');if(cm)cm.style.display='none';
   document.body.classList.remove('cooking-active');
   var ov=document.getElementById('cookingOverlay');if(ov)ov.remove();
@@ -5502,7 +5526,7 @@ function exitCookingMode(){
   }else{
     _cookId=null;_cookStep=0;_cookDishList=[];_cookDishListIdx=0;_cookDishState={};
     _stopGlobalTimer();renderTimerStrip();
-    if(recipe)setTimeout(function(){showRatingModal(recipe);},400);
+    if(recipe&&!skipRating)setTimeout(function(){showRatingModal(recipe);},400);
   }
   renderRecipeBank();
 }

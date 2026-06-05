@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v93
+     Meal Planner v94
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3419,16 +3419,25 @@ function parseFrac(v){var t=String(v||'').trim();if(/^\d+\s+\d+\/\d+$/.test(t)){
 function fmtQty(v){if(!v&&v!==0)return'';if(v===0)return'0';if(Number.isInteger(v))return String(v);var whole=Math.floor(v),frac=v-whole,fracs=[[0.125,'1/8'],[0.1667,'1/6'],[0.2,'1/5'],[0.25,'1/4'],[0.3333,'1/3'],[0.375,'3/8'],[0.5,'1/2'],[0.625,'5/8'],[0.6667,'2/3'],[0.75,'3/4'],[0.875,'7/8']];var cl=null,md=0.04;for(var i=0;i<fracs.length;i++){var dv=Math.abs(frac-fracs[i][0]);if(dv<md){md=dv;cl=fracs[i][1];}}if(cl)return whole>0?whole+' '+cl:cl;return String(Math.round(v*100)/100);}
 
 /* ===== GROCERY ===== */
+// v94 (#10): ONE name normalisation, used by BOTH the merge key and the duplicate-flag banner, so a row that's
+// flagged as a duplicate is actually mergeable (they previously used different rules → false flags + split qty).
+function _groceryNameNorm(name){
+  return String(name||'').trim().toLowerCase()
+    .replace(/^\d+[\s.\/]+/,'')
+    .replace(/ies$/,'y').replace(/ves$/,'f').replace(/oes$/,'o').replace(/es$/,'e').replace(/s$/,'');
+}
+// v94 (#10): the name shown + merged on the grocery list. Uses a stored groceryName if present (set later by AI
+// cleaning, Stage 2), else a heuristic: text before the first comma, drop a trailing parenthetical. The dish
+// ingredient itself is NEVER modified — this only affects how the grocery list groups/displays.
+function groceryDisplayName(ing){
+  if(ing&&ing.groceryName&&String(ing.groceryName).trim())return String(ing.groceryName).trim();
+  var n=String((ing&&ing.item)||'').split(',')[0];   // text before the first comma
+  n=n.replace(/\s*\([^)]*\)\s*$/,'');                 // drop a trailing parenthetical
+  return n.trim()||String((ing&&ing.item)||'').trim();
+}
 // Robust key normalisation — strips leading digits, handles plurals
 function legacyNormKey(item,unit){
-  var k=String(item||'').trim().toLowerCase()
-    .replace(/^\d+[\s.\/]+/,'')
-    .replace(/ies$/,'y')
-    .replace(/ves$/,'f')
-    .replace(/oes$/,'o')
-    .replace(/es$/,'e')
-    .replace(/s$/,'');
-  return k+'|'+String(unit||'').trim().toLowerCase();
+  return _groceryNameNorm(item)+'|'+String(unit||'').trim().toLowerCase();
 }
 function firebaseSafeKey(raw){
   raw=String(raw||'');
@@ -3518,7 +3527,7 @@ function aggregateRows(){
     if(!visibleDishIds[dish.id])return;
     var scale=getDishScale(dish);
     (dish.ingredients||[]).forEach(function(ing){
-      var item=toTitleCaseIngredient((ing.item||'').trim().replace(/^\d+[\s.\/]+/,''));if(!item)return;
+      var item=toTitleCaseIngredient(groceryDisplayName(ing).replace(/^\d+[\s.\/]+/,''));if(!item)return; // v94 (#10): merge on the cleaned name
       var unit=(ing.unit||'').trim(),sqty=scaleQty(ing.quantity,scale),legacyKey=legacyNormKey(item,unit),key=normKey(item,unit);
       if(!grouped[key])grouped[key]={key:key,legacyKey:legacyKey,item:item,unit:unit,quantityTotal:0,quantityText:'',numeric:true,dishes:[],usedFor:[],isManual:false};
       var pq=parseFrac(sqty);
@@ -3552,9 +3561,7 @@ function aggregateRows(){
   });
   var possibleDupCounts={};
   rows.forEach(function(r){
-    var dupKey=String(r.item||'').trim().toLowerCase()
-      .replace(/^\d+[\s.\/]+/,'')
-      .replace(/ies$/,'y').replace(/ves$/,'f').replace(/es$/,'').replace(/s$/,'');
+    var dupKey=_groceryNameNorm(r.item); // v94 (#10): same normalization as the merge key — no more false dup flags
     r.duplicateGroupKey=dupKey;
     possibleDupCounts[dupKey]=(possibleDupCounts[dupKey]||0)+1;
   });
@@ -3757,10 +3764,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v93';
-var APP_BUILD_TIME='2026-06-04 23:00';
+var APP_VERSION='v94';
+var APP_BUILD_TIME='2026-06-05 10:00';
 
-var APP_VERSION_TAG='Meal Planner v93';
+var APP_VERSION_TAG='Meal Planner v94';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

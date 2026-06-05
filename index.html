@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v95
+     Meal Planner v96
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1855,8 +1855,9 @@ body.planner-edit-mode .dish-title{margin-bottom:4px;}
         <button type="button" onclick="saveImageApiKey()">Save</button>
         <button type="button" class="secondary" onclick="clearImageApiKey()">Clear</button>
         <button type="button" class="secondary" onclick="backfillMissingImages()">Backfill missing images</button>
+        <button type="button" class="secondary" onclick="backfillGroceryNames()">Clean grocery names (AI)</button>
       </div>
-      <div class="small-note" style="margin-top:12px;">Free key at <strong>spoonacular.com/food-api</strong>. "Backfill" fills up to 25 image-less recipes at a time (paced to protect your quota).</div>
+      <div class="small-note" style="margin-top:12px;">Free key at <strong>spoonacular.com/food-api</strong>. "Backfill" fills up to 25 image-less recipes at a time (paced to protect your quota). "Clean grocery names" uses your Anthropic key to set the shopping-list name for each ingredient (15 recipes per run).</div>
     </div>
     <div class="admin-card">
       <h3>AI Features</h3><p class="card-desc">Features that use your API key.</p>
@@ -3437,6 +3438,55 @@ function groceryDisplayName(ing){
   n=n.replace(/\s*\([^)]*\)\s*$/,'');                 // drop a trailing parenthetical
   return n.trim()||String((ing&&ing.item)||'').trim();
 }
+// v96: AI-clean ingredient names to their core grocery item in ONE batched call. Only SIMPLIFIES each given name —
+// never invents or adds ingredients. Returns an array aligned 1:1 to the input; '' for any it can't clean.
+async function cleanGroceryNames(items){
+  items=(items||[]).map(function(s){return String(s||'');});
+  if(!items.length)return [];
+  var key=getApiKey();if(!key)return items.map(function(){return '';});
+  var prompt='For each ingredient line below, return its core GROCERY name — what you would write on a shopping list. '
+    +'Remove quantities, package sizes, brand names, and prep words (diced, sliced, drained, chopped, minced, melted, to taste, for serving, etc.). '
+    +'KEEP meaningful product distinctions: "crushed tomatoes" stays "crushed tomatoes"; "extra-virgin olive oil" -> "olive oil"; '
+    +'"1 (14 oz) can black beans, drained" -> "black beans"; "2 boneless skinless chicken thighs" -> "chicken thighs"; "kosher salt" -> "salt". '
+    +'Do NOT invent, add, or merge ingredients. Return ONLY a JSON array of strings, SAME length and order as the input.\n\nINGREDIENTS:\n'
+    +JSON.stringify(items);
+  try{
+    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1800,messages:[{role:'user',content:prompt}]})});
+    var data=await res.json();
+    var text=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    var mm=stripJsonFences(text).match(/\[[\s\S]*\]/);
+    var arr=mm?JSON.parse(mm[0]):null;
+    if(Array.isArray(arr)&&arr.length===items.length)return arr.map(function(s){return String(s||'').trim();});
+  }catch(e){console.warn('[groceryNames] failed',e);}
+  return items.map(function(){return '';});
+}
+// Apply AI grocery-name cleaning to one library recipe's ingredients and persist (targeted write to ingredients only).
+async function _applyGroceryNames(recipe){
+  if(!recipe||!recipe.id)return 0;
+  var ings=recipe.ingredients||[];
+  var needIdx=[],items=[];
+  ings.forEach(function(i,idx){if(i&&i.item&&!(i.groceryName&&String(i.groceryName).trim())){needIdx.push(idx);items.push(i.item);}});
+  if(!items.length)return 0;
+  var cleaned=await cleanGroceryNames(items);
+  var changed=0;
+  needIdx.forEach(function(idx,k){if(cleaned[k]){ings[idx].groceryName=cleaned[k];changed++;}});
+  if(changed&&db&&ings.length){try{db.ref('menuLibrary/'+recipe.id+'/ingredients').set(ings);}catch(e){}}
+  return changed;
+}
+// Console tool / Settings button: clean grocery names for library recipes that don't have them yet. Throttled.
+window.backfillGroceryNames=async function(opts){
+  opts=opts||{};var cap=opts.max||15;
+  if(!_menuLibrary||!_menuLibrary.length){console.warn('[gnBackfill] Library not loaded — open the Recipe Library first.');return;}
+  if(!getApiKey()){console.warn('[gnBackfill] Add your Anthropic API key in App Settings first.');return;}
+  var targets=_menuLibrary.filter(function(r){return r.id&&(r.ingredients||[]).some(function(i){return i&&i.item&&!(i.groceryName&&String(i.groceryName).trim());});}).slice(0,cap);
+  if(!targets.length){console.log('[gnBackfill] All recipes already have grocery names.');return;}
+  console.log('[gnBackfill] Cleaning grocery names for '+targets.length+' recipe(s)…');
+  var n=0;
+  for(var t=0;t<targets.length;t++){var c=await _applyGroceryNames(targets[t]);if(c)n++;await new Promise(function(rs){setTimeout(rs,1000);});}
+  if(typeof renderMenuLibraryOverlay==='function')renderMenuLibraryOverlay();
+  if(typeof buildGroceryList==='function')buildGroceryList();
+  console.log('[gnBackfill] Done — updated '+n+'/'+targets.length+' recipe(s). Run again for the next batch.');
+};
 // Robust key normalisation — strips leading digits, handles plurals
 function legacyNormKey(item,unit){
   return _groceryNameNorm(item)+'|'+String(unit||'').trim().toLowerCase();
@@ -3766,10 +3816,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v95';
-var APP_BUILD_TIME='2026-06-05 11:00';
+var APP_VERSION='v96';
+var APP_BUILD_TIME='2026-06-05 12:00';
 
-var APP_VERSION_TAG='Meal Planner v95';
+var APP_VERSION_TAG='Meal Planner v96';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -6136,6 +6186,8 @@ function confirmRecipeImport(){
     showToast('✓ "'+recipe.name+'" saved — '+(recipe.ingredients||[]).length+' ingredients, '+(recipe.steps||[]).length+' steps.','success');
     // v92 (#5): if the imported recipe has no image (e.g. a photo import), source one (URL photo / similar dish online).
     if(!_displayImageUrl(recipe))sourceRecipeImage(recipe,{fromLibrary:true}).then(function(u){if(u){renderMenuLibraryOverlay();renderRecipeBank();}});
+    // v96: clean grocery names for the imported recipe (async, non-blocking)
+    _applyGroceryNames(recipe).then(function(c){if(c){renderMenuLibraryOverlay();if(typeof buildGroceryList==='function')buildGroceryList();}});
   }
   // If dish modal is open, pre-fill it with the imported recipe so user can review/edit
   var modal=safeEl('dishModal');

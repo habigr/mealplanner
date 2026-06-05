@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v105
+     Meal Planner v106
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -2713,7 +2713,10 @@ function commitAndSync(){
   fbWriteTrip(currentEvent);
 }
 async function saveCurrentTrip(){autosave();clearTimeout(fbSaveTimer);setSyncStatus('syncing');try{await fbWriteTrip(currentEvent);showToast('Saved and synced.','success');}catch(e){showToast('Saved locally — will sync when online.','');}}
-async function deleteTripFromDevice(code){var all=getAllTrips(),ev=all[code],name=ev?(ev.name||ev.code||code):code;if(!await confirmAction({title:'Remove Trip',message:'"'+name+'" will be removed from this device. Firebase data stays intact for others.',confirmLabel:'Remove',danger:true}))return;var dt=getDeviceTrips().filter(function(c){return c!==code;});setDeviceTrips(dt);delete all[code];setAllTrips(all);renderLanding();showToast('Removed from this device.','success');}
+async function deleteTripFromDevice(code){var all=getAllTrips(),ev=all[code],name=ev?(ev.name||ev.code||code):code;if(!await confirmAction({title:'Remove Trip',message:'"'+name+'" will be removed from this device. Firebase data stays intact for others.',confirmLabel:'Remove',danger:true}))return;var dt=getDeviceTrips().filter(function(c){return c!==code;});setDeviceTrips(dt);delete all[code];setAllTrips(all);
+  // v106: also remove the user->trip LINK in Firebase so loadUserTripsFromFirebase (on load / pull-refresh) can't re-add it. Trip data (trips/{code}) is NOT touched — stays intact for others.
+  if(db&&currentUser){try{db.ref('users/'+currentUser.uid+'/trips/'+code).remove();}catch(e){}}
+  renderLanding();showToast('Removed from this device.','success');}
 function formatDateShort(s){try{var d=new Date(s+'T00:00:00');return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});}catch(e){return s;}}
 
 /* ===== VISIBILITY: save on hide, sync-on-focus-return ===== */
@@ -3867,10 +3870,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v105';
-var APP_BUILD_TIME='2026-06-05 21:00';
+var APP_VERSION='v106';
+var APP_BUILD_TIME='2026-06-05 22:00';
 
-var APP_VERSION_TAG='Meal Planner v105';
+var APP_VERSION_TAG='Meal Planner v106';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v98
+     Meal Planner v99
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3460,35 +3460,64 @@ async function cleanGroceryNames(items){
   }catch(e){console.warn('[groceryNames] failed',e);}
   return items.map(function(){return '';});
 }
-// Apply AI grocery-name cleaning to one library recipe's ingredients and persist (targeted write to ingredients only).
-async function _applyGroceryNames(recipe){
-  if(!recipe||!recipe.id)return 0;
-  var ings=recipe.ingredients||[];
+// v99: clean grocery names for ONE ingredient list (mutates in place, sets groceryName on any missing it). Returns # changed.
+function _ingNeedsGroceryName(i){return i&&i.item&&!(i.groceryName&&String(i.groceryName).trim());}
+async function _cleanIngredientNames(ings){
+  ings=ings||[];
   var needIdx=[],items=[];
-  ings.forEach(function(i,idx){if(i&&i.item&&!(i.groceryName&&String(i.groceryName).trim())){needIdx.push(idx);items.push(i.item);}});
+  ings.forEach(function(i,idx){if(_ingNeedsGroceryName(i)){needIdx.push(idx);items.push(i.item);}});
   if(!items.length)return 0;
   var cleaned=await cleanGroceryNames(items);
   var changed=0;
   needIdx.forEach(function(idx,k){if(cleaned[k]){ings[idx].groceryName=cleaned[k];changed++;}});
-  if(changed&&db&&ings.length){try{db.ref('menuLibrary/'+recipe.id+'/ingredients').set(ings);}catch(e){}}
   return changed;
+}
+// Apply to one LIBRARY recipe + persist (targeted write to ingredients only).
+async function _applyGroceryNames(recipe){
+  if(!recipe||!recipe.id)return 0;
+  var changed=await _cleanIngredientNames(recipe.ingredients||[]);
+  if(changed&&db&&(recipe.ingredients||[]).length){try{db.ref('menuLibrary/'+recipe.id+'/ingredients').set(recipe.ingredients);}catch(e){}}
+  return changed;
+}
+// v99: clean the OPEN trip's dishes — the grocery list + plan tab read from currentEvent.dishes (a separate copy of
+// the ingredients), NOT the library. Persists via commitAndSync. Returns # ingredients changed.
+async function _cleanTripDishes(){
+  if(!currentEvent||!Array.isArray(currentEvent.dishes))return 0;
+  var changed=0;
+  for(var i=0;i<currentEvent.dishes.length;i++){
+    var d=currentEvent.dishes[i];
+    if(d&&!d.isEvent&&(d.ingredients||[]).length){var c=await _cleanIngredientNames(d.ingredients);if(c)changed+=c;await new Promise(function(rs){setTimeout(rs,300);});}
+  }
+  if(changed&&typeof commitAndSync==='function')commitAndSync();
+  return changed;
+}
+function _tripHasMissingGroceryNames(){return !!(currentEvent&&(currentEvent.dishes||[]).some(function(d){return d&&!d.isEvent&&(d.ingredients||[]).some(_ingNeedsGroceryName);}));}
+// v99: SELF-HEALING — first time a trip's grocery list builds, auto-fill any missing grocery names. Once per trip/session.
+var _gnAutoHealRan={};
+async function _autoHealGroceryNames(){
+  if(!currentEvent||!currentCode||!getApiKey()||_gnAutoHealRan[currentCode])return;
+  _gnAutoHealRan[currentCode]=true; // set before await to prevent re-entry while running
+  if(!_tripHasMissingGroceryNames())return;
+  showToast('Tidying grocery names…','');
+  var n=await _cleanTripDishes();
+  if(n){if(typeof buildGroceryList==='function')buildGroceryList();if(typeof renderAll==='function')renderAll();showToast('✓ Grocery names tidied.','success');}
 }
 // Console tool / Settings button: clean grocery names for library recipes that don't have them yet. Throttled.
 window.backfillGroceryNames=async function(opts){
   opts=opts||{};var cap=opts.max||15;
-  function _gnMissing(){return _menuLibrary.filter(function(r){return r.id&&(r.ingredients||[]).some(function(i){return i&&i.item&&!(i.groceryName&&String(i.groceryName).trim());});});}
+  function _gnMissing(){return _menuLibrary.filter(function(r){return r.id&&(r.ingredients||[]).some(_ingNeedsGroceryName);});}
   if(!getApiKey()){showToast('Add your Anthropic API key in App Settings first.','error');return;}
   showToast('Loading your recipes…','');await _ensureLibraryLoaded();
-  if(!_menuLibrary||!_menuLibrary.length){showToast('No recipes in your library yet.','');return;}
   var targets=_gnMissing().slice(0,cap);
-  if(!targets.length){showToast('✓ All recipes already have grocery names.','success');return;}
-  showToast('Cleaning grocery names for '+targets.length+' recipe(s)…','');
+  if(!targets.length&&!_tripHasMissingGroceryNames()){showToast('✓ Everything already has grocery names.','success');return;}
+  showToast('Cleaning grocery names…','');
   var n=0;
   for(var t=0;t<targets.length;t++){var c=await _applyGroceryNames(targets[t]);if(c)n++;await new Promise(function(rs){setTimeout(rs,1000);});}
+  var tripN=currentEvent?await _cleanTripDishes():0; // v99: also clean the OPEN trip's dishes (what the grocery list reads)
   if(typeof renderMenuLibraryOverlay==='function')renderMenuLibraryOverlay();
-  if(currentEvent&&typeof buildGroceryList==='function')buildGroceryList(); // v97: only if a trip is open
+  if(currentEvent){if(typeof buildGroceryList==='function')buildGroceryList();if(typeof renderAll==='function')renderAll();}
   var remaining=_gnMissing().length;
-  showToast('✓ Cleaned grocery names for '+n+' recipe(s).'+(remaining?' '+remaining+' more — run again.':''),'success');
+  showToast('✓ Cleaned '+n+' recipe(s)'+(tripN?' + the open trip':'')+'.'+(remaining?' '+remaining+' library recipe(s) left — run again.':''),'success');
 };
 // Robust key normalisation — strips leading digits, handles plurals
 function legacyNormKey(item,unit){
@@ -3687,6 +3716,7 @@ function guessStore(name,dept){
 function buildGroceryList(){
   mpLog('GROCERY','buildGroceryList',{dishes:(currentEvent&&currentEvent.dishes||[]).length});
   var tableOut=safeEl('groceryTableInner'),shopOut=safeEl('groceryOutput');if(!tableOut||!shopOut)return;
+  if(typeof _autoHealGroceryNames==='function')_autoHealGroceryNames(); // v99: self-heal missing grocery names (once/trip/session)
   var hasDishes=currentEvent&&((currentEvent.dishes||[]).length>0||(currentEvent.manualGroceryItems||[]).length>0);
   if(currentEvent&&reconcileGroceryMeta({toast:false})&&hasDishes){saveGroceryStateNow('Could not sync grocery cleanup. It was fixed locally.');showToast('Grocery list was out of sync. Fixed stale items from deleted meals.','');}
   if(shoppingMode)tableOut.innerHTML='';else shopOut.innerHTML='';
@@ -3820,10 +3850,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v98';
-var APP_BUILD_TIME='2026-06-05 14:00';
+var APP_VERSION='v99';
+var APP_BUILD_TIME='2026-06-05 15:00';
 
-var APP_VERSION_TAG='Meal Planner v98';
+var APP_VERSION_TAG='Meal Planner v99';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

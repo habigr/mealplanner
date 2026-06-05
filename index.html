@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v99
+     Meal Planner v100
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3850,10 +3850,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v99';
-var APP_BUILD_TIME='2026-06-05 15:00';
+var APP_VERSION='v100';
+var APP_BUILD_TIME='2026-06-05 16:00';
 
-var APP_VERSION_TAG='Meal Planner v99';
+var APP_VERSION_TAG='Meal Planner v100';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5786,7 +5786,7 @@ function showRecipeDetail(id){
   html+='</div>';
   if(r.personalNotes)html+='<div class="recipe-personal-notes">📝 '+escHtml(r.personalNotes)+'</div>';
   var ings=r.ingredients||[];
-  if(ings.length){html+=renderGroupedIngredientsHtml(ings);}
+  if(ings.length){html+=renderGroupedIngredientsHtml(ings,{type:'recipe',id:r.id});}
   var steps=r.steps||[];
   if(steps.length){html+='<div class="recipe-detail-section"><div class="recipe-section-heading">Instructions</div><ol class="recipe-steps-list">';steps.forEach(function(step,i){html+='<li><span class="recipe-step-num">'+(i+1)+'</span><span>'+escHtml(cleanStepText(step))+'</span></li>';});html+='</ol></div>';}
   // Library info section
@@ -5835,15 +5835,17 @@ function cleanStepText(s){return String(s||'').replace(/^\s*step\s*\d+\s*[:.\)\-
 // Section groups by grocery department (same guessDept the grocery list uses). Render-only, no data writes.
 var _ingSortMode='section';
 function setIngSort(mode){_ingSortMode=mode;if(_dishDetailId)showDishDetail(_dishDetailId);else if(_recipeDetailId)showRecipeDetail(_recipeDetailId);}
-function renderGroupedIngredientsHtml(ings){
+function renderGroupedIngredientsHtml(ings,ctx){
   ings=ings||[];if(!ings.length)return'';
   function liFor(ing){
     var qty,item;
     if(typeof ing==='string'){qty='';item=ing;}
     else{qty=[ing.quantity||ing.displayedQuantity||'',ing.unit||''].filter(Boolean).join(' ');item=ing.item||'';}
-    var gn=(typeof ing==='object')?groceryDisplayName(ing):''; // v95: grocery-list name (heuristic now, AI later)
-    var pill=(gn&&gn.toLowerCase()!==String(item).trim().toLowerCase())?'<span class="grocery-name-pill" title="On the grocery list as">'+escHtml(gn)+'</span>':'';
-    return'<li><span class="recipe-ing-qty">'+escHtml(qty)+'</span><span class="recipe-ing-item">'+escHtml(item)+pill+'</span></li>';
+    var gn=(typeof ing==='object')?groceryDisplayName(ing):''; // grocery-list name
+    var pill=(gn&&gn.toLowerCase()!==String(item).trim().toLowerCase())?'<span class="grocery-name-pill" title="On the grocery list as — tap to edit">'+escHtml(gn)+'</span>':'';
+    var editable=!!(ctx&&ctx.id&&typeof ing==='object'); // v100: tap to edit the grocery-list name
+    var attrs=editable?' style="cursor:pointer;" onclick="editGroceryName(\''+ctx.type+'\',\''+escAttr(ctx.id)+'\','+ings.indexOf(ing)+')" title="Tap to set the grocery-list name"':'';
+    return'<li'+attrs+'><span class="recipe-ing-qty">'+escHtml(qty)+'</span><span class="recipe-ing-item">'+escHtml(item)+pill+'</span></li>';
   }
   var modes=[['section','Section'],['recipe','Recipe order'],['alpha','A–Z']];
   var bar='<div style="display:flex;gap:6px;margin:2px 0 10px;flex-wrap:wrap;">'+modes.map(function(m){
@@ -5862,7 +5864,23 @@ function renderGroupedIngredientsHtml(ings){
     if(order.length<=1){listHtml='<ul class="recipe-ing-list">'+ings.map(liFor).join('')+'</ul>';}
     else{order.forEach(function(dept){listHtml+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 4px;">'+getDeptIcon(dept)+' '+escHtml(dept)+'</div><ul class="recipe-ing-list">'+groups[dept].map(liFor).join('')+'</ul>';});}
   }
-  return'<div class="recipe-detail-section"><div class="recipe-section-heading">Ingredients</div>'+bar+listHtml+'</div>';
+  var hint=(ctx&&ctx.id)?'<div style="font-size:11px;color:var(--muted);margin:-2px 0 8px;">Tap an ingredient to set its 🛒 grocery-list name.</div>':'';
+  return'<div class="recipe-detail-section"><div class="recipe-section-heading">Ingredients</div>'+hint+bar+listHtml+'</div>';
+}
+// v100: edit an ingredient's grocery-list name. type 'recipe' edits the library recipe; 'dish' edits the plan dish.
+async function editGroceryName(type,id,idx){
+  var ings,persist;
+  if(type==='recipe'){var r=_menuLibrary.find(function(x){return x.id===id;});if(!r)return;ings=r.ingredients||[];persist=function(){if(db&&ings.length){try{db.ref('menuLibrary/'+id+'/ingredients').set(ings);}catch(e){}}};}
+  else{var d=currentEvent&&(currentEvent.dishes||[]).find(function(x){return x.id===id;});if(!d)return;ings=d.ingredients||[];persist=function(){if(typeof commitAndSync==='function')commitAndSync();};}
+  var ing=ings[idx];if(!ing||typeof ing!=='object')return;
+  var cur=(ing.groceryName&&String(ing.groceryName).trim())||groceryDisplayName(ing);
+  var val=await promptAction({title:'Grocery-list name',message:'How should "'+(ing.item||'')+'" appear on the grocery list? Items with the same name are combined.',defaultValue:cur,placeholder:'e.g. crushed tomatoes',confirmLabel:'Save'});
+  if(val==null)return; // cancelled
+  ing.groceryName=val;
+  persist();
+  if(currentEvent&&typeof buildGroceryList==='function')buildGroceryList();
+  if(type==='recipe')showRecipeDetail(id);else showDishDetail(id);
+  showToast('Grocery name updated.','success');
 }
 
 /* ===== DISH DETAIL VIEW (v64) — reuses recipe-detail format; edits the PLAN dish ===== */
@@ -5897,7 +5915,7 @@ function showDishDetail(id){
   html+='</div>';
   if(d.notes)html+='<div class="recipe-personal-notes">📝 '+escHtml(d.notes)+'</div>';
   var ings=d.ingredients||[];
-  if(ings.length){html+=renderGroupedIngredientsHtml(ings);}
+  if(ings.length){html+=renderGroupedIngredientsHtml(ings,{type:'dish',id:d.id});}
   var steps=d.steps||[];
   if(steps.length){html+='<div class="recipe-detail-section"><div class="recipe-section-heading">Instructions</div><ol class="recipe-steps-list">';steps.forEach(function(s,i){html+='<li><span class="recipe-step-num">'+(i+1)+'</span><span>'+escHtml(cleanStepText(s))+'</span></li>';});html+='</ol></div>';}
   body.innerHTML=html;body.scrollTop=0;

@@ -172,18 +172,18 @@ Browser console tests — run before every push:
 
 ## RECENT VERSIONS (last 5 — full history in CHANGELOG.md)
 
+- v112 — **C0a cooking timers persist + run in parallel** (cooking-mode redesign pt 1). Wall-clock timers (correct through phone sleep), survive leaving cooking mode, persistent bottom strip (tap-resume / ✕ cancel / Clear all), beep+haptic+red DONE chip, Back vs endCookingSession split. Local UI state only — no Firebase/sync/save. **Built, awaiting Robbie's live test + runRegressionTests 25/25 before it's considered confirmed.** Lock-screen live timer = iOS-native-only → parked on #21.
 - v111 — image fallback switched to PEXELS (Google Custom Search deprecating). Order: recipe URL → Spoonacular → Google(if keys) → Pexels. Pexels key syncs with trip. VERIFIED working by Robbie.
 - v110 — Google image fallback (superseded by v111) + image keys (Spoonacular/Google/Pexels) now stick with the TRIP (#29).
 - v109 — #26 edit a dish's item from the grocery row's dish pill (full ingredient editor; picker when a dish feeds a row via >1 ingredient; no ids shown).
 - v108 — #25 smarter image search: _simplifyDishQuery reduces a title to its core dish before Spoonacular. URL still first.
-- v107 — teammates' profile photos show when online (writePresence re-reads getUser() each tick; saveProfile re-pushes presence).
 
 ---
 
 ## NEXT SESSION — start here
 
-STATE (session ended at v111): shipped v80→v111. 25/25 regression confirmed at v101 AND v109. Working tree clean. Robbie wants the **COOKING-MODE REDESIGN (C0)** next — read the C0 spec in BACKLOG.md first.
+STATE: **v112 shipped C0a** (cooking timers persist + parallel) — built, pushed live, **awaiting Robbie's phone test + runRegressionTests 25/25 to confirm.** If a timer issue shows up, iterate on the cooking block (renderTimerStrip / _startGlobalTimer / exitCookingMode). Prior: shipped v80→v111, 25/25 confirmed at v101 + v109.
 
-Lead with C0a (persistent/parallel timers — also fixes the timer-dies-on-exit bug), then the quick wins C0f (immediate Back), C0g (clock overlap), C0h (remove people adjuster), C0d (dish picture not emoji). Its own focused session.
+Continue the **COOKING-MODE REDESIGN (C0)** — read the C0 spec in BACKLOG.md. Remaining small builds, in order: **C0f** (Back/X on the cooking overview screen), **C0g** (top safe-area padding so content clears the status-bar clock), **C0h** (remove the non-working "cooking for #" adjuster), **C0d** (dish photo instead of emoji + clean focus view). Then the bigger C0b multi-dish dashboard / C0c coordination timeline.
 
 NOTE: the v99 self-heal spends ~0.1¢/recipe on Robbie's Anthropic key to clean grocery names (cached, one-time); Robbie is OK with it. To make it button-only, gate _autoHealGroceryNames().

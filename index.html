@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v111
+     Meal Planner v112
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -979,6 +979,20 @@ tr.swipe-checking{background:rgba(34,197,94,.12)!important;transition:background
 #dishModal input[readonly]:hover{border-color:var(--theme-accent);}
 /* AI Chat FAB */
 .ai-chat-fab{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);right:16px;width:54px;height:54px;border-radius:50%;background:var(--theme-accent);color:#fff;border:none;font-size:24px;cursor:pointer;z-index:9150;box-shadow:0 4px 20px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;animation:fabGlow 3s ease-in-out infinite;}
+/* v112 (C0a): persistent active-timers strip (bottom, left of the AI fab) */
+.timer-strip{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);left:16px;right:84px;z-index:9140;display:flex;align-items:center;gap:8px;}
+.timer-strip-chips{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px;flex:1;}
+.timer-strip-chips::-webkit-scrollbar{display:none;}
+.timer-chip{display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--panel,#fff);border:1.5px solid var(--theme-accent);border-radius:999px;padding:7px 8px 7px 14px;box-shadow:0 4px 16px rgba(0,0,0,.18);cursor:pointer;font-size:13px;max-width:200px;}
+.timer-chip-name{font-weight:700;color:var(--text,#222);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.timer-chip-time{font-weight:800;color:var(--theme-accent);font-variant-numeric:tabular-nums;flex-shrink:0;}
+.timer-chip-x{background:rgba(0,0,0,.06);border:none;border-radius:50%;width:22px;height:22px;font-size:12px;line-height:1;color:var(--muted,#888);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.timer-chip.done{border-color:#e0492f;background:#e0492f;animation:timerDonePulse 1s ease-in-out infinite;}
+.timer-chip.done .timer-chip-name,.timer-chip.done .timer-chip-time{color:#fff;}
+.timer-chip.done .timer-chip-x{background:rgba(255,255,255,.25);color:#fff;}
+@keyframes timerDonePulse{0%,100%{box-shadow:0 4px 16px rgba(224,73,47,.4);}50%{box-shadow:0 4px 24px rgba(224,73,47,.85);}}
+.timer-strip-clear{flex-shrink:0;background:var(--panel,#fff);border:1.5px solid var(--border,#ddd);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700;color:var(--muted,#888);cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.18);}
+body.cooking-active .timer-strip{display:none!important;}
 @keyframes fabGlow{0%,100%{box-shadow:0 4px 20px rgba(0,0,0,.3);}50%{box-shadow:0 4px 28px rgba(0,0,0,.4),0 0 16px rgba(26,50,96,.3);}}
 .ai-chat-fab svg{transition:transform .3s;}
 .ai-chat-fab:hover svg{transform:rotate(20deg) scale(1.1);}
@@ -3928,10 +3942,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v111';
+var APP_VERSION='v112';
 var APP_BUILD_TIME='2026-06-06 13:00';
 
-var APP_VERSION_TAG='Meal Planner v111';
+var APP_VERSION_TAG='Meal Planner v112';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5297,23 +5311,85 @@ var _cookDishList=[],_cookDishListIdx=0;
 // Per-dish state for multi-dish cooking
 var _cookDishState={}; // dishId->{step,timerSec,timerRunning}
 var _cookGlobalTimerInt=null; // ticks all background timers
-function _saveCookDishState(){if(!_cookId)return;_cookDishState[_cookId]={step:_cookStep,timerSec:_cookTimerSec,timerRunning:_cookTimerRunning};}
+// v112 (C0a): merge-save so endsAt/fired survive a save; never clobber the wall-clock fields.
+function _saveCookDishState(){if(!_cookId)return;var s=_cookDishState[_cookId]||{};s.step=_cookStep;s.timerSec=_cookTimerSec;s.timerRunning=_cookTimerRunning;_cookDishState[_cookId]=s;}
 function _loadCookDishState(id){var s=_cookDishState[id]||{};_cookStep=s.step||0;_cookTimerSec=s.timerSec||0;_cookTimerRunning=s.timerRunning||false;}
+// v112: remaining seconds from the wall clock (correct through phone sleep / tab throttle).
+function _cookRemaining(s){if(!s)return 0;if(s.timerRunning&&s.endsAt)return Math.max(0,Math.round((s.endsAt-Date.now())/1000));return s.timerSec||0;}
+function _hasActiveTimers(){return Object.keys(_cookDishState).some(function(id){var s=_cookDishState[id];return s&&((s.timerRunning&&s.endsAt)||s.fired);});}
 function _startGlobalTimer(){
   if(_cookGlobalTimerInt)return;
   _cookGlobalTimerInt=setInterval(function(){
-    var changed=false;
+    var changed=false,anyActive=false;
     Object.keys(_cookDishState).forEach(function(id){
-      var s=_cookDishState[id];
-      if(s&&s.timerRunning&&s.timerSec>0){s.timerSec--;changed=true;if(s.timerSec<=0){s.timerRunning=false;haptic(300);showToast('⏱ Timer done for '+_getCookDishName(id)+'!','success');}}
+      var s=_cookDishState[id];if(!s)return;
+      if(s.timerRunning&&s.endsAt){
+        var rem=_cookRemaining(s);s.timerSec=rem;anyActive=true;
+        if(rem<=0){s.timerRunning=false;s.endsAt=null;s.fired=true;changed=true;haptic(300);_cookBeep();showToast('⏱ Timer done for '+_getCookDishName(id)+'!','success');}
+      }
+      if(s.fired)anyActive=true; // keep the strip + engine alive until acknowledged
     });
     // Sync current dish display
     if(_cookId&&_cookDishState[_cookId]&&_cookDishState[_cookId].timerRunning){_cookTimerSec=_cookDishState[_cookId].timerSec;updateCookingTimerDisplay();}
+    renderTimerStrip();
     if(changed)renderDishSwitcher();
+    if(!anyActive)_stopGlobalTimer();
   },1000);
 }
 function _stopGlobalTimer(){if(_cookGlobalTimerInt){clearInterval(_cookGlobalTimerInt);_cookGlobalTimerInt=null;}}
 function _getCookDishName(id){var r=_menuLibrary.find(function(x){return x.id===id;})||(currentEvent&&(currentEvent.recipeBank||[]).find(function(x){return x.id===id;}));return r?r.name:'Recipe';}
+
+// v112 (C0a): short alarm beep. AudioContext is unlocked on the start tap (a user gesture) so it can play later.
+var _cookAudioCtx=null;
+function _unlockCookAudio(){try{if(!_cookAudioCtx)_cookAudioCtx=new (window.AudioContext||window.webkitAudioContext)();if(_cookAudioCtx.state==='suspended')_cookAudioCtx.resume();}catch(e){}}
+function _cookBeep(){try{_unlockCookAudio();var ctx=_cookAudioCtx;if(!ctx)return;[0,300,600].forEach(function(off){var o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.setValueAtTime(0.0001,ctx.currentTime+off/1000);g.gain.exponentialRampToValueAtTime(0.18,ctx.currentTime+off/1000+0.02);g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+off/1000+0.18);o.start(ctx.currentTime+off/1000);o.stop(ctx.currentTime+off/1000+0.2);});}catch(e){}}
+function _fmtMMSS(sec){sec=Math.max(0,sec|0);var m=Math.floor(sec/60),s=sec%60;return m+':'+(s<10?'0':'')+s;}
+
+// v112 (C0a): persistent bottom strip — running/finished timers stay visible after you leave cooking mode.
+function renderTimerStrip(){
+  var strip=safeEl('timerStrip');if(!strip)return;
+  var cm=safeEl('cookingMode');var cooking=cm&&cm.style.display!=='none';
+  var ids=Object.keys(_cookDishState).filter(function(id){var s=_cookDishState[id];return s&&((s.timerRunning&&s.endsAt)||s.fired);});
+  if(cooking||!ids.length){strip.style.display='none';strip.innerHTML='';return;}// inside cooking mode the in-cook timer + pills already show it
+  strip.style.display='flex';
+  var chips=ids.map(function(id){
+    var s=_cookDishState[id],name=_getCookDishName(id),done=s.fired,rem=_cookRemaining(s);
+    return '<div class="timer-chip'+(done?' done':'')+'" onclick="resumeCookingDish(\''+escAttr(id)+'\')">'
+      +'<span class="timer-chip-name">'+escHtml(name)+'</span>'
+      +'<span class="timer-chip-time">'+(done?'DONE':_fmtMMSS(rem))+'</span>'
+      +'<button class="timer-chip-x" onclick="event.stopPropagation();cancelCookTimer(\''+escAttr(id)+'\')" aria-label="Cancel timer">✕</button>'
+      +'</div>';
+  }).join('');
+  strip.innerHTML='<div class="timer-strip-chips">'+chips+'</div>'+(ids.length>1?'<button class="timer-strip-clear" onclick="endCookingSession()">Clear all</button>':'');
+}
+// Tap a strip chip → re-open cooking mode on that dish.
+function resumeCookingDish(id){
+  if(!_findRecipeForCook(id)){showToast('Recipe not found.','error');return;}
+  if(_cookDishList.indexOf(id)<0)_cookDishList.push(id);
+  _cookDishListIdx=_cookDishList.indexOf(id);_cookId=id;
+  var s=_cookDishState[id];if(s)s.fired=false;// acknowledge a finished timer on entry
+  _loadCookDishState(id);
+  var recipe=_findRecipeForCook(id);
+  var forEl=safeEl('cookingFor');if(forEl&&recipe)forEl.value=recipe.peopleEating||recipe.servings||4;
+  if(recipe)safeEl('cookingTitle').textContent=recipe.name||'Recipe';
+  var cm=safeEl('cookingMode');if(cm)cm.style.display='flex';
+  document.body.classList.add('cooking-active');
+  renderDishSwitcher();renderCookingStep();renderCookingIngredients();
+  requestWakeLock();_startGlobalTimer();_initCookingSwipe();renderTimerStrip();
+}
+// ✕ on a chip → cancel just that timer (keeps the dish in the session).
+function cancelCookTimer(id){
+  var s=_cookDishState[id];if(s){s.timerRunning=false;s.endsAt=null;s.timerSec=0;s.fired=false;}
+  if(_cookId===id){_cookTimerRunning=false;_cookTimerSec=0;updateCookingTimerDisplay();var btn=document.querySelector('.cooking-timer-btn');if(btn)btn.textContent='Start';}
+  if(!_hasActiveTimers())_stopGlobalTimer();
+  renderTimerStrip();renderDishSwitcher();
+}
+// Explicit "End cooking / clear all" — separate from just backing out.
+function endCookingSession(){
+  Object.keys(_cookDishState).forEach(function(id){var s=_cookDishState[id];if(s){s.timerRunning=false;s.endsAt=null;s.fired=false;s.timerSec=0;}});
+  _cookTimerRunning=false;clearInterval(_cookTimerInt);_cookTimerInt=null;_stopGlobalTimer();
+  renderTimerStrip();renderDishSwitcher();showToast('All timers cleared.','success');
+}
 
 function _findRecipeForCook(id){
   var r=_menuLibrary.find(function(x){return x.id===id;})||(currentEvent&&(currentEvent.recipeBank||[]).find(function(x){return x.id===id;}));
@@ -5325,7 +5401,8 @@ function cookRecipe(id,fromMeal){
   var recipe=_findRecipeForCook(id);
   if(!recipe){showToast('Recipe not found.','error');return;}
   if(!(recipe.steps||[]).length){showToast('No steps found. Add steps to this recipe first.','error');if(id)editDish(id);return;}
-  if(!fromMeal){_cookDishList=[id];_cookDishListIdx=0;_cookDishState={};}
+  if(!fromMeal){_cookDishList=[id];_cookDishListIdx=0;}// v112: keep _cookDishState so a timer already running on another dish isn't wiped
+  _unlockCookAudio();
   _cookId=id;_loadCookDishState(id);
   recipe.timesUsed=(recipe.timesUsed||0)+1;recipe.lastUsed=getTodayStr();
   commitAndSync();
@@ -5376,7 +5453,7 @@ function cookMeal(dayId,meal){
     if(recipe&&cookable.indexOf(recipe.id)<0)cookable.push(recipe.id);
   });
   if(!cookable.length){showToast('No recipes with steps found for this meal.','error');return;}
-  _cookDishList=cookable;_cookDishListIdx=0;_cookDishState={};
+  _cookDishList=cookable;_cookDishListIdx=0;// v112: don't wipe _cookDishState — a running timer from a prior session survives
   cookRecipe(cookable[0],true);
 }
 
@@ -5385,13 +5462,14 @@ function switchCookingDish(idx){
   // Save current dish state (timer keeps running in background via _cookGlobalTimerInt)
   _saveCookDishState();
   _cookDishListIdx=idx;_cookId=_cookDishList[idx];
-  _loadCookDishState(_cookId);
-  // Stop the local timer display (background timer keeps ticking)
-  clearInterval(_cookTimerInt);_cookTimerInt=null;_cookTimerRunning=false;
+  _loadCookDishState(_cookId);// v112: this dish's own timerRunning travels with it (don't force it off — that used to save the timer as stopped)
+  clearInterval(_cookTimerInt);_cookTimerInt=null;
   var recipe=_findRecipeForCook(_cookId);
   if(recipe){var forEl=safeEl('cookingFor');if(forEl)forEl.value=recipe.peopleEating||recipe.servings||4;safeEl('cookingTitle').textContent=recipe.name||'Recipe';}
   renderDishSwitcher();renderCookingStep();renderCookingIngredients();
-  if(_cookDishState[_cookId]&&_cookDishState[_cookId].timerRunning){_cookTimerSec=_cookDishState[_cookId].timerSec;updateCookingTimerDisplay();}
+  var s=_cookDishState[_cookId];
+  var btn=document.querySelector('.cooking-timer-btn');if(btn)btn.textContent=(s&&s.timerRunning)?'Pause':'Start';
+  if(s&&s.timerRunning){_cookTimerSec=_cookRemaining(s);updateCookingTimerDisplay();}
 }
 
 function renderDishSwitcher(){
@@ -5414,10 +5492,18 @@ function exitCookingMode(){
   var cm=safeEl('cookingMode');if(cm)cm.style.display='none';
   document.body.classList.remove('cooking-active');
   var ov=document.getElementById('cookingOverlay');if(ov)ov.remove();
-  stopCookingTimer();_stopGlobalTimer();releaseWakeLock();
+  _saveCookDishState();// persist current dish's step/timer before leaving
+  clearInterval(_cookTimerInt);_cookTimerInt=null;// drop the local display interval only — per-dish timers keep ticking in the global engine
+  releaseWakeLock();
   var recipe=getCurrentCookingRecipe();
-  _cookId=null;_cookStep=0;_cookDishList=[];_cookDishListIdx=0;_cookDishState={};
-  if(recipe)setTimeout(function(){showRatingModal(recipe);},400);
+  if(_hasActiveTimers()){
+    // v112 (C0a): Back leaves timers running — they show in the persistent strip. No rating prompt mid-cook.
+    renderTimerStrip();
+  }else{
+    _cookId=null;_cookStep=0;_cookDishList=[];_cookDishListIdx=0;_cookDishState={};
+    _stopGlobalTimer();renderTimerStrip();
+    if(recipe)setTimeout(function(){showRatingModal(recipe);},400);
+  }
   renderRecipeBank();
 }
 
@@ -5669,7 +5755,7 @@ function renderCookingStep(){
       // Only reset seconds if timer is NOT currently running
       if(!_cookTimerRunning){
         _cookTimerSec=parseInt(tm[1])*60;
-        if(_cookId){_cookDishState[_cookId]=_cookDishState[_cookId]||{};_cookDishState[_cookId].timerSec=_cookTimerSec;}
+        if(_cookId){var s=_cookDishState[_cookId]=_cookDishState[_cookId]||{};s.timerSec=_cookTimerSec;s.endsAt=null;s.fired=false;}
         updateCookingTimerDisplay();
       }
     }
@@ -5691,16 +5777,19 @@ function prevCookingStep(){if(_cookStep>0){_cookStep--;renderCookingStep();}}
 function toggleCookingTimer(){
   if(_cookTimerRunning){stopCookingTimer();}
   else{
+    if(_cookTimerSec<=0)return;// nothing to count down
+    _unlockCookAudio();
     _cookTimerRunning=true;
-    if(_cookId){_cookDishState[_cookId]=_cookDishState[_cookId]||{};_cookDishState[_cookId].timerRunning=true;_cookDishState[_cookId].timerSec=_cookTimerSec;}
+    if(_cookId){var s=_cookDishState[_cookId]=_cookDishState[_cookId]||{};s.timerRunning=true;s.timerSec=_cookTimerSec;s.endsAt=Date.now()+_cookTimerSec*1000;s.fired=false;}
     var btn=document.querySelector('.cooking-timer-btn');if(btn)btn.textContent='Pause';
+    _startGlobalTimer();renderDishSwitcher();
   }
 }
 function stopCookingTimer(){
   _cookTimerRunning=false;clearInterval(_cookTimerInt);_cookTimerInt=null;
-  if(_cookId&&_cookDishState[_cookId]){_cookDishState[_cookId].timerRunning=false;}
+  if(_cookId&&_cookDishState[_cookId]){var s=_cookDishState[_cookId];s.timerSec=_cookRemaining(s);s.timerRunning=false;s.endsAt=null;_cookTimerSec=s.timerSec;updateCookingTimerDisplay();}
   var btn=document.querySelector('.cooking-timer-btn');if(btn)btn.textContent='Start';
-  renderDishSwitcher();
+  renderDishSwitcher();renderTimerStrip();
 }
 function updateCookingTimerDisplay(){var el=safeEl('cookingTimerDisplay');if(!el)return;var m=Math.floor(_cookTimerSec/60),s=_cookTimerSec%60;el.textContent=m+':'+(s<10?'0':'')+s;}
 
@@ -7611,6 +7700,8 @@ document.addEventListener('DOMContentLoaded',function(){
     </div>
   </div>
 </div>
+<!-- v112 (C0a): persistent active-timers strip, visible app-wide while a cooking timer runs -->
+<div id="timerStrip" class="timer-strip" style="display:none;"></div>
 <!-- AI Chat Assistant -->
 <button id="aiChatFab" class="ai-chat-fab" onclick="toggleAiChat()" title="Meal Assistant" style="display:flex;font-size:22px;">✦</button>
 <div id="aiChatPanel" class="ai-chat-panel">

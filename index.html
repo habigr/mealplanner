@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v116
+     Meal Planner v117
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -311,6 +311,13 @@ body.shopping-mode #grocery .two-col{display:none!important;}
 .shopping-toggle-btn{font-size:12px;padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--panel);color:var(--text-secondary);font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .shopping-toggle-btn.active{background:var(--theme-accent);color:#fff;border-color:var(--theme-accent);}
 .shopping-section.done .shopping-section-header{background:#16a34a;}
+/* v117: split-by-store filter chips */
+.shopping-store-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px;-webkit-overflow-scrolling:touch;}
+.shopping-store-chips::-webkit-scrollbar{display:none;}
+.shop-store-chip{flex-shrink:0;font-size:12.5px;font-weight:700;padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--panel);color:var(--text-secondary);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;}
+.shop-store-chip.active{background:var(--theme-accent);color:#fff;border-color:var(--theme-accent);}
+.shop-store-chip-count{display:inline-block;min-width:16px;font-size:10.5px;font-weight:800;opacity:.7;}
+.shop-store-chip.active .shop-store-chip-count{opacity:.9;}
 
 /* ===== ASSIGN STORES ===== */
 #assignStoresContainer{display:none;}
@@ -3951,10 +3958,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v116';
+var APP_VERSION='v117';
 var APP_BUILD_TIME='2026-06-06 13:00';
 
-var APP_VERSION_TAG='Meal Planner v116';
+var APP_VERSION_TAG='Meal Planner v117';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -3985,16 +3992,21 @@ function registerUpdateCheck(){
 
 /* ===== SHOPPING MODE + RESET ===== */
 var _shopHideBought=false;
+var _shopStoreFilter='All';// v117: per-device "I'm shopping at" filter (display-only, no writes)
 function toggleShopHideBought(){_shopHideBought=!_shopHideBought;buildGroceryList();}
+function setShopStore(s){_shopStoreFilter=s;buildGroceryList();}
 function renderShoppingList(out,rows){
   var u=getUser(),myInitials=u?u.initials:'';
   var activeStores=getActiveStores(),groups={};
   rows.forEach(function(r){var a=r.storeAssignments&&r.storeAssignments.length?r.storeAssignments:[r.store||'Unassigned'];a.forEach(function(s){if(activeStores.indexOf(s)<0&&s!=='Unassigned')return;if(!groups[s])groups[s]=[];groups[s].push(r);});});
   var keys=Object.keys(groups).sort(),total=new Set(rows.map(function(r){return r.key;})).size,bought=rows.filter(function(r){return r.status==='Bought';}).length,left=total-bought,pct=total?Math.round(bought/total*100):0;
+  if(_shopStoreFilter!=='All'&&keys.indexOf(_shopStoreFilter)<0)_shopStoreFilter='All';// chosen store no longer present → fall back to All
+  var renderKeys=(_shopStoreFilter!=='All')?[_shopStoreFilter]:keys;
   var storeCounts={};rows.forEach(function(r){var a=r.storeAssignments&&r.storeAssignments.length?r.storeAssignments:[r.store||'Unassigned'];storeCounts[r.key]=a.filter(function(s){return activeStores.indexOf(s)>=0||s==='Unassigned';}).length;});
   var controls='<div class="shopping-controls-bar"><button class="shopping-toggle-btn'+(_shopHideBought?' active':'')+'" onclick="toggleShopHideBought()">'+(_shopHideBought?'☑':'☐')+' Hide done</button><button class="secondary" onclick="resetGroceryCheckoffs()" style="font-size:12px;padding:7px 14px;">↩ Reset all</button></div>';
+  var storeChips=(keys.length>1)?'<div class="shopping-store-chips"><button class="shop-store-chip'+(_shopStoreFilter==='All'?' active':'')+'" data-store="All">All</button>'+keys.map(function(s){var sb=groups[s].filter(function(r){return r.status==='Bought';}).length;return'<button class="shop-store-chip'+(_shopStoreFilter===s?' active':'')+'" data-store="'+escAttr(s)+'">'+escHtml(s)+' <span class="shop-store-chip-count">'+(groups[s].length-sb)+'</span></button>';}).join('')+'</div>':'';
   var progress='<div class="shopping-progress"><span><strong>'+left+'</strong> left · '+bought+' of '+total+'</span><div class="shopping-progress-bar"><div class="shopping-progress-fill" style="width:'+pct+'%;"></div></div><span style="font-weight:700;">'+pct+'%</span></div>';
-  var sectionsHtml=keys.map(function(store){
+  var sectionsHtml=renderKeys.map(function(store){
     var items=groups[store].slice().sort(function(a,b){var as=a.status==='Bought'?1:0,bs=b.status==='Bought'?1:0;return as-bs||String(a.department).localeCompare(String(b.department))||String(a.item).localeCompare(String(b.item));});
     var sb=items.filter(function(r){return r.status==='Bought';}).length;
     var allDone=items.length>0&&sb===items.length;
@@ -4011,8 +4023,9 @@ function renderShoppingList(out,rows){
     }).join('')+'</div></div>';
   }).filter(Boolean).join('');
   if(!sectionsHtml){var allBought=total>0&&bought===total;sectionsHtml='<div class="empty" style="margin-top:0;"><div class="empty-icon">'+(allBought?'🎉':'🏪')+'</div><h3>'+(allBought?'All done!':'No store sections yet')+'</h3><p>'+(allBought?'Everything is checked off.':'Use Assign Stores to assign items to stores.')+'</p></div>';}
-  out.innerHTML=controls+progress+'<div class="shopping-list">'+sectionsHtml+'</div>';
+  out.innerHTML=controls+storeChips+progress+'<div class="shopping-list">'+sectionsHtml+'</div>';
   out.querySelectorAll('.shopping-item-check').forEach(function(cb){cb.addEventListener('change',function(){updateGroceryMeta(cb.dataset.key,'status',cb.checked?'Bought':'Need');haptic();});});
+  out.querySelectorAll('.shop-store-chip').forEach(function(b){b.addEventListener('click',function(){setShopStore(b.dataset.store);});});// v117: data-store avoids onclick-escaping issues with names like "Trader Joe's"
 }
 function toggleShoppingMode(){setGroceryMode(shoppingMode?'list':'shop');}
 function resetGroceryCheckoffs(){

@@ -172,10 +172,10 @@ Browser console tests — run before every push:
 
 ## RECENT VERSIONS (last 5 — full history in CHANGELOG.md)
 
+- v117 — **shopping split-by-store filter** (#27 multi-shopper, safe bit 1). Store chips at top of shopping mode (All + each store w/ remaining count) to filter to your store; pure render, zero writes, FIP-safe. Chips use data-store (apostrophe-safe).
 - v116 — **shopping filter clarity.** "Needed only" (list) and "Hide done" (shopping) overlapped; now shopping view ignores list's "Needed only" (`if(groceryNeededOnly&&!shoppingMode)`) so each view has one toggle. "Have" items stay visible while shopping. Render-path only.
 - v115 — **shopping-mode declutter (#27 phase 1).** Cleaner in-aisle rows (dropped dish provenance), "Hide done" toggle, store-complete green ✓ + auto-collapse, "N left" progress. Render/CSS only. NEXT: multi-shopper phase (per-item writes, who's-shopping, split-by-store).
 - v114 — **C0h + pill ordering.** Removed the non-working "For N people" adjuster from cooking mode (scaling now uses the dish's peopleEating); dish-switcher pills with a live timer shift left, soonest-first. Render only.
-- v113 — **cooking-mode quick wins.** Pill badge shows full mm:ss + live-updates (was "30m"); overview screen gets safe-area top padding (C0g, no longer under the clock); overview shows the dish photo not the emoji (C0d); Back button on the pre-cook overview (C0f, via exitCookingMode(true) skipRating). Render/CSS only.
 - v112 — **C0a cooking timers persist + run in parallel.** Wall-clock timers (correct through phone sleep), survive leaving cooking mode, persistent bottom strip (tap-resume / ✕ cancel / Clear all), beep+haptic+red DONE chip, Back vs endCookingSession split. Local UI state only. Lock-screen live timer = iOS-native-only → parked on #21.
 
 ---

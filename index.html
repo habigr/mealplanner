@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v118
+     Meal Planner v119
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -322,7 +322,8 @@ body.shopping-mode #grocery .two-col{display:none!important;}/* v118: Shop is it
 .shop-store-chip.active .shop-store-chip-count{opacity:.9;}
 /* v118: focused shop-mode toolbar */
 .shop-top{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;}
-.shop-done-btn{align-self:flex-start;background:none;border:none;color:var(--theme-accent);font-size:14px;font-weight:800;cursor:pointer;padding:4px 0;-webkit-tap-highlight-color:transparent;}
+.shop-done-row{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.shop-done-btn{background:none;border:none;color:var(--theme-accent);font-size:14px;font-weight:800;cursor:pointer;padding:4px 0;-webkit-tap-highlight-color:transparent;}
 .shop-search-wrap{width:100%;}
 .shop-search{width:100%;font-size:15px;padding:11px 14px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--text);-webkit-appearance:none;box-sizing:border-box;}
 .shop-progress-row{display:flex;align-items:center;gap:12px;}
@@ -3972,10 +3973,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v118';
+var APP_VERSION='v119';
 var APP_BUILD_TIME='2026-06-06 13:00';
 
-var APP_VERSION_TAG='Meal Planner v118';
+var APP_VERSION_TAG='Meal Planner v119';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4034,7 +4035,8 @@ function renderShoppingList(out,rows){
   var searchBox='<div class="shop-search-wrap"><input id="shopSearch" class="shop-search" type="search" placeholder="Search or add an item…" value="'+escAttr(q)+'" oninput="onShopSearch(this.value)" /></div>';
   var storeChips=(keys.length>1)?'<div class="shopping-store-chips"><button class="shop-store-chip'+(_shopStoreFilter==='All'?' active':'')+'" data-store="All">All</button>'+keys.map(function(s){var sb=groups[s].filter(function(r){return r.status==='Bought';}).length;return'<button class="shop-store-chip'+(_shopStoreFilter===s?' active':'')+'" data-store="'+escAttr(s)+'">'+escHtml(s)+' <span class="shop-store-chip-count">'+(groups[s].length-sb)+'</span></button>';}).join('')+'</div>':'';
   var progress='<div class="shop-progress-row"><div class="shopping-progress"><span><strong>'+left+'</strong> left · '+bought+' of '+total+'</span><div class="shopping-progress-bar"><div class="shopping-progress-fill" style="width:'+pct+'%;"></div></div></div><button class="shopping-toggle-btn'+(_shopHideBought?' active':'')+'" onclick="toggleShopHideBought()">'+(_shopHideBought?'☑':'☐')+' Hide done</button></div>';
-  var toolbar='<div class="shop-top">'+doneBtn+searchBox+storeChips+progress+'</div>';
+  var uncheckBtn=(total>0)?'<button class="shop-uncheck-btn" onclick="resetGroceryCheckoffs()">↩ Uncheck all</button>':'';// v119: Uncheck all moved to the top, paired with Done
+  var toolbar='<div class="shop-top"><div class="shop-done-row">'+doneBtn+uncheckBtn+'</div>'+searchBox+storeChips+progress+'</div>';
   // --- sections (bought items sink to the bottom of their OWN store) ---
   var sectionsHtml=renderKeys.map(function(store){
     var items=groups[store].slice().sort(function(a,b){var as=a.status==='Bought'?1:0,bs=b.status==='Bought'?1:0;return as-bs||String(a.department).localeCompare(String(b.department))||String(a.item).localeCompare(String(b.item));});
@@ -4056,10 +4058,9 @@ function renderShoppingList(out,rows){
     if(q){sectionsHtml='<div class="shop-add-zone"><button class="shop-add-btn" onclick="shopAddFromSearch()">+ Add “'+escHtml(q)+'”</button><div class="shop-add-hint">No matches — add it as a new item.</div></div>';}
     else{var allBought=total>0&&bought===total;sectionsHtml='<div class="empty" style="margin-top:0;"><div class="empty-icon">'+(allBought?'🎉':'🏪')+'</div><h3>'+(allBought?'All done!':'Nothing here yet')+'</h3><p>'+(allBought?'Everything is checked off.':'Add items in List mode or assign stores.')+'</p></div>';}
   }
-  var bottom=(total>0)?'<div class="shop-bottom"><button class="shop-uncheck-btn" onclick="resetGroceryCheckoffs()">↩ Uncheck all</button></div>':'';
   // v118: preserve search-box focus + caret across the rebuild (the input lives inside the rebuilt output)
   var hadFocus=document.activeElement&&document.activeElement.id==='shopSearch',caret=hadFocus?document.activeElement.selectionStart:null;
-  out.innerHTML=toolbar+'<div class="shopping-list">'+sectionsHtml+'</div>'+bottom;
+  out.innerHTML=toolbar+'<div class="shopping-list">'+sectionsHtml+'</div>';
   if(hadFocus){var si=safeEl('shopSearch');if(si){si.focus();try{si.setSelectionRange(caret,caret);}catch(e){}}}
   out.querySelectorAll('.shopping-item-check').forEach(function(cb){cb.addEventListener('change',function(){updateGroceryMeta(cb.dataset.key,'status',cb.checked?'Bought':'Need');haptic();});});
   out.querySelectorAll('.shop-store-chip').forEach(function(b){b.addEventListener('click',function(){setShopStore(b.dataset.store);});});// v117: data-store avoids onclick-escaping issues with names like "Trader Joe's"

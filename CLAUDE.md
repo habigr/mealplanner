@@ -172,10 +172,10 @@ Browser console tests — run before every push:
 
 ## RECENT VERSIONS (last 5 — full history in CHANGELOG.md)
 
+- v119 — **shop: "Uncheck all" moved to the top**, paired with ✕ Done (Done left, Uncheck all right). Render-only.
 - v118 — **shop-mode redesign: one focused screen.** Hid the whole List toolbar in Shop (killed the duplicate resets / store-dropdown-vs-chips / Needed-vs-Hide-done). Shop now has its own toolbar: ✕ Done (→ List), search-or-add box (shares grocerySearch state; no match → "+ Add" via the existing manual-item path), store chips, slim progress + Hide done, Uncheck-all at bottom. Bought items sink within their own store. Render + reuse of existing add path; FIP-safe.
 - v117 — **shopping split-by-store filter** (#27 multi-shopper, safe bit 1). Store chips at top of shopping mode (All + each store w/ remaining count); pure render, zero writes. Chips use data-store (apostrophe-safe).
 - v116 — **shopping filter clarity.** "Needed only" (list) and "Hide done" (shopping) overlapped; now shopping view ignores list's "Needed only" (`if(groceryNeededOnly&&!shoppingMode)`) so each view has one toggle. "Have" items stay visible while shopping. Render-path only.
-- v115 — **shopping-mode declutter (#27 phase 1).** Cleaner in-aisle rows (dropped dish provenance), "Hide done" toggle, store-complete green ✓ + auto-collapse, "N left" progress. Render/CSS only. NEXT: multi-shopper phase (per-item writes, who's-shopping, split-by-store).
 - v112 — **C0a cooking timers persist + run in parallel.** Wall-clock timers (correct through phone sleep), survive leaving cooking mode, persistent bottom strip (tap-resume / ✕ cancel / Clear all), beep+haptic+red DONE chip, Back vs endCookingSession split. Local UI state only. Lock-screen live timer = iOS-native-only → parked on #21.
 
 ---

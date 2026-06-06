@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v115
+     Meal Planner v116
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -3786,7 +3786,7 @@ function buildGroceryList(){
   if(df!=='All')rows=rows.filter(function(r){return r.department===df;});
   var q=(getValue('grocerySearch')||'').toLowerCase().trim();
   if(q)rows=rows.filter(function(r){return String(r.item).toLowerCase().indexOf(q)>=0||String(r.dishes.join(' ')).toLowerCase().indexOf(q)>=0||String(r.store).toLowerCase().indexOf(q)>=0||String(r.department).toLowerCase().indexOf(q)>=0;});
-  if(groceryNeededOnly)rows=rows.filter(function(r){return r.status!=='Bought'&&r.status!=='Have';});
+  if(groceryNeededOnly&&!shoppingMode)rows=rows.filter(function(r){return r.status!=='Bought'&&r.status!=='Have';});// v116: shopping view ignores list "Needed only" — its own "Hide done" toggle governs it (one toggle per view)
   rows.sort(function(a,b){if(shoppingMode){var sa=(a.status==='Bought'||a.status==='Have')?1:0,sb=(b.status==='Bought'||b.status==='Have')?1:0;if(sa!==sb)return sa-sb;return String(a.store||'Unassigned').localeCompare(String(b.store||'Unassigned'))||String(a.department||'Unassigned').localeCompare(String(b.department||'Unassigned'))||String(a.item).localeCompare(String(b.item));}if(grocerySortMode==='alpha')return String(a.item).localeCompare(String(b.item));var la=grocerySortMode==='department'?a.department:a.store,lb=grocerySortMode==='department'?b.department:b.store;return String(la).localeCompare(String(lb))||String(a.item).localeCompare(String(b.item));});
   updateGroceryProgress(rows);updateSortButtons();
   var emptyHtml='<div class="empty"><div class="empty-icon">🛒</div><h3>No items yet</h3><p>Add dishes with ingredients to your meal plan.</p></div>';
@@ -3951,10 +3951,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v115';
+var APP_VERSION='v116';
 var APP_BUILD_TIME='2026-06-06 13:00';
 
-var APP_VERSION_TAG='Meal Planner v115';
+var APP_VERSION_TAG='Meal Planner v116';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

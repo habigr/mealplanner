@@ -4,7 +4,7 @@
 
 ## HIGHEST PRIORITY — NON-NEGOTIABLE
 
-No data loss under any circumstances. There is real live trip data in Firebase including active trips like MDW 2026.
+No data loss under any circumstances. There is real live trip data in Firebase. **FIP 2026 is THE protected live trip — it must NEVER be deleted or overwritten under any circumstances (Robbie, 2026-06-06).** Never test data/sync changes against FIP 2026; use a throwaway test trip and back FIP 2026 up first.
 
 Before touching any sync, save, or Firebase logic:
 - Never write an empty dishes array to Firebase

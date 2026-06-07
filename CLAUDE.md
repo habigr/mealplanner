@@ -172,10 +172,10 @@ Browser console tests — run before every push:
 
 ## RECENT VERSIONS (last 5 — full history in CHANGELOG.md)
 
+- v121 — **Assign-stores grid overhaul.** Keyboard nav (↑↓ row, ←→ store, 1–9 set store+advance, Space/Enter toggle); clickable recipe pills per item → editDish; polish (assigned-cell accent, unassigned amber edge + "N left" count, numbered headers, focus ring). Manual/override grid — the AI per-trip store-assign + removing the wrong auto-guess is still a separate future build. FIP-safe.
 - v120 — **FIX image-source URL-first (#25).** sourceRecipeImage's Microlink call was the only one missing `&force=true`, so it returned empty-cached and fell through to Pexels even when the recipe had a URL photo. Added force=true (+9s timeout) so the page image wins. Image-fetch only.
 - v119 — **shop: "Uncheck all" moved to the top**, paired with ✕ Done. Render-only.
 - v118 — **shop-mode redesign: one focused screen.** Hid the whole List toolbar in Shop (killed the duplicate resets / store-dropdown-vs-chips / Needed-vs-Hide-done). Shop now has its own toolbar: ✕ Done (→ List), search-or-add box (shares grocerySearch state; no match → "+ Add" via the existing manual-item path), store chips, slim progress + Hide done, Uncheck-all at bottom. Bought items sink within their own store. Render + reuse of existing add path; FIP-safe.
-- v117 — **shopping split-by-store filter** (#27 multi-shopper, safe bit 1). Store chips at top of shopping mode (All + each store w/ remaining count); pure render, zero writes. Chips use data-store (apostrophe-safe).
 - v112 — **C0a cooking timers persist + run in parallel.** Wall-clock timers (correct through phone sleep), survive leaving cooking mode, persistent bottom strip (tap-resume / ✕ cancel / Clear all), beep+haptic+red DONE chip, Back vs endCookingSession split. Local UI state only. Lock-screen live timer = iOS-native-only → parked on #21.
 
 ---

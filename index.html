@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v120
+     Meal Planner v121
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -352,6 +352,22 @@ body.shopping-mode #grocery .two-col{display:none!important;}/* v118: Shop is it
 .assign-store-check{-webkit-appearance:none;appearance:none;width:24px;height:24px;border:2px solid var(--border);border-radius:7px;cursor:pointer;position:relative;transition:all .15s;}
 .assign-store-check:checked{background:var(--theme-accent);border-color:var(--theme-accent);}
 .assign-store-check:checked::after{content:'';position:absolute;left:5px;top:2px;width:8px;height:12px;border:2.5px solid #fff;border-top:none;border-left:none;transform:rotate(40deg);}
+/* v121: keyboard-driven assign grid polish */
+.assign-keys-hint{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;}
+.assign-left-count{font-weight:800;color:var(--muted);}
+.assign-left-count.has{color:#b45309;}
+.assign-keys{color:var(--muted);font-size:11px;}
+.store-num{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:5px;background:var(--theme-accent);color:#fff;font-size:9px;font-weight:800;vertical-align:middle;}
+.assign-stores-table:focus{outline:none;}
+.assign-item-name{font-weight:700;font-size:13px;line-height:1.25;}
+.assign-dish-pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.assign-dish-pill{font-size:10.5px;font-weight:700;background:var(--theme-accent-soft);color:var(--theme-accent-dark);border-radius:999px;padding:2px 8px;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s;}
+.assign-dish-pill:hover{background:var(--theme-accent);color:#fff;}
+.assign-stores-table td.assign-cell.assigned{background:var(--theme-accent-soft);}
+.assign-stores-table tr.unassigned td:first-child{box-shadow:inset 3px 0 0 #f59e0b;}
+.assign-stores-table tr.arow-focus td{background:var(--panel-warm);}
+.assign-stores-table tr.arow-focus td:first-child{background:var(--panel-warm);}
+.assign-stores-table td.assign-cell.acell-focus{outline:2px solid var(--theme-accent);outline-offset:-2px;border-radius:4px;}
 
 /* ===== ACTIVE STORES ===== */
 .active-stores-list{display:grid;gap:5px;}
@@ -3954,7 +3970,67 @@ function setGroceryMode(mode){
   if(assignStoresMode)renderAssignStoresGrid();else buildGroceryList();
 }
 function toggleAssignStoresMode(){setGroceryMode(assignStoresMode?'list':'assign');}
-function renderAssignStoresGrid(){var grid=safeEl('assignStoresGrid');if(!grid)return;var rows=(typeof getCurrentGroceryRows==='function'?getCurrentGroceryRows():aggregateRows()),activeStores=getActiveStores().filter(function(s){return s!=='Unassigned';});if(!rows.length){grid.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);">Add dishes with ingredients first.</div>';return;}if(!activeStores.length){grid.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);">No active stores — check stores in Event Setup.</div>';return;}var hdr='<th>Ingredient</th><th>Qty</th>'+activeStores.map(function(s){return'<th style="min-width:64px;">'+escHtml(s)+'</th>';}).join('');var body=rows.map(function(r){var a=r.storeAssignments||[],dup=a.length>1;return'<tr><td>'+escHtml(dispPlural(r.item,r.quantityText))+(dup?'<span class="dup-badge">DUP</span>':'')+'</td><td style="font-size:12px;color:var(--muted);">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'—')+'</td>'+activeStores.map(function(s){return'<td><input type="checkbox" class="assign-store-check" data-key="'+escAttr(r.key)+'" data-store="'+escAttr(s)+'" '+(a.indexOf(s)>=0?'checked':'')+' onchange="setItemStore(this)" /></td>';}).join('')+'</tr>';}).join('');grid.innerHTML='<table class="assign-stores-table"><thead><tr>'+hdr+'</tr></thead><tbody>'+body+'</tbody></table>';}
+// v121: keyboard-driven assign grid + clickable recipe pills (→ edit dish) + visual polish.
+var _assignStores=[],_aFocus={r:0,c:0};
+function renderAssignStoresGrid(){
+  var grid=safeEl('assignStoresGrid');if(!grid)return;
+  var rows=(typeof getCurrentGroceryRows==='function'?getCurrentGroceryRows():aggregateRows());
+  var activeStores=getActiveStores().filter(function(s){return s!=='Unassigned';});
+  _assignStores=activeStores;
+  if(!rows.length){grid.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);">Add dishes with ingredients first.</div>';return;}
+  if(!activeStores.length){grid.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);">No active stores — check stores in Event Setup.</div>';return;}
+  var unassigned=rows.filter(function(r){return !(r.storeAssignments&&r.storeAssignments.length);}).length;
+  var hint='<div class="assign-keys-hint"><span class="assign-left-count'+(unassigned?' has':'')+'">'+(unassigned?unassigned+' left to assign':'All assigned ✓')+'</span><span class="assign-keys">↑↓ move row · 1–'+Math.min(9,activeStores.length)+' set store + next · Space toggle</span></div>';
+  var hdr='<th>Ingredient</th><th>Qty</th>'+activeStores.map(function(s,i){return'<th style="min-width:64px;">'+(i<9?'<span class="store-num">'+(i+1)+'</span> ':'')+escHtml(s)+'</th>';}).join('');
+  var body=rows.map(function(r,ri){
+    var a=r.storeAssignments||[],dup=a.length>1,noStore=!a.length;
+    var seen={},pills=(r.usedFor||[]).filter(function(uf){if(!uf.dishId||seen[uf.dishId])return false;seen[uf.dishId]=true;return true;}).map(function(uf){return'<span class="assign-dish-pill" onclick="event.stopPropagation();editDish(\''+escAttr(uf.dishId)+'\')" title="Edit this dish">'+escHtml(uf.dish||'dish')+'</span>';}).join('');
+    if(!pills&&(r.dishes||[]).length)pills=(r.dishes||[]).map(function(d){return'<span class="assign-dish-pill" style="cursor:default;">'+escHtml(d)+'</span>';}).join('');
+    var nameCell='<div class="assign-item-name">'+escHtml(dispPlural(r.item,r.quantityText))+(dup?'<span class="dup-badge">DUP</span>':'')+'</div>'+(pills?'<div class="assign-dish-pills">'+pills+'</div>':'');
+    return'<tr data-r="'+ri+'" data-key="'+escAttr(r.key)+'"'+(noStore?' class="unassigned"':'')+' onclick="_aFocusRow('+ri+')"><td>'+nameCell+'</td><td class="assign-qty">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'—')+'</td>'+activeStores.map(function(s,ci){var on=a.indexOf(s)>=0;return'<td class="assign-cell'+(on?' assigned':'')+'" data-c="'+ci+'"><input type="checkbox" class="assign-store-check" data-key="'+escAttr(r.key)+'" data-store="'+escAttr(s)+'" '+(on?'checked':'')+' onchange="setItemStore(this)" tabindex="-1" /></td>';}).join('')+'</tr>';
+  }).join('');
+  grid.innerHTML=hint+'<table class="assign-stores-table" tabindex="0" onkeydown="handleAssignKey(event)"><thead><tr>'+hdr+'</tr></thead><tbody>'+body+'</tbody></table>';
+  if(_aFocus.r>rows.length-1)_aFocus.r=rows.length-1;if(_aFocus.r<0)_aFocus.r=0;
+  var tbl=grid.querySelector('table');if(tbl&&!grid.contains(document.activeElement)){try{tbl.focus({preventScroll:true});}catch(e){}}
+  _renderAssignFocus();
+}
+function _aFocusRow(ri){_aFocus.r=ri;var t=document.querySelector('#assignStoresGrid table');if(t){try{t.focus({preventScroll:true});}catch(e){}}_renderAssignFocus();}
+function _renderAssignFocus(){
+  var rows=document.querySelectorAll('#assignStoresGrid tbody tr[data-r]');if(!rows.length)return;
+  if(_aFocus.r>rows.length-1)_aFocus.r=rows.length-1;if(_aFocus.r<0)_aFocus.r=0;if(_aFocus.c<0)_aFocus.c=0;
+  rows.forEach(function(tr,i){tr.classList.toggle('arow-focus',i===_aFocus.r);tr.querySelectorAll('.assign-cell').forEach(function(td,ci){td.classList.toggle('acell-focus',i===_aFocus.r&&ci===_aFocus.c);});});
+  var fr=rows[_aFocus.r];if(fr&&fr.scrollIntoView){fr.scrollIntoView({block:'nearest'});}
+}
+function _updateAssignLeftCount(){
+  var rows=document.querySelectorAll('#assignStoresGrid tbody tr[data-r]'),n=0;rows.forEach(function(tr){if(tr.classList.contains('unassigned'))n++;});
+  var el=document.querySelector('#assignStoresGrid .assign-left-count');if(el){el.textContent=n?n+' left to assign':'All assigned ✓';el.classList.toggle('has',!!n);}
+}
+// digit shortcut: set the row's store to ONLY this one (the fast single-store path) + advance
+function assignRowToStore(key,store,tr){
+  if(!currentEvent)return;
+  currentEvent.groceryMeta=currentEvent.groceryMeta||{};
+  var m=currentEvent.groceryMeta[key]=currentEvent.groceryMeta[key]||{};
+  m.storeAssignments=[store];m.store=store;
+  tr.querySelectorAll('.assign-cell').forEach(function(td){var cb=td.querySelector('.assign-store-check');var on=!!(cb&&cb.dataset.store===store);if(cb)cb.checked=on;td.classList.toggle('assigned',on);});
+  tr.classList.remove('unassigned');
+  var nm=tr.querySelector('.assign-item-name');var ex=nm&&nm.querySelector('.dup-badge');if(ex)ex.remove();
+  _updateAssignLeftCount();
+  saveGroceryStateNow('Could not save store assignment. Your change may not sync to other users.');
+}
+function handleAssignKey(e){
+  var rows=document.querySelectorAll('#assignStoresGrid tbody tr[data-r]');if(!rows.length)return;
+  var maxR=rows.length-1,maxC=(_assignStores||[]).length-1,k=e.key;
+  if(k==='ArrowDown'){_aFocus.r=Math.min(maxR,_aFocus.r+1);}
+  else if(k==='ArrowUp'){_aFocus.r=Math.max(0,_aFocus.r-1);}
+  else if(k==='ArrowRight'){_aFocus.c=Math.min(maxC,_aFocus.c+1);}
+  else if(k==='ArrowLeft'){_aFocus.c=Math.max(0,_aFocus.c-1);}
+  else if(k===' '||k==='Enter'){var tr=rows[_aFocus.r];var cb=tr.querySelectorAll('.assign-store-check')[_aFocus.c];if(cb){cb.checked=!cb.checked;setItemStore(cb);}if(k==='Enter')_aFocus.r=Math.min(maxR,_aFocus.r+1);}
+  else if(/^[1-9]$/.test(k)){var ci=parseInt(k,10)-1;if(ci<=maxC){var tr2=rows[_aFocus.r];assignRowToStore(tr2.dataset.key,_assignStores[ci],tr2);_aFocus.c=ci;_aFocus.r=Math.min(maxR,_aFocus.r+1);}}
+  else if(k==='Escape'){var t=document.querySelector('#assignStoresGrid table');if(t)t.blur();return;}
+  else{return;}
+  e.preventDefault();
+  _renderAssignFocus();
+}
 async function bulkAssignVisibleItems(){var stores=getActiveStores().filter(function(s){return s!=='Unassigned';});if(!stores.length){showToast('No active stores.','error');return;}var store=await promptAction({title:'Bulk Assign Store',message:'Type store name for all currently visible items:',placeholder:stores.join(' / ')});if(!store)return;var match=stores.find(function(s){return s.toLowerCase()===store.toLowerCase();});if(!match){showToast('Store not found.','error');return;}document.querySelectorAll('#assignStoresGrid tbody tr').forEach(function(row){var cb=Array.from(row.querySelectorAll('.assign-store-check')).find(function(x){return x.dataset.store===match;});if(cb&&!cb.checked){cb.checked=true;setItemStore(cb);}});showToast('Assigned visible items to '+match+'.','success');}
 function setItemStore(cb){
   var key=cb.dataset.key,store=cb.dataset.store;
@@ -3964,7 +4040,14 @@ function setItemStore(cb){
   currentEvent.groceryMeta[key].storeAssignments=a;
   // ONE SOURCE OF TRUTH: primary store for main list is first assignment
   currentEvent.groceryMeta[key].store=a.length?a[0]:(guessStore(groceryKeyLabel(key),guessDept(groceryKeyLabel(key))));
-  var row=cb.closest('tr');if(row){var td=row.querySelector('td:first-child');if(td){var ex=td.querySelector('.dup-badge');if(ex)ex.remove();if(a.length>1){var b=document.createElement('span');b.className='dup-badge';b.textContent='DUP';td.appendChild(b);}}}
+  var row=cb.closest('tr');
+  if(row){
+    var nm=row.querySelector('.assign-item-name')||row.querySelector('td:first-child');
+    if(nm){var ex=nm.querySelector('.dup-badge');if(ex)ex.remove();if(a.length>1){var b=document.createElement('span');b.className='dup-badge';b.textContent='DUP';nm.appendChild(b);}}
+    var cell=cb.closest('td');if(cell)cell.classList.toggle('assigned',cb.checked);// v121 visual accent
+    row.classList.toggle('unassigned',a.length===0);
+  }
+  if(typeof _updateAssignLeftCount==='function')_updateAssignLeftCount();
   saveGroceryStateNow('Could not save store assignment. Your change may not sync to other users.');
 }
 
@@ -3973,10 +4056,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v120';
+var APP_VERSION='v121';
 var APP_BUILD_TIME='2026-06-06 13:00';
 
-var APP_VERSION_TAG='Meal Planner v120';
+var APP_VERSION_TAG='Meal Planner v121';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

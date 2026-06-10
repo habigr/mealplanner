@@ -172,18 +172,18 @@ Browser console tests — run before every push:
 
 ## RECENT VERSIONS (last 5 — full history in CHANGELOG.md)
 
+- v122 — **Adjusted-amount override (dish-level, single source of truth).** New additive ingredient field `qtyOverride` — empty = auto-scale as before; non-empty = a manual amount shown verbatim everywhere with no math. Dish-editor "Adjusted" box is now editable (was readonly) + amber when overridden; threaded through normalizeDish (survives sync) / collectIngredients / addIngredientRow / editDish; all read sites honour it (grocery aggregateRows, cooking, detail view). Detail view now shows SCALED (was original — the reported bug); grocery "Edit ingredient" popup shows the adjusted + a "Recipe base: X" hint and saves as override (base quantity left editable in the full editor). Cooking mode now uses scaleQty (fractions scale right). Original quantity never modified → FIP-safe, opt-in, no backfill. Confirmed 25/25.
 - v121 — **Assign-stores grid overhaul.** Keyboard nav (↑↓ row, ←→ store, 1–9 set store+advance, Space/Enter toggle); clickable recipe pills per item → editDish; polish (assigned-cell accent, unassigned amber edge + "N left" count, numbered headers, focus ring). Manual/override grid — the AI per-trip store-assign + removing the wrong auto-guess is still a separate future build. FIP-safe.
 - v120 — **FIX image-source URL-first (#25).** sourceRecipeImage's Microlink call was the only one missing `&force=true`, so it returned empty-cached and fell through to Pexels even when the recipe had a URL photo. Added force=true (+9s timeout) so the page image wins. Image-fetch only.
 - v119 — **shop: "Uncheck all" moved to the top**, paired with ✕ Done. Render-only.
 - v118 — **shop-mode redesign: one focused screen.** Hid the whole List toolbar in Shop (killed the duplicate resets / store-dropdown-vs-chips / Needed-vs-Hide-done). Shop now has its own toolbar: ✕ Done (→ List), search-or-add box (shares grocerySearch state; no match → "+ Add" via the existing manual-item path), store chips, slim progress + Hide done, Uncheck-all at bottom. Bought items sink within their own store. Render + reuse of existing add path; FIP-safe.
-- v112 — **C0a cooking timers persist + run in parallel.** Wall-clock timers (correct through phone sleep), survive leaving cooking mode, persistent bottom strip (tap-resume / ✕ cancel / Clear all), beep+haptic+red DONE chip, Back vs endCookingSession split. Local UI state only. Lock-screen live timer = iOS-native-only → parked on #21.
 
 ---
 
 ## NEXT SESSION — start here
 
-STATE: **v112 shipped C0a** (cooking timers persist + parallel) — built, pushed live, **awaiting Robbie's phone test + runRegressionTests 25/25 to confirm.** If a timer issue shows up, iterate on the cooking block (renderTimerStrip / _startGlobalTimer / exitCookingMode). Prior: shipped v80→v111, 25/25 confirmed at v101 + v109.
+STATE: **v122 shipped + confirmed** (adjusted-amount override, dish-level single source of truth) — pushed live, runRegressionTests 25/25 confirmed by Robbie on a throwaway trip (2026-06-09). FIP-safe: original quantity never touched, override is opt-in. Small related follow-up if Robbie wants it: the grocery "Edit ingredient" popup now edits the override (not the base) — flip it back to base editing if that's preferred.
 
-Continue the **COOKING-MODE REDESIGN (C0)** — read the C0 spec in BACKLOG.md. Remaining small builds, in order: **C0f** (Back/X on the cooking overview screen), **C0g** (top safe-area padding so content clears the status-bar clock), **C0h** (remove the non-working "cooking for #" adjuster), **C0d** (dish photo instead of emoji + clean focus view). Then the bigger C0b multi-dish dashboard / C0c coordination timeline.
+Next priority = **COOKING-MODE REDESIGN (C0)** — read the C0 spec in BACKLOG.md. Already shipped: C0a (v112 timers), C0d/C0f/C0g (v113), C0h (v114). **Remaining: C0b multi-dish dashboard → C0c coordination timeline → C0e QoL.** Queued safe/small alternatives if Robbie wants a quick win first: **#25(i)** proactive image sourcing on save, **#27A** grocery section headers on all screens, **#3** run cleanupDuplicateRecipes (dry-run then apply).
 
 NOTE: the v99 self-heal spends ~0.1¢/recipe on Robbie's Anthropic key to clean grocery names (cached, one-time); Robbie is OK with it. To make it button-only, gate _autoHealGroceryNames().

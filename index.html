@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v127
+     Meal Planner v128
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -2980,6 +2980,12 @@ function repairCorruptedTripCodes(){
       var ev=all[c];
       if(ev&&!ev.code){ev.code=c;all[c]=ev;changed=true;console.log('[MealPlanner] Repaired trip code:',c);}
     });
+    // v128: prune orphaned/invalid keys from the local trip cache (e.g. a literal "null" key from an
+    // old code-corruption bug) so they stop showing in App Admin → Data. Local cache ONLY — never
+    // touches Firebase; a real trip (object value under a valid key) is never removed.
+    Object.keys(all).forEach(function(k){
+      if(k==='null'||k==='undefined'||k===''||!all[k]||typeof all[k]!=='object'){delete all[k];changed=true;}
+    });
     if(changed){try{localStorage.setItem(TRIPS_KEY,JSON.stringify(all));}catch(e){}}
   }catch(e){console.warn('[MealPlanner] repairCorruptedTripCodes:',e);}
 }
@@ -4207,10 +4213,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v127';
+var APP_VERSION='v128';
 var APP_BUILD_TIME='2026-06-18';
 
-var APP_VERSION_TAG='Meal Planner v127';
+var APP_VERSION_TAG='Meal Planner v128';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -7297,10 +7303,12 @@ function loadUserTripsFromFirebase(){
     // v124: keep the account's trip codes in memory so renderLanding can show them even when this
     // device's localStorage is full and can't cache the trip data (source of truth stays Firebase).
     _accountTripCodes=codes.slice();
-    var existing=getDeviceTrips();
-    // Fetch any trip not already in the local cache; keep it in memory (_accountTrips) AND try to cache
-    // it locally (a no-op on a full device — renderLanding then falls back to the in-memory copy).
-    var missing=codes.filter(function(c){return existing.indexOf(c)<0;});
+    // v128: fetch any account trip whose DATA we don't already have locally OR in memory — this catches
+    // BOTH a trip absent from the device list AND a trip that IS in the list but whose cached data went
+    // missing (e.g. a save that failed while the device was storage-full). v124 only handled the first
+    // case, so such a trip stayed invisible on that device (e.g. Juneteenth on Robbie's iPhone).
+    var allLocal=getAllTrips();
+    var missing=codes.filter(function(c){return !allLocal[c]&&!_accountTrips[c];});
     missing.forEach(function(code){
       db.ref('trips/'+code).once('value').then(function(snap){
         var v=snap.val();

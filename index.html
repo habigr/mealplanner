@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v129
+     Meal Planner v130
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -162,6 +162,7 @@ label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-t
 .landing-empty p{font-size:13px;color:var(--muted);line-height:1.55;max-width:260px;margin:0 auto;}
 .landing-ctas{display:flex;flex-direction:column;gap:10px;}
 .landing-ctas button{width:100%;padding:15px;font-size:15px;border-radius:var(--r);}
+.landing-ctas button:not(.secondary){background:#1a3260;color:#fff;} /* v130: pin New Trip to brand navy (was following the trip theme accent → teal on some themes) */
 .trip-code-box{background:var(--theme-accent-soft);border:1.5px solid var(--theme-border);border-radius:var(--r-sm);padding:12px 16px;margin:14px 0 0;display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .trip-code-display{font-family:monospace;font-size:15px;font-weight:700;color:var(--theme-accent-dark);letter-spacing:.03em;}
 
@@ -2664,6 +2665,7 @@ var _accountTrips={};      // code -> normalized event
 var _accountTripCodes=[];  // ordered list of the account's trip codes
 var _archivedTripCodes=[]; // v129: codes the user has archived (users/{uid}/trips/{code}.archived)
 var _showArchived=false;   // v129: is the home "Archived" section expanded?
+var _keepActiveTripCodes=[]; // v130: codes the user manually un-archived — auto-archive skips these
 function getAllTrips(){try{return JSON.parse(localStorage.getItem(TRIPS_KEY)||'{}');}catch(e){return{};}}
 function setAllTrips(d){_safeLSSet(TRIPS_KEY,JSON.stringify(d),'all trips');}
 function getDeviceTrips(){try{return JSON.parse(localStorage.getItem(DEVICE_KEY)||'[]');}catch(e){return[];}}
@@ -4230,10 +4232,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v129';
+var APP_VERSION='v130';
 var APP_BUILD_TIME='2026-06-18';
 
-var APP_VERSION_TAG='Meal Planner v129';
+var APP_VERSION_TAG='Meal Planner v130';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -7316,9 +7318,15 @@ function recordTripForUser(code){
 function setTripArchived(code,archived,silent){
   if(!db||!currentUser){if(!silent)showToast('Sign in to archive trips.','error');return;}
   code=String(code||'').toLowerCase();if(!code)return;
-  try{db.ref('users/'+currentUser.uid+'/trips/'+code).update({archived:!!archived});}catch(e){}
+  // v130: a MANUAL un-archive sets keepActive so autoArchivePastTrips won't re-archive a past trip the
+  // user deliberately brought back (this is why un-archive wasn't sticking / wasn't consistent). Any
+  // archive (manual or auto) clears keepActive.
+  var keepActive=(!archived&&!silent);
+  try{db.ref('users/'+currentUser.uid+'/trips/'+code).update({archived:!!archived,keepActive:keepActive});}catch(e){}
   var i=_archivedTripCodes.indexOf(code);
   if(archived){if(i<0)_archivedTripCodes.push(code);}else if(i>=0)_archivedTripCodes.splice(i,1);
+  var ka=_keepActiveTripCodes.indexOf(code);
+  if(keepActive){if(ka<0)_keepActiveTripCodes.push(code);}else if(ka>=0)_keepActiveTripCodes.splice(ka,1);
   if(!silent)showToast(archived?'Trip moved to Archived.':'Trip un-archived.','success');
   renderArchiveButton();renderLanding();
 }
@@ -7327,6 +7335,7 @@ function autoArchivePastTrips(){
   var all=getAllTrips(),today=new Date(getTodayStr()+'T00:00:00');
   (_accountTripCodes||[]).forEach(function(code){
     if(_archivedTripCodes.indexOf(code)>=0)return;             // already archived
+    if(_keepActiveTripCodes.indexOf(code)>=0)return;           // v130: user manually kept this active
     var ev=all[code]||_accountTrips[code];
     if(!ev||!ev.endDate)return;                                 // no end date → never auto-archive
     var end=new Date(ev.endDate+'T00:00:00');if(isNaN(end.getTime()))return;
@@ -7343,8 +7352,23 @@ function renderArchiveButton(){
   b.textContent=(!!currentCode&&_archivedTripCodes.indexOf(currentCode)>=0)?'Un-archive Trip':'Archive Trip';
 }
 
+// v130: live listener so an archive/un-archive on one device shows on the user's OTHER devices
+// without a reload. Read-only (no writes) — updates the in-memory flags + re-renders the home list.
+var _userTripsListenerAttached=false;
+function subscribeUserTrips(){
+  if(!db||!currentUser||_userTripsListenerAttached)return;
+  _userTripsListenerAttached=true;
+  db.ref('users/'+currentUser.uid+'/trips').on('value',function(snap){
+    var data=snap.val()||{},codes=Object.keys(data);
+    _accountTripCodes=codes.slice();
+    _archivedTripCodes=codes.filter(function(c){return data[c]&&data[c].archived;});
+    _keepActiveTripCodes=codes.filter(function(c){return data[c]&&data[c].keepActive;});
+    renderLanding();
+  });
+}
 function loadUserTripsFromFirebase(){
   if(!db||!currentUser)return;
+  subscribeUserTrips(); // v130: keep archived/keepActive state live across the user's devices
   db.ref('users/'+currentUser.uid+'/trips').once('value').then(function(snap){
     var data=snap.val()||{};
     var codes=Object.keys(data);
@@ -7353,6 +7377,7 @@ function loadUserTripsFromFirebase(){
     // device's localStorage is full and can't cache the trip data (source of truth stays Firebase).
     _accountTripCodes=codes.slice();
     _archivedTripCodes=codes.filter(function(c){return data[c]&&data[c].archived;}); // v129: per-user archived flags
+    _keepActiveTripCodes=codes.filter(function(c){return data[c]&&data[c].keepActive;}); // v130: manually-kept-active
     // v128: fetch any account trip whose DATA we don't already have locally OR in memory — this catches
     // BOTH a trip absent from the device list AND a trip that IS in the list but whose cached data went
     // missing (e.g. a save that failed while the device was storage-full). v124 only handled the first

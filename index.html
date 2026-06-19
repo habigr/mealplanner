@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v123
+     Meal Planner v124
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -2536,6 +2536,11 @@ function _safeLSSet(key,value,label){
     return false;
   }
 }
+// v124: in-memory mirror of the signed-in account's trips (Firebase users/{uid}/trips), so the home
+// list can render trips joined on another device even when THIS device's localStorage is full and
+// can't cache them. Source of truth stays Firebase; local cache is just an optimization.
+var _accountTrips={};      // code -> normalized event
+var _accountTripCodes=[];  // ordered list of the account's trip codes
 function getAllTrips(){try{return JSON.parse(localStorage.getItem(TRIPS_KEY)||'{}');}catch(e){return{};}}
 function setAllTrips(d){_safeLSSet(TRIPS_KEY,JSON.stringify(d),'all trips');}
 function getDeviceTrips(){try{return JSON.parse(localStorage.getItem(DEVICE_KEY)||'[]');}catch(e){return[];}}
@@ -2809,7 +2814,7 @@ function commitAndSync(){
   fbWriteTrip(currentEvent);
 }
 async function saveCurrentTrip(){autosave();clearTimeout(fbSaveTimer);setSyncStatus('syncing');try{await fbWriteTrip(currentEvent);showToast('Saved and synced.','success');}catch(e){showToast('Saved locally — will sync when online.','');}}
-async function deleteTripFromDevice(code){var all=getAllTrips(),ev=all[code],name=ev?(ev.name||ev.code||code):code;if(!await confirmAction({title:'Remove Trip',message:'"'+name+'" will be removed from this device. Firebase data stays intact for others.',confirmLabel:'Remove',danger:true}))return;var dt=getDeviceTrips().filter(function(c){return c!==code;});setDeviceTrips(dt);delete all[code];setAllTrips(all);
+async function deleteTripFromDevice(code){var all=getAllTrips(),ev=all[code],name=ev?(ev.name||ev.code||code):code;if(!await confirmAction({title:'Remove Trip',message:'"'+name+'" will be removed from this device. Firebase data stays intact for others.',confirmLabel:'Remove',danger:true}))return;var dt=getDeviceTrips().filter(function(c){return c!==code;});setDeviceTrips(dt);delete all[code];setAllTrips(all);delete _accountTrips[code];_accountTripCodes=_accountTripCodes.filter(function(c){return c!==code;});
   // v106: also remove the user->trip LINK in Firebase so loadUserTripsFromFirebase (on load / pull-refresh) can't re-add it. Trip data (trips/{code}) is NOT touched — stays intact for others.
   if(db&&currentUser){try{db.ref('users/'+currentUser.uid+'/trips/'+code).remove();}catch(e){}}
   renderLanding();showToast('Removed from this device.','success');}
@@ -2881,7 +2886,13 @@ function renderLanding(){
   }
   var dt=getDeviceTrips(),all=getAllTrips(),wrap=safeEl('landingTripList');if(!wrap)return;
   // Repair corrupted trip codes (v31 bug set them to null). Skip null keys.
-  var trips=dt.filter(function(c){return!!c;}).map(function(c){var ev=all[c];if(ev&&!ev.code)ev.code=c;return ev;}).filter(function(ev){return ev&&ev.code;});
+  // v124: render from the UNION of this device's cached trips AND the in-memory account trip-list
+  // (_accountTripCodes / _accountTrips from Firebase), so trips joined on another device still show
+  // even when this device's localStorage is full and couldn't cache them. Prefer the local copy when
+  // present; fall back to the in-memory Firebase copy for trips that couldn't be cached.
+  var codes=dt.filter(function(c){return!!c;});
+  _accountTripCodes.forEach(function(c){if(c&&codes.indexOf(c)<0)codes.push(c);});
+  var trips=codes.map(function(c){var ev=all[c]||_accountTrips[c];if(ev&&!ev.code)ev.code=c;return ev;}).filter(function(ev){return ev&&ev.code;});
   if(!trips.length){wrap.innerHTML='<div class="landing-empty"><span class="landing-empty-icon">🍴</span><h3>No trips yet</h3><p>Create your first trip to start planning meals and building grocery lists.</p></div>';return;}
   var html='<p class="landing-section-label">Your Trips</p><div>'+trips.map(function(ev){
     var cls=ev.theme||'larchmont',dateStr=ev.startDate?formatDateShort(ev.startDate)+(ev.endDate?' – '+formatDateShort(ev.endDate):''):'No dates',dishes=(ev.dishes||[]).length;
@@ -4079,10 +4090,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v123';
-var APP_BUILD_TIME='2026-06-06 13:00';
+var APP_VERSION='v124';
+var APP_BUILD_TIME='2026-06-18';
 
-var APP_VERSION_TAG='Meal Planner v123';
+var APP_VERSION_TAG='Meal Planner v124';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -7166,17 +7177,20 @@ function loadUserTripsFromFirebase(){
     var data=snap.val()||{};
     var codes=Object.keys(data);
     if(!codes.length)return;
+    // v124: keep the account's trip codes in memory so renderLanding can show them even when this
+    // device's localStorage is full and can't cache the trip data (source of truth stays Firebase).
+    _accountTripCodes=codes.slice();
     var existing=getDeviceTrips();
-    var merged=existing.slice();
-    codes.forEach(function(code){if(merged.indexOf(code)<0)merged.push(code);});
-    // Load any missing trips from Firebase
+    // Fetch any trip not already in the local cache; keep it in memory (_accountTrips) AND try to cache
+    // it locally (a no-op on a full device — renderLanding then falls back to the in-memory copy).
     var missing=codes.filter(function(c){return existing.indexOf(c)<0;});
     missing.forEach(function(code){
       db.ref('trips/'+code).once('value').then(function(snap){
-        if(snap.val()){saveToLocal(normalizeEvent(snap.val()));recordDeviceTrip(code);}
-      }).catch(function(){});
+        var v=snap.val();
+        if(v){var ev=normalizeEvent(v);_accountTrips[code]=ev;saveToLocal(ev);recordDeviceTrip(code);}
+      }).catch(function(){}).then(function(){renderLanding();});
     });
-    if(missing.length){setTimeout(renderLanding,1500);}
+    renderLanding();
   }).catch(function(){});
 }
 

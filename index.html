@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v126
+     Meal Planner v127
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1871,6 +1871,12 @@ body.planner-edit-mode .dish-title{margin-bottom:4px;}
       <h3>Trip Data</h3><p class="card-desc">Permanently delete trips or clean up local copies. Permanent delete removes the trip from Firebase and this device.</p>
       <div id="adminTripDataList"></div>
     </div>
+    <div class="admin-card">
+      <h3>Storage &amp; Diagnostics</h3>
+      <p class="card-desc">Read-only. Shows this device's version, login, which trips load from where, and localStorage usage. Use it to compare devices when their trip lists differ.</p>
+      <button class="secondary" type="button" style="width:100%;" onclick="showDiagReport()">Show storage &amp; diagnostics</button>
+      <pre id="diagReportOutput" style="display:none;white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.5;background:var(--panel-soft,#f5f2ec);border:1px solid var(--border,#ddd);border-radius:8px;padding:12px;margin-top:10px;max-height:50vh;overflow:auto;"></pre>
+    </div>
   </div>
 
   <div id="adminTabAbout" class="app-admin-tab-panel">
@@ -2134,6 +2140,39 @@ window.diagStorage=function(){
   });
   console.groupEnd();
   return{totalKB:Math.round(total/1024),keyCount:rows.length,biggest:rows.slice(0,3).map(function(r){return r.key+' '+r.size;})};
+};
+
+// v127: on-screen version of the diagnostics (no console needed — for phones). Renders into App Admin
+// > Data > "Storage & Diagnostics". Read-only. Also surfaces login state + where each trip comes from,
+// to compare devices when their trip lists differ.
+window.showDiagReport=function(){
+  var el=safeEl('diagReportOutput');if(!el)return;
+  function kb(n){return(n/1024).toFixed(1)+' KB';}
+  function bytes(s){return s?s.length*2:0;}
+  var L=[];
+  L.push('Version: '+APP_VERSION+'  ·  Built '+APP_BUILD_TIME);
+  L.push('Signed in: '+(currentUser?('YES — '+(currentUser.email||currentUser.uid||'?')):(isGuest?'NO (Guest mode)':'NO')));
+  var u=(typeof getUser==='function')?getUser():null;
+  if(u)L.push('Profile: '+((u.name||u.firstName||'?')+(u.initials?(' ('+u.initials+')'):'')));
+  L.push('');
+  var dt=getDeviceTrips().filter(function(c){return!!c;});
+  var ac=(_accountTripCodes||[]).slice();
+  L.push('Trips cached on THIS device: '+dt.length);
+  dt.forEach(function(c){L.push('   • '+c);});
+  L.push('Trips on your ACCOUNT (Firebase): '+ac.length+(currentUser?'':'   — empty (not signed in)'));
+  ac.forEach(function(c){L.push('   • '+c);});
+  var onlyDev=dt.filter(function(c){return ac.indexOf(c)<0;});
+  var onlyAcc=ac.filter(function(c){return dt.indexOf(c)<0;});
+  if(onlyDev.length)L.push('⚠ On this device but NOT your account: '+onlyDev.join(', '));
+  if(onlyAcc.length)L.push('⚠ On your account but NOT cached here: '+onlyAcc.join(', '));
+  L.push('');
+  var total=0,rows=[];
+  for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i),v=localStorage.getItem(k)||'';var b=bytes(v);total+=b;rows.push([k,b]);}
+  rows.sort(function(a,b){return b[1]-a[1];});
+  L.push('localStorage total: '+kb(total)+'  (cap ~5 MB)');
+  rows.slice(0,6).forEach(function(r){L.push('   '+kb(r[1])+'  —  '+r[0]);});
+  el.textContent=L.join('\n');
+  el.style.display='block';
 };
 window.checkSyncFreshness=function(){
   if(!db||!currentCode||!currentEvent){console.warn('[SyncFreshness] No active trip or Firebase connection');return;}
@@ -4168,10 +4207,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v126';
+var APP_VERSION='v127';
 var APP_BUILD_TIME='2026-06-18';
 
-var APP_VERSION_TAG='Meal Planner v126';
+var APP_VERSION_TAG='Meal Planner v127';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v128
+     Meal Planner v129
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1794,6 +1794,10 @@ body.planner-edit-mode .dish-title{margin-bottom:4px;}
   <div class="section-title">Activity</div>
   <button class="secondary" type="button" style="width:100%;" onclick="openAuditDrawer()">&#128336; View Audit Log</button>
 
+  <div class="section-title">Archive</div>
+  <button id="archiveTripBtn" class="secondary" type="button" style="width:100%;" onclick="toggleArchiveCurrentTrip()">Archive Trip</button>
+  <div class="small-note">Archived trips move to the “Archived” section on the home screen. Per-user — only affects your view, not the trip data.</div>
+
   <div class="section-title">Advanced</div>
   <button class="secondary" type="button" style="width:100%;margin-bottom:8px;" onclick="toggleAppAdmin(true)">Open App Admin</button>
   <button class="secondary" type="button" style="width:100%;" onclick="saveCurrentTrip()">Save Trip Now</button>
@@ -2658,6 +2662,8 @@ function _safeLSSet(key,value,label){
 // can't cache them. Source of truth stays Firebase; local cache is just an optimization.
 var _accountTrips={};      // code -> normalized event
 var _accountTripCodes=[];  // ordered list of the account's trip codes
+var _archivedTripCodes=[]; // v129: codes the user has archived (users/{uid}/trips/{code}.archived)
+var _showArchived=false;   // v129: is the home "Archived" section expanded?
 function getAllTrips(){try{return JSON.parse(localStorage.getItem(TRIPS_KEY)||'{}');}catch(e){return{};}}
 function setAllTrips(d){_safeLSSet(TRIPS_KEY,JSON.stringify(d),'all trips');}
 function getDeviceTrips(){try{return JSON.parse(localStorage.getItem(DEVICE_KEY)||'[]');}catch(e){return[];}}
@@ -3017,7 +3023,8 @@ function renderLanding(){
   _accountTripCodes.forEach(function(c){if(c&&codes.indexOf(c)<0)codes.push(c);});
   var trips=codes.map(function(c){var ev=all[c]||_accountTrips[c];if(ev&&!ev.code)ev.code=c;return ev;}).filter(function(ev){return ev&&ev.code;});
   if(!trips.length){wrap.innerHTML='<div class="landing-empty"><span class="landing-empty-icon">🍴</span><h3>No trips yet</h3><p>Create your first trip to start planning meals and building grocery lists.</p></div>';return;}
-  var html='<p class="landing-section-label">Your Trips</p><div>'+trips.map(function(ev){
+  // v129: split active vs archived (archived = code flagged in the user's account, _archivedTripCodes)
+  function tripCardHtml(ev){
     var cls=ev.theme||'larchmont',dateStr=ev.startDate?formatDateShort(ev.startDate)+(ev.endDate?' – '+formatDateShort(ev.endDate):''):'No dates',dishes=(ev.dishes||[]).length;
     return'<div class="trip-card-wrap" data-code="'+escAttr(ev.code||'')+'">'+
       '<button class="trip-del-btn" onclick="event.stopPropagation();deleteTripFromDevice(\''+escAttr(ev.code||'')+'\')" aria-label="Delete">'+TRASH_SVG+'Delete</button>'+
@@ -3027,7 +3034,17 @@ function renderLanding(){
         '<button class="trip-del-hover" onclick="event.stopPropagation();deleteTripFromDevice(\''+escAttr(ev.code||'')+'\')">✕</button>'+
         '<span class="trip-chevron">›</span>'+
       '</div></div>';
-  }).join('')+'</div><div style="margin-bottom:20px;"></div>';
+  }
+  var activeTrips=trips.filter(function(ev){return _archivedTripCodes.indexOf(ev.code)<0;});
+  var archivedTrips=trips.filter(function(ev){return _archivedTripCodes.indexOf(ev.code)>=0;});
+  var html='';
+  if(activeTrips.length){html+='<p class="landing-section-label">Your Trips</p><div>'+activeTrips.map(tripCardHtml).join('')+'</div>';}
+  else{html+='<div class="landing-empty" style="padding:24px 16px;"><p>All your trips are archived — open <strong>Archived</strong> below to see them.</p></div>';}
+  if(archivedTrips.length){
+    html+='<button type="button" onclick="toggleArchivedSection()" style="width:100%;text-align:left;background:none;border:none;color:var(--muted);font-size:13px;font-weight:700;letter-spacing:.02em;padding:16px 4px 8px;cursor:pointer;">'+(_showArchived?'▾':'▸')+' Archived ('+archivedTrips.length+')</button>';
+    if(_showArchived){html+='<div style="opacity:.78;">'+archivedTrips.map(tripCardHtml).join('')+'</div>';}
+  }
+  html+='<div style="margin-bottom:20px;"></div>';
   wrap.innerHTML=html;
   document.querySelectorAll('.trip-card-wrap').forEach(initSwipe);
 }
@@ -4213,10 +4230,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v128';
+var APP_VERSION='v129';
 var APP_BUILD_TIME='2026-06-18';
 
-var APP_VERSION_TAG='Meal Planner v128';
+var APP_VERSION_TAG='Meal Planner v129';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5270,7 +5287,7 @@ function saveStoresDepartments(){var stores=getValue('adminStores').split('\n').
 function syncAdminInputs(){var ev=currentEvent||{};setValue('adminStores',(ev.stores||getDefaultStores()).join('\n'));setValue('adminDepartments',(ev.departments||getDefaultDepts()).join('\n'));setValue('adminMealTypes',(ev.mealTypes||['Breakfast','Lunch','Dinner']).join('\n'));var ik=safeEl('imageApiKeyInput');if(ik)ik.value=getImageApiKey();var pk=safeEl('pexelsKeyInput');if(pk)pk.value=getPexelsKey();renderDarkModeButton();}
 function switchAppAdminTab(tab){appAdminLastTab=tab;document.querySelectorAll('.app-admin-tab').forEach(function(b){b.classList.toggle('active',b.dataset.adminTab===tab);});document.querySelectorAll('.app-admin-tab-panel').forEach(function(p){p.classList.remove('active');});var panel=safeEl('adminTab'+tab.charAt(0).toUpperCase()+tab.slice(1));if(panel)panel.classList.add('active');if(tab==='themes'){themeAdminTab=(currentEvent&&currentEvent.theme)||'larchmont';document.querySelectorAll('.theme-inner-tab').forEach(function(b){b.classList.toggle('active',b.dataset.themeTab===themeAdminTab);});renderThemeGallery();var t=safeEl('themePreviewTitle');if(t)t.textContent=(currentEvent&&currentEvent.name)||themeDisplayName(themeAdminTab);}if(tab==='ai'){renderApiKeyStatus();}if(tab==='data'){renderAdminTripDataList();}if(tab==='about'){var av=safeEl('aboutVersion');if(av)av.textContent=APP_VERSION;var at=safeEl('aboutBuildTime');if(at)at.textContent=APP_BUILD_TIME;}}
 function toggleAppAdmin(open){var panel=safeEl('appAdminPanel'),bd=safeEl('appAdminBackdrop');if(!panel||!bd)return;var s=typeof open==='undefined'?!panel.classList.contains('active'):open;if(s){syncAdminInputs();renderStoreRules();switchAppAdminTab(appAdminLastTab);}panel.classList.toggle('active',s);bd.classList.toggle('active',s);}
-function toggleAdminPanel(open){var drawer=safeEl('adminDrawer'),bd=safeEl('adminBackdrop');if(!drawer||!bd)return;var s=typeof open==='undefined'?!drawer.classList.contains('active'):open;if(s&&!currentEvent){showToast('Load a trip first.','error');return;}drawer.classList.toggle('active',s);bd.classList.toggle('active',s&&!document.body.classList.contains('mobile-setup-mode'));if(!s)document.body.classList.remove('mobile-setup-mode');}
+function toggleAdminPanel(open){var drawer=safeEl('adminDrawer'),bd=safeEl('adminBackdrop');if(!drawer||!bd)return;var s=typeof open==='undefined'?!drawer.classList.contains('active'):open;if(s&&!currentEvent){showToast('Load a trip first.','error');return;}if(s)renderArchiveButton();drawer.classList.toggle('active',s);bd.classList.toggle('active',s&&!document.body.classList.contains('mobile-setup-mode'));if(!s)document.body.classList.remove('mobile-setup-mode');}
 
 /* ===== DATA ADMIN ===== */
 function renderAdminTripDataList(){
@@ -7291,7 +7308,39 @@ function renderMenuLibraryOverlay(){
 /* ===== UID-TRIP LINKAGE ===== */
 function recordTripForUser(code){
   if(!db||!currentUser)return;
-  db.ref('users/'+currentUser.uid+'/trips/'+code).set({code:code,joinedAt:getTodayStr()});
+  // v129: update (not set) so an existing .archived flag is preserved when a trip is re-opened
+  db.ref('users/'+currentUser.uid+'/trips/'+code).update({code:code,joinedAt:getTodayStr()});
+}
+// v129: archive is a PER-USER flag on users/{uid}/trips/{code}.archived — it NEVER touches trip data,
+// so it's reversible and FIP-safe. Auto-archive (>1 day past end) is automatic; un-archive is manual.
+function setTripArchived(code,archived,silent){
+  if(!db||!currentUser){if(!silent)showToast('Sign in to archive trips.','error');return;}
+  code=String(code||'').toLowerCase();if(!code)return;
+  try{db.ref('users/'+currentUser.uid+'/trips/'+code).update({archived:!!archived});}catch(e){}
+  var i=_archivedTripCodes.indexOf(code);
+  if(archived){if(i<0)_archivedTripCodes.push(code);}else if(i>=0)_archivedTripCodes.splice(i,1);
+  if(!silent)showToast(archived?'Trip moved to Archived.':'Trip un-archived.','success');
+  renderArchiveButton();renderLanding();
+}
+function autoArchivePastTrips(){
+  if(!db||!currentUser)return;
+  var all=getAllTrips(),today=new Date(getTodayStr()+'T00:00:00');
+  (_accountTripCodes||[]).forEach(function(code){
+    if(_archivedTripCodes.indexOf(code)>=0)return;             // already archived
+    var ev=all[code]||_accountTrips[code];
+    if(!ev||!ev.endDate)return;                                 // no end date → never auto-archive
+    var end=new Date(ev.endDate+'T00:00:00');if(isNaN(end.getTime()))return;
+    if((today-end)/86400000>1)setTripArchived(code,true,true);  // >1 day past end → archive (silent)
+  });
+}
+function toggleArchivedSection(){_showArchived=!_showArchived;renderLanding();}
+function toggleArchiveCurrentTrip(){
+  if(!currentCode){showToast('Load a trip first.','error');return;}
+  setTripArchived(currentCode,_archivedTripCodes.indexOf(currentCode)<0,false);
+}
+function renderArchiveButton(){
+  var b=safeEl('archiveTripBtn');if(!b)return;
+  b.textContent=(!!currentCode&&_archivedTripCodes.indexOf(currentCode)>=0)?'Un-archive Trip':'Archive Trip';
 }
 
 function loadUserTripsFromFirebase(){
@@ -7303,6 +7352,7 @@ function loadUserTripsFromFirebase(){
     // v124: keep the account's trip codes in memory so renderLanding can show them even when this
     // device's localStorage is full and can't cache the trip data (source of truth stays Firebase).
     _accountTripCodes=codes.slice();
+    _archivedTripCodes=codes.filter(function(c){return data[c]&&data[c].archived;}); // v129: per-user archived flags
     // v128: fetch any account trip whose DATA we don't already have locally OR in memory — this catches
     // BOTH a trip absent from the device list AND a trip that IS in the list but whose cached data went
     // missing (e.g. a save that failed while the device was storage-full). v124 only handled the first
@@ -7313,9 +7363,9 @@ function loadUserTripsFromFirebase(){
       db.ref('trips/'+code).once('value').then(function(snap){
         var v=snap.val();
         if(v){var ev=normalizeEvent(v);_accountTrips[code]=ev;saveToLocal(ev);recordDeviceTrip(code);}
-      }).catch(function(){}).then(function(){renderLanding();});
+      }).catch(function(){}).then(function(){renderLanding();autoArchivePastTrips();});
     });
-    renderLanding();
+    renderLanding();autoArchivePastTrips();
   }).catch(function(){});
 }
 

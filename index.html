@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v135
+     Meal Planner v136
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -4280,10 +4280,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v135';
+var APP_VERSION='v136';
 var APP_BUILD_TIME='2026-06-18';
 
-var APP_VERSION_TAG='Meal Planner v135';
+var APP_VERSION_TAG='Meal Planner v136';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5353,10 +5353,25 @@ async function deleteTripEverywhere(code){if(!await confirmAction({title:'Delete
 
 /* ===== RECIPE BANK ===== */
 var _recipeFilter='all';
-var _recipeSort='recent';
+var _recipeSort=(function(){try{return localStorage.getItem('mealPlanner.recipeSort')||'recent';}catch(e){return 'recent';}})();
 var _recipeView='grid';
 var _recipeGroupBy='none'; // v86 (#16): library group-by — none | owner | date
 function setRecipeGroupBy(mode){_recipeGroupBy=(mode==='owner'||mode==='date')?mode:'none';renderMenuLibraryOverlay();}
+// v136 (#35): single shared Recipe sort helper used by the library overlay AND the bank. 'alpha' key
+// matches the pre-existing bank sort; adds 'cooktime'. Render-only; _recipeSort persists per-device.
+function sortRecipesForLibrary(arr){
+  arr=(arr||[]).slice();
+  function ct(r){var m=String(r.cookTime||'').match(/\d+/);return m?parseInt(m[0],10):999999;}
+  function ts(r){return String(r.savedAt||r.addedAt||'');}
+  switch(_recipeSort){
+    case'alpha':arr.sort(function(a,b){return String(a.name||'').localeCompare(String(b.name||''));});break;
+    case'used':arr.sort(function(a,b){return (b.timesUsed||0)-(a.timesUsed||0);});break;
+    case'rating':arr.sort(function(a,b){return (b.rating||0)-(a.rating||0);});break;
+    case'cooktime':arr.sort(function(a,b){return ct(a)-ct(b);});break;
+    default:arr.sort(function(a,b){return ts(b).localeCompare(ts(a));});break;
+  }
+  return arr;
+}
 var _recipeOwnerFilter='';
 
 var RECIPE_CATEGORY_MAP={
@@ -5380,7 +5395,7 @@ function detectRecipeCategory(recipe){
 }
 
 function setRecipeFilter(f,btn){_recipeFilter=f;document.querySelectorAll('.recipe-filter-tab').forEach(function(b){b.classList.toggle('active',b.dataset.filter===f);});renderRecipeBank();renderMenuLibraryOverlay();}
-function setRecipeSort(v){_recipeSort=v;renderRecipeBank();}
+function setRecipeSort(v){_recipeSort=v;try{localStorage.setItem('mealPlanner.recipeSort',v);}catch(e){}renderRecipeBank();renderMenuLibraryOverlay();}
 function setRecipeView(v){_recipeView=v;renderRecipeBank();}
 
 function sortAndFilterRecipes(recipes){
@@ -5390,12 +5405,7 @@ function sortAndFilterRecipes(recipes){
   if(_recipeFilter==='veg')recipes=recipes.filter(function(r){return r.isVegetarian;});
   if(_recipeFilter==='mine')recipes=recipes.filter(function(r){return r.addedBy===myName;});
   if(_recipeOwnerFilter)recipes=recipes.filter(function(r){return(r.owner||r.addedBy||'')=== _recipeOwnerFilter;});
-  switch(_recipeSort){
-    case'alpha':recipes=recipes.slice().sort(function(a,b){return(a.name||'').localeCompare(b.name||'');});break;
-    case'used':recipes=recipes.slice().sort(function(a,b){return(b.timesUsed||0)-(a.timesUsed||0);});break;
-    case'rating':recipes=recipes.slice().sort(function(a,b){return(b.rating||0)-(a.rating||0);});break;
-    default:recipes=recipes.slice().sort(function(a,b){return(b.savedAt||b.addedAt||'').localeCompare(a.savedAt||a.addedAt||'');});
-  }
+  recipes=sortRecipesForLibrary(recipes); // v136: shared sort (now also supports 'cooktime')
   return recipes;
 }
 
@@ -7313,6 +7323,7 @@ function renderMenuLibraryOverlay(){
   if(_recipeFilter==='veg')recipes=recipes.filter(function(r){return r.isVegetarian;});
   if(_recipeOwnerFilter)recipes=recipes.filter(function(r){return(r.owner||r.addedBy||'')=== _recipeOwnerFilter;});
   if(search)recipes=recipes.filter(function(r){return(r.name||'').toLowerCase().indexOf(search)>=0||(r.ingredients||[]).some(function(i){return(i.item||'').toLowerCase().indexOf(search)>=0;});});
+  recipes=sortRecipesForLibrary(recipes); // v136 (#35): apply the chosen sort before grouping/render
   // Render owner filter dropdown
   var ownerWrap=safeEl('libraryOwnerFilterWrap');
   if(ownerWrap){
@@ -7328,6 +7339,9 @@ function renderMenuLibraryOverlay(){
     var on=_recipeGroupBy===m[0];
     return'<button onclick="setRecipeGroupBy(\''+m[0]+'\')" style="font-size:11px;font-weight:700;padding:5px 11px;border-radius:999px;cursor:pointer;border:1.5px solid '+(on?'var(--theme-accent)':'var(--border)')+';background:'+(on?'var(--theme-accent)':'transparent')+';color:'+(on?'#fff':'var(--muted)')+';">'+escHtml(m[1])+'</button>';
   }).join('')+'</div>';
+  // v136 (#35): sort dropdown prepended to the controls
+  var _sortOpts=[['recent','Recently added'],['alpha','Name A–Z'],['used','Most used'],['rating','Top rated'],['cooktime','Quickest to cook']];
+  gbBar='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="font-size:11px;font-weight:700;color:var(--muted);flex-shrink:0;">Sort</span><select onchange="setRecipeSort(this.value)" style="flex:1;font-size:12px;padding:6px 9px;border-radius:8px;border:1.5px solid var(--border);background:var(--panel);color:var(--text);">'+_sortOpts.map(function(o){return'<option value="'+o[0]+'"'+(_recipeSort===o[0]?' selected':'')+'>'+escHtml(o[1])+'</option>';}).join('')+'</select></div>'+gbBar;
   if(!recipes.length){el.innerHTML=gbBar+'<div style="text-align:center;padding:40px 20px;color:var(--muted);">'+((!_menuLibraryLoaded)?'Loading…':'No recipes match.')+'</div>';return;}
   if(_recipeGroupBy==='none'){
     el.innerHTML=gbBar+'<div class="recipe-bank-grid-v2">'+recipes.map(renderRecipeCard).join('')+'</div>';

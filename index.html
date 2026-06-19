@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v130
+     Meal Planner v131
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -2637,6 +2637,20 @@ function loadSharedApiKey(ev){
     if(ev&&ev.sharedGoogleCx&&!localStorage.getItem(GIMG_CX_STORAGE))localStorage.setItem(GIMG_CX_STORAGE,ev.sharedGoogleCx);
     if(ev&&ev.sharedPexelsKey&&!localStorage.getItem(PEXELS_KEY_STORAGE))localStorage.setItem(PEXELS_KEY_STORAGE,ev.sharedPexelsKey);
   }catch(e){}
+  // v131 (#29): also PUSH local image keys UP to the trip when the trip lacks them — mirrors the
+  // Anthropic key self-heal above. Without this, image keys entered on one device (or before v110)
+  // stayed local-only and never reached the user's other devices (the bug Robbie reported).
+  try{
+    var t=currentEvent||ev;
+    if(t){
+      var pushed=false,li=localStorage.getItem(IMG_API_KEY_STORAGE),lg=localStorage.getItem(GIMG_KEY_STORAGE),lcx=localStorage.getItem(GIMG_CX_STORAGE),lp=localStorage.getItem(PEXELS_KEY_STORAGE);
+      if(li&&!t.sharedImageApiKey){t.sharedImageApiKey=li;pushed=true;}
+      if(lg&&!t.sharedGoogleKey){t.sharedGoogleKey=lg;pushed=true;}
+      if(lcx&&!t.sharedGoogleCx){t.sharedGoogleCx=lcx;pushed=true;}
+      if(lp&&!t.sharedPexelsKey){t.sharedPexelsKey=lp;pushed=true;}
+      if(pushed){currentEvent=t;commitAndSync();}
+    }
+  }catch(e){}
 }
 function toggleApiKeyVisibility(){var inp=safeEl('apiKeyInput'),btn=safeEl('apiKeyToggle');if(!inp)return;var h=inp.type==='password';inp.type=h?'text':'password';if(btn)btn.textContent=h?'Hide':'Show';}
 function renderApiKeyStatus(){var key=getApiKey(),s=safeEl('apiKeyStatus'),f=safeEl('aiFeatureParseStatus'),fc=safeEl('aiFeatureChatStatus'),fd=safeEl('aiFeatureDedupStatus');if(s){if(key)s.innerHTML='<div style="background:#ecfdf3;border:1px solid #a3d8b4;border-radius:var(--r-sm);padding:9px 12px;font-size:12.5px;color:#0f5e2a;">✓ API key saved (ends in …'+key.slice(-4)+')</div>';else s.innerHTML='<div style="background:var(--panel-soft);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;font-size:12.5px;color:var(--muted);">No key saved yet.</div>';}var statusText=key?'✓ Ready':'⚠ No key',statusColor=key?'var(--success)':'#d97706';[f,fc,fd].forEach(function(el){if(el){el.textContent=statusText;el.style.color=statusColor;}});if(key)setValue('apiKeyInput',key);}
@@ -4232,10 +4246,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v130';
+var APP_VERSION='v131';
 var APP_BUILD_TIME='2026-06-18';
 
-var APP_VERSION_TAG='Meal Planner v130';
+var APP_VERSION_TAG='Meal Planner v131';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

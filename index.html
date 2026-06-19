@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v125
+     Meal Planner v126
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -2288,16 +2288,45 @@ function setSyncStatus(s){var d=safeEl('syncDot');if(!d)return;d.className='sync
 /* ===== LOCAL BACKUP SYSTEM ===== */
 var BACKUP_KEY='mealPlanner.tripBackup.v1';
 
+// v126: photos are stored as heavy base64 data:image URLs inside trips (FIP alone = 128 ≈ 2.4 MB).
+// The LOCAL BACKUP kept a SECOND full copy of them — pure waste, since Firebase AND the live cache
+// already hold every photo. Strip data:image blobs out of the BACKUP copy only (keeps dish/recipe
+// structure so the empty-trip restore still works). Operates on a CLONE — never touches the live
+// trip, the in-memory event, or Firebase. The real photos are never deleted.
+function _stripDataImagesForBackup(ev){
+  var clone;try{clone=JSON.parse(JSON.stringify(ev));}catch(e){return ev;}
+  (function walk(o){
+    if(!o||typeof o!=='object')return;
+    Object.keys(o).forEach(function(k){
+      var v=o[k];
+      if(typeof v==='string'){if(v.indexOf('data:image')===0)o[k]='';}
+      else if(v&&typeof v==='object')walk(v);
+    });
+  })(clone);
+  return clone;
+}
+// v126 one-time: shrink the EXISTING backup blob by stripping its base64 photos, so the duplicate
+// copy frees immediately instead of only on each trip's next save. Idempotent + local only.
+function _migrateStripBackupImages(){
+  try{
+    var raw=localStorage.getItem(BACKUP_KEY);if(!raw)return;
+    var backups=JSON.parse(raw),changed=false;
+    Object.keys(backups).forEach(function(code){
+      var b=backups[code];
+      if(b&&b.data&&JSON.stringify(b.data).indexOf('data:image')>=0){b.data=_stripDataImagesForBackup(b.data);changed=true;}
+    });
+    if(changed)localStorage.setItem(BACKUP_KEY,JSON.stringify(backups));
+  }catch(e){console.warn('[Backup] migrate strip failed:',e);}
+}
 function saveLocalBackup(ev){
   if(!ev||!ev.code)return;
   try{
     var backups=JSON.parse(localStorage.getItem(BACKUP_KEY)||'{}');
     backups[ev.code]={
-      data:JSON.parse(JSON.stringify(ev)),
+      data:_stripDataImagesForBackup(ev), // v126: image-light — Firebase + the live cache hold the photos
       savedAt:new Date().toISOString(),
       dishCount:(ev.dishes||[]).length
     };
-    // Keep last 3 backups per trip
     localStorage.setItem(BACKUP_KEY,JSON.stringify(backups));
   }catch(e){console.warn('[Backup] Could not save local backup:',e);}
 }
@@ -2334,17 +2363,35 @@ function checkAndOfferRestore(ev){
 }
 
 function restoreFromBackup(code){
-  var backup=getLocalBackup(code);
-  if(!backup||!backup.data){showToast('No backup found.','error');return;}
+  var lc=String(code||'').toLowerCase();
   var banner=document.getElementById('restoreBanner');if(banner)banner.remove();
-  var restoredEv=normalizeEvent(backup.data);
-  restoredEv.code=String(code||restoredEv.code||'').toLowerCase();
-  mpLog('TRIPSTORE','restoreFromBackup',{code:restoredEv.code,dishes:(restoredEv.dishes||[]).length,backupDishCount:backup.dishCount});
-  if(!TripStore.setTrip(restoredEv,restoredEv.code,'restoreFromBackup')){showToast('Restore failed: missing trip code.','error');return;}
-  saveToLocal(currentEvent);
-  commitAndSync();
-  renderAll();
-  showToast('✓ Restored '+backup.dishCount+' dishes from backup.','success');
+  function fromLocalBackup(){
+    var backup=getLocalBackup(code);
+    if(!backup||!backup.data){showToast('No backup found.','error');return;}
+    var restoredEv=normalizeEvent(backup.data);
+    restoredEv.code=lc||restoredEv.code;
+    mpLog('TRIPSTORE','restoreFromBackup(local)',{code:restoredEv.code,dishes:(restoredEv.dishes||[]).length,backupDishCount:backup.dishCount});
+    if(!TripStore.setTrip(restoredEv,restoredEv.code,'restoreFromBackup')){showToast('Restore failed: missing trip code.','error');return;}
+    saveToLocal(currentEvent);
+    commitAndSync();
+    renderAll();
+    showToast('✓ Restored '+backup.dishCount+' dishes from local backup.','success');
+  }
+  // v126: PREFER Firebase — it holds the full trip incl. every photo. The local backup is now
+  // image-light, so only fall back to it when Firebase genuinely has no dishes. This makes a restore
+  // unable to overwrite real photos (esp. FIP) with blanks.
+  if(!db){fromLocalBackup();return;}
+  fbGetTripWithTimeout(lc,7000).then(function(snap){
+    var remote=(snap&&snap.exists&&snap.exists())?normalizeEvent(snap.val()):null;
+    if(remote&&(remote.dishes||[]).length>0){
+      remote.code=remote.code||lc;
+      mpLog('TRIPSTORE','restoreFromBackup(firebase-preferred)',{code:remote.code,dishes:remote.dishes.length});
+      openLoadedTrip(remote,lc,'firebase-restore');
+      showToast('✓ Restored '+remote.dishes.length+' dishes from the cloud.','success');
+    }else{
+      fromLocalBackup();
+    }
+  }).catch(function(){fromLocalBackup();});
 }
 
 function fbWriteTrip(ev){
@@ -4121,10 +4168,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v125';
+var APP_VERSION='v126';
 var APP_BUILD_TIME='2026-06-18';
 
-var APP_VERSION_TAG='Meal Planner v125';
+var APP_VERSION_TAG='Meal Planner v126';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -7711,6 +7758,7 @@ function startAppAfterAuth(){
   checkVersionEnforcement();
   setTimeout(renderProfileDisplay,100);
   repairCorruptedTripCodes();
+  _migrateStripBackupImages(); // v126: free the duplicate base64 photos sitting in the local backup
   if(db&&!_menuLibraryLoaded)subscribeToMenuLibrary();
   if(db)setTimeout(loadKnownUsers,1000);
   // Migrate any locally cached trip recipes to Firebase library

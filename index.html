@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v133
+     Meal Planner v134
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -1479,6 +1479,27 @@ body.planner-edit-mode .dish-title{margin-bottom:4px;}
   #dishModal .ing-labels-mobile>span{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:center;}
   #dishModal .ing-labels-mobile>span:nth-child(3){color:var(--theme-accent-dark);}
 }
+/* ===== v134: modern/futuristic polish — glass + glow + motion (additive, layered over the system) ===== */
+:root{--glass:rgba(255,255,255,.72);--glass-brd:rgba(255,255,255,.55);}
+body.dark-mode{--glass:rgba(18,26,42,.64);--glass-brd:rgba(255,255,255,.08);}
+/* Frosted-glass floating chrome (falls back to a solid-ish panel where backdrop-filter is unsupported) */
+.modal,.app-admin-panel,.admin-drawer{background:var(--glass);border:1px solid var(--glass-brd);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);}
+.modal-backdrop{background:rgba(8,12,24,.5);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);}
+.bottom-nav{background:var(--glass)!important;border-top:1px solid var(--glass-brd)!important;-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);}
+/* Soft accent glow at rest + tactile press on buttons */
+button{box-shadow:0 4px 14px -6px var(--theme-accent);}
+button:active{transform:translateY(1px) scale(.985);}
+button.secondary,button.ghost,button.add-button,button.icon-button{box-shadow:none;}
+.landing-ctas button:not(.secondary){box-shadow:0 8px 22px -10px #1a3260;}
+/* Modern focus rings (keyboard) */
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.trip-card:focus-visible{outline:2px solid var(--theme-accent);outline-offset:2px;}
+/* Trip cards: lift + glow on hover, soft staggered entrance */
+.trip-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--theme-border);}
+.trip-card-wrap{animation:cardRise .44s cubic-bezier(.25,.46,.45,.94) both;}
+.trip-card-wrap:nth-child(2){animation-delay:.05s}.trip-card-wrap:nth-child(3){animation-delay:.1s}
+.trip-card-wrap:nth-child(4){animation-delay:.15s}.trip-card-wrap:nth-child(n+5){animation-delay:.2s}
+@keyframes cardRise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media (prefers-reduced-motion:reduce){.trip-card-wrap{animation:none!important}*{transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
@@ -4246,10 +4267,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v133';
+var APP_VERSION='v134';
 var APP_BUILD_TIME='2026-06-18';
 
-var APP_VERSION_TAG='Meal Planner v133';
+var APP_VERSION_TAG='Meal Planner v134';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

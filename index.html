@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v132
+     Meal Planner v133
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -4246,10 +4246,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v132';
+var APP_VERSION='v133';
 var APP_BUILD_TIME='2026-06-18';
 
-var APP_VERSION_TAG='Meal Planner v132';
+var APP_VERSION_TAG='Meal Planner v133';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -6799,10 +6799,8 @@ function showRecipeReviewPanel(recipe,intendedDay,intendedMeal){
     +checks.map(function(c,i){return'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;'+(i>0?'border-top:1px solid var(--border-light)':'')+';font-size:13px;"><span style="color:var(--muted);font-weight:600;">'+escHtml(c.label)+'</span><span style="font-weight:700;color:'+(c.ok?'var(--text)':'#ef4444')+';">'+escHtml(String(c.value))+'</span></div>';}).join('')
     +'</div>'
     +(ingCount>0?'<div style="font-size:11px;color:var(--muted);margin-bottom:12px;background:var(--panel-soft);border-radius:8px;padding:8px 12px;"><strong>Ingredients preview:</strong> '+(recipe.ingredients||[]).slice(0,4).map(function(x){return escHtml(x);}).join(', ')+(ingCount>4?' + '+(ingCount-4)+' more…':'')+'</div>':'')
-    +'<div style="display:flex;gap:10px;margin-bottom:8px;">'
-    +'<button onclick="confirmRecipeImport()" style="flex:2;background:var(--theme-accent);color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;">✓ Save to Library'+(intendedDay||intendedMeal?' & Add to Plan':'')+'</button>'
-    +'<button onclick="editRecipeImport()" style="flex:1;background:var(--panel-soft);border:1.5px solid var(--border);border-radius:12px;padding:14px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text);">✎ Edit</button>'
-    +'</div>'
+    +'<button onclick="editRecipeImport()" style="width:100%;background:var(--theme-accent);color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;">Save Details</button>'
+    +'<div style="font-size:11px;color:var(--muted);text-align:center;margin:8px 0;">Loads these details into the editor — review and edit, then tap <strong>Save</strong> to add it to your library.</div>'
     +'<button onclick="document.getElementById(\'recipeReviewPanel\').remove();" style="width:100%;background:none;border:none;padding:8px;font-size:12px;color:var(--muted);cursor:pointer;">Cancel — discard this import</button>';
   overlay.appendChild(panel);document.body.appendChild(overlay);
   overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     Meal Planner v124
+     Meal Planner v125
      Single-file app · GitHub Pages · localStorage + Firebase
      Architecture: poll-on-focus sync (no real-time listener)
      ============================================================ -->
@@ -2104,6 +2104,37 @@ window.runRegressionTests=function(){
   else console.log('[MealPlanner] All regression tests passed ✓');
   return{pass:p,fail:f,results:results};
 };
+
+// v125: read-only storage audit. Run window.diagStorage() in the console to see exactly what is
+// filling localStorage — total, per key, per cached trip / backup, and how many heavy embedded
+// data: images each holds. READS ONLY; writes nothing, touches no Firebase, mutates no state.
+window.diagStorage=function(){
+  function bytes(s){return s?s.length*2:0;} // localStorage is UTF-16 (~2 bytes/char) — approximate
+  function kb(n){return(n/1024).toFixed(1)+' KB';}
+  function dataImgs(s){var m=s&&s.match(/data:[^"']{50,}/g);return m?m.length:0;}
+  var total=0,rows=[];
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i),v=localStorage.getItem(k)||'';
+    var b=bytes(v);total+=b;
+    rows.push({key:k,size:kb(b),bytes:b,dataImages:dataImgs(v)});
+  }
+  rows.sort(function(a,b){return b.bytes-a.bytes;});
+  console.group('[MealPlanner Storage] total ~'+kb(total)+' across '+rows.length+' keys (iOS cap ~5 MB)');
+  console.table(rows.map(function(r){return{key:r.key,size:r.size,dataImages:r.dataImages};}));
+  [['trips',TRIPS_KEY],['backups',BACKUP_KEY]].forEach(function(pair){
+    var raw=localStorage.getItem(pair[1]);if(!raw)return;
+    try{
+      var obj=JSON.parse(raw),per=[];
+      Object.keys(obj).forEach(function(code){var s=JSON.stringify(obj[code]);per.push({code:code,size:kb(bytes(s)),bytes:bytes(s),dataImages:dataImgs(s)});});
+      per.sort(function(a,b){return b.bytes-a.bytes;});
+      console.group('['+pair[0]+'] '+per.length+' entr'+(per.length===1?'y':'ies'));
+      console.table(per.map(function(r){return{code:r.code,size:r.size,dataImages:r.dataImages};}));
+      console.groupEnd();
+    }catch(e){console.warn('[diagStorage] could not parse '+pair[0],e);}
+  });
+  console.groupEnd();
+  return{totalKB:Math.round(total/1024),keyCount:rows.length,biggest:rows.slice(0,3).map(function(r){return r.key+' '+r.size;})};
+};
 window.checkSyncFreshness=function(){
   if(!db||!currentCode||!currentEvent){console.warn('[SyncFreshness] No active trip or Firebase connection');return;}
   db.ref('trips/'+currentCode).once('value').then(function(snap){
@@ -4090,10 +4121,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v124';
+var APP_VERSION='v125';
 var APP_BUILD_TIME='2026-06-18';
 
-var APP_VERSION_TAG='Meal Planner v124';
+var APP_VERSION_TAG='Meal Planner v125';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

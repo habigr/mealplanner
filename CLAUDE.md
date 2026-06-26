@@ -182,7 +182,7 @@ Browser console tests — run before every push:
 
 ## NEXT SESSION — start here
 
-STATE: **v136 live — end of day 2026-06-19.** Big day, shipped **v124→v136**, all live + FIP-safe (every build since v126 = node --check only):
+STATE: **v137 = launch fix (built, about to ship): the app no longer auto-opens a finished/archived trip — it lands on home (FIP shows under Archived).** Root cause = a stale `#trip=` hash re-opening the last trip every launch. node --check passed; awaiting 25/25 + push to go live. ⚠️ The SEPARATE **banner shared-gallery (#28) is parked on branch `banner-wip`** (untested, NOT on main) — it becomes **v138** after its 2-device test; don't confuse it with this v137 or rebuild it. Below = the v124–v136 history (all live):
 - **Storage saga v124–v128** (confirmed): full-device joined-trips fix, `diagStorage()`/`showDiagReport()` tools, backup de-dupe (5120→3068 KB, FIP intact), missing-data self-heal + `null` orphan prune.
 - **Archive #22 — v129/v130** (confirmed): per-user archive (`users/{uid}/trips/{code}.archived`), auto-archive >1 day past end, manual un-archive (`keepActive` flag), live cross-device sync (`subscribeUserTrips`), teal New-Trip button fixed.
 - **Image-key sync #29 — v131**; **import rework #3 — v132/v133** (import now LOADS into the editor via "Save Details"→`editRecipeImport`; single editor Save = only write; no dupes).

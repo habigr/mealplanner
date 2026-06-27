@@ -182,7 +182,17 @@ Browser console tests — run before every push:
 
 ## NEXT SESSION — start here
 
-STATE: **v137 = launch fix (built, about to ship): the app no longer auto-opens a finished/archived trip — it lands on home (FIP shows under Archived).** Root cause = a stale `#trip=` hash re-opening the last trip every launch. node --check passed; awaiting 25/25 + push to go live. ⚠️ The SEPARATE **banner shared-gallery (#28) is parked on branch `banner-wip`** (untested, NOT on main) — it becomes **v138** after its 2-device test; don't confuse it with this v137 or rebuild it. Below = the v124–v136 history (all live):
+STATE: **v137 is LIVE** (launch fix — app no longer auto-opens a finished/archived trip; lands on home, FIP under Archived). ⚠️ The `banner-wip` branch (photo shared-gallery #28) is **OBSOLETE — do NOT ship it** (superseded by the plan below; delete the branch eventually).
+
+**NEXT — v138: COLOR-SCHEME HEADER (Robbie 2026-06-27 — replaces the entire photo-banner system; NO photos).** Robbie doesn't want photos at all. Plan:
+- **Remove all photo machinery:** `getThemeGallery`/`setThemeGallery`/`applyThemePhotoFromTrip`/`applyCustomHero`/`renderThemeGallery`/upload + the "Themes & Photos" gallery UI + every `themePhoto` read/write + the header `background-image:var(--hi/--dhi)`.
+- **Add a Color-scheme dropdown in Trip settings**, saved on the trip (repurpose `currentEvent.theme` as the scheme key) → **syncs to all users on the trip** (trip-level, consistent on every device automatically).
+- **Header = a gradient in the scheme's colors** (trip name + dates on top; reuse the landing-hero gradient polish). Scheme tints the **WHOLE app accent** (buttons/active states), not just the header.
+- **Schemes:** Midnight(navy) · Ocean(teal) · Forest(green) · Sunset(orange→pink) · Plum(violet) · Slate(gray) · Cherry(red) · **Pride** (rainbow header; pick ONE clean accent for buttons so the UI stays readable).
+- **Back-compat:** map old themes — larchmont→midnight, fire-island→ocean, adirondacks→forest.
+- FIP-safe: only writes the trip's scheme field; otherwise removing code. node --check + 25/25 before push.
+
+Below = the v124–v137 history (all live):
 - **Storage saga v124–v128** (confirmed): full-device joined-trips fix, `diagStorage()`/`showDiagReport()` tools, backup de-dupe (5120→3068 KB, FIP intact), missing-data self-heal + `null` orphan prune.
 - **Archive #22 — v129/v130** (confirmed): per-user archive (`users/{uid}/trips/{code}.archived`), auto-archive >1 day past end, manual un-archive (`keepActive` flag), live cross-device sync (`subscribeUserTrips`), teal New-Trip button fixed.
 - **Image-key sync #29 — v131**; **import rework #3 — v132/v133** (import now LOADS into the editor via "Save Details"→`editRecipeImport`; single editor Save = only write; no dupes).

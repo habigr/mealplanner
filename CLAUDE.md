@@ -192,6 +192,8 @@ STATE: **v137 is LIVE** (launch fix — app no longer auto-opens a finished/arch
 - **Back-compat:** map old themes — larchmont→midnight, fire-island→ocean, adirondacks→forest.
 - FIP-safe: only writes the trip's scheme field; otherwise removing code. node --check + 25/25 before push.
 
+**UI REFRESH QUEUE (Robbie confirmed 2026-06-27, after the v138 header):** (1) **Grocery + Shopping UI** (#36/#27A) — sticky per-store/dept section headers (fix the ≤768px hide bug), cleaner rows, per-section "X of Y" counts. (2) **AI chat panel** (A1) — visual pass (bubbles/input/flow; Robbie: "clunky and ugly"). (3) **Recipe Library sort control** — restyle on mobile (#35). (4) **Dish edit modal** — more breathing room. (5) **Consistency sweep** — bring older screens up to the v134/v135 polish. ❌ **Cooking mode C0 DEPRIORITIZED** (Robbie: not really used). ❌ **Empty states — leave as-is** (Robbie). ALSO: Robbie wants to rethink the **grocery PROCESS FLOW** (plan → list → assign stores → shop) — discuss/scope before building.
+
 Below = the v124–v137 history (all live):
 - **Storage saga v124–v128** (confirmed): full-device joined-trips fix, `diagStorage()`/`showDiagReport()` tools, backup de-dupe (5120→3068 KB, FIP intact), missing-data self-heal + `null` orphan prune.
 - **Archive #22 — v129/v130** (confirmed): per-user archive (`users/{uid}/trips/{code}.archived`), auto-archive >1 day past end, manual un-archive (`keepActive` flag), live cross-device sync (`subscribeUserTrips`), teal New-Trip button fixed.

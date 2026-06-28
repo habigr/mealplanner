@@ -32,6 +32,50 @@ V. **Vegetarian indicator → VEG pill everywhere** — DONE on plan tab (v60), 
 
 ---
 
+## GROCERY & RECIPE COMPONENT PROGRAM (Robbie brief, 2026-06-27 — corrected to live v138 code)
+
+Source: `MEALPLANNER_GROCERY_BRIEF.md` (hand-off doc). The brief was framed against v137 and a few of its assumptions drifted from the live code — corrections noted inline. **Build order: Item 1 → `sources` backbone → Item 3 → Item 2.** Each item = its own version, backup first. Items G2/G3 change the grocery data model → **never run their migrations mid-trip**; G1 is safe anytime.
+
+**⚠️ Code-accuracy corrections vs the brief (verified in v138):**
+- **`storeRules` is currently DEAD CODE.** The App Admin "Store Auto-Assignment Rules" keyword UI saves to `currentEvent.storeRules`, but `guessStore` (≈line 3968) does NOT read it — it's a hardcoded dept→store map (Produce/Meat&Seafood → DeCiccio's, else Stop & Shop). The brief assumes `guessStore` is the keyword-rule assigner; it isn't. **G1 must decide: re-wire `storeRules` into `guessStore`, or keep the hardcoded guess** (and either hide or honor the rules UI).
+- **The store-drop culprit is `reconcileGroceryMeta` (≈3908/3919)** — it deletes any `groceryMeta` key not present in the current aggregated rows, and runs inside both `buildGroceryList` (≈3982) and `saveGroceryStateNow` (≈3928). On edit/rename the `normKey` (≈3783, `firebaseSafeKey(legacyNormKey(item,unit))`) changes → old store+bought meta is no longer "live" → deleted. This is **backlog #10**. The brief's `groceryName→lastStore` memory map is the clean fix: re-resolve the new line's store from memory so the delete no longer loses the assignment (no risky old→new key migration in the delete path).
+- Aggregation entry point is `aggregateRows()` (called by `buildGroceryList`, `reconcileGroceryMeta`, assign + shop renders) — the `sources` array attaches here.
+
+### G1 — One-off store auto-assignment (SHIP FIRST, v139, safe mid-trip) — supersedes/closes #10
+**Problem:** a last-minute add/swap defaults to `Unassigned` and (per brief) doesn't surface in Shop mode, so each one-off needs a manual trip into Assign-Stores. Bulk assign at trip start is fine; per-item edits are the pain.
+**Fix:**
+1. **Auto-assign on every add/edit** — call `guessStore(item,dept)` when an ingredient is saved (dish-modal save / `collectIngredients`) and when aggregation creates a new line, so new lines get a store immediately. *(Decide first: does `guessStore` consult `storeRules` or stay hardcoded — see correction above.)*
+2. **Per-name store memory** — new optional `currentEvent.groceryMeta._storeMemory` (or under `tripMemory`) map `groceryName → lastStore`. Resolution order: **explicit manual assignment → `_storeMemory[groceryName]` → `guessStore()` → `Unassigned`.** On manual assign, write `groceryName→store` into the map so future occurrences (and renames) auto-land there. This is what makes #10 disappear.
+3. **Never hide `Unassigned`** — Shop mode always renders a pinned "Needs a store" group at the TOP when any unassigned lines exist. *(Verify the brief's claim that Shop currently hides them — `renderShoppingList`; the list/table path at ≈4278 already keeps Unassigned.)*
+4. **Inline reassignment** — small store `<select>` per row in List/Shop so a one-off can be reassigned in place without entering Assign-Stores mode.
+**Guardrails:** only new field is the `_storeMemory` map; reuse `guessStore` + existing `Unassigned` store. No node reshaping. FIP-safe.
+
+### G-backbone — source-aware grocery lines (plumbing for G2 + G3)
+Add optional `sources: [{dishId,item,component,quantity,unit}]` to each aggregated line in `aggregateRows()` — one entry per contributing ingredient occurrence. Additive; do NOT reshape `dish.ingredients` or change `normKey`. G2 fills `component`; G3 reads `sources` for the breakdown + quantity math.
+
+### G3 — Smart purchase consolidation + retire dedup button (own version, NOT mid-trip)
+- **3a. Retire manual dedup UI** — unhook `runGroceryDedup`/`showDedupPanel`/`updateDedupBanner`/`showDedupReview` + banner render, but **keep the functions defined/parked** (optional quiet "Re-consolidate" in App Admin). Leave `dismissedDups` in place. Rationale: `groceryName` normalization at import means dups rarely form now.
+- **3b. Consolidate by purchasable unit** — group lines by `groceryName` (fallback `item`); cross-unit totals **AI-resolved (Haiku), not summed** → `buyQty`/`buyUnit` + per-source contribution + one-line reasoning, stored on the `groceryMeta` line. Units hidden from the collapsed line, shown only in the expanded breakdown.
+- **5. Override = signed delta, not a frozen number** (key behavior): store the difference (suggestion 5 → user 6 ⇒ `+1`); displayed total = `AI suggestion + delta` so it rides along when the suggestion later changes. Reuse `qtyOverride` ✎ semantics. No interrupting modal (user's in a store) — passive ✎ badge; tap to change/clear.
+- **6/7. Breakdown** = inline-under-the-line (never popup), read-only source rows + one editable adjustment row; mobile-first stepper (−/+) tap targets; ✎ badge visible on the collapsed line too.
+**Guardrails:** `sources`/`buyQty`/`buyUnit`/delta are additive. AI runs at consolidation time / on demand — never a silent background overwrite of a user delta. Versioned, backup first, not mid-trip.
+
+### G2 — Recipe components (sauce vs main, with overlap) (own version, biggest lift, do LAST)
+Purely additive — empty `component` = current behavior, zero migration. **Component names are the recipe's own section names, verbatim (never hardcode "Main"/"Sauce").**
+1. Add `component:''` to the ingredient object in `normalizeDish` (≈3124) + `collectIngredients`.
+2. Optional `dish.components` = ordered array of the recipe's real section names.
+3. Single/zero-component dish → plain flat list, **no heading** (part concept invisible). Headings only when 2+ named parts.
+4. Editor: per-ingredient free-text component input backed by a `<datalist>` of the dish's existing names; default empty.
+5. Recipe view + cooking mode: group under real section headings when 2+ exist; empty-component ingredients fall under a neutral catch-all (still never invent a name).
+6. Grocery aggregation: record contributing `component` into each line's `sources`.
+7. AI import (Haiku): emit `component` per ingredient from the recipe's actual section labels (disambiguate via steps text); route segmentation through the **existing import review panel** for user confirm before save; no sections ⇒ empty component.
+**Guardrails:** additive leaf field + one optional array; don't touch `normKey` aggregation except to carry `component` into `sources`. Versioned, backup first, not mid-trip; migrate lazily (on next edit), not one sweep.
+
+### G-extra (lower priority, while in here) — Serious Eats / Dotdash URL import
+Microlink calls (`api.microlink.io/?url=...&meta=true&force=true`, ≈2268/5483/6679) get bot-blocked at the source (not a parser bug). Fallback: on Microlink failure, fetch server-side via the existing Cloud Function with a browser-like UA and parse the page's JSON-LD recipe schema.
+
+---
+
 ## COOKING MODE — its own focused session (NEXT, per Robbie)
 
 C0. **COOKING MODE REDESIGN — "kitchen command center"** (Robbie approved the vision). Reframe cooking mode from a single-recipe slideshow into a hub for a cook juggling several dishes at once, with all info in a clean view. Sub-items in priority order:

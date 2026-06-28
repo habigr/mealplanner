@@ -3073,7 +3073,7 @@ function getDefaultRules(){return[{keywords:'fish, shrimp, salmon, tuna, lobster
 /* ===== NORMALIZE ===== */
 function normalizeEvent(e){e=e&&typeof e==='object'?e:{};e.id=e.id||makeId();e.code=String(e.code||makeId()).toLowerCase();e.name=e.name||'';e.location=e.location||'';e.theme=e.theme||'midnight';e.startDate=e.startDate||'';e.endDate=e.endDate||'';
   if(e.dishes&&!Array.isArray(e.dishes)&&typeof e.dishes==='object'){mpLog('NORMALIZE','dishes was Firebase object map — converting to array',{code:e.code,keys:Object.keys(e.dishes).length});}
-  e.days=Array.isArray(e.days)?e.days:(e.days&&typeof e.days==="object"?Object.values(e.days).filter(Boolean):[]);e.dishes=Array.isArray(e.dishes)?e.dishes:(e.dishes&&typeof e.dishes==="object"?Object.values(e.dishes).filter(Boolean):[]);e.recipeBank=Array.isArray(e.recipeBank)?e.recipeBank:(e.recipeBank&&typeof e.recipeBank==="object"?Object.values(e.recipeBank).filter(Boolean):[]);e.manualGroceryItems=Array.isArray(e.manualGroceryItems)?e.manualGroceryItems:[];e.stores=Array.isArray(e.stores)?e.stores:getDefaultStores();e.departments=Array.isArray(e.departments)?e.departments:getDefaultDepts();e.groceryMeta=e.groceryMeta&&typeof e.groceryMeta==='object'?e.groceryMeta:{};e.auditLog=e.auditLog&&typeof e.auditLog==='object'?e.auditLog:{};e.storeRules=Array.isArray(e.storeRules)?e.storeRules:getDefaultRules();e.activeStores=Array.isArray(e.activeStores)?e.activeStores:null;e.mealTypes=Array.isArray(e.mealTypes)&&e.mealTypes.length?e.mealTypes:['Breakfast','Lunch','Dinner'];e.tripMemory=e.tripMemory&&typeof e.tripMemory==='object'?e.tripMemory:{preferences:[],restrictions:{},notes:[]};e.dismissedDups=Array.isArray(e.dismissedDups)?e.dismissedDups:[];e.dishes.forEach(normalizeDish);e.recipeBank.forEach(normalizeDish);e.manualGroceryItems=e.manualGroceryItems.map(function(i){return{id:i.id||makeId(),item:i.item||'',quantity:i.quantity||'',unit:i.unit||'',department:i.department||'Pantry',store:i.store||'Unassigned'};}).filter(function(i){return i.item;});return e;}
+  e.days=Array.isArray(e.days)?e.days:(e.days&&typeof e.days==="object"?Object.values(e.days).filter(Boolean):[]);e.dishes=Array.isArray(e.dishes)?e.dishes:(e.dishes&&typeof e.dishes==="object"?Object.values(e.dishes).filter(Boolean):[]);e.recipeBank=Array.isArray(e.recipeBank)?e.recipeBank:(e.recipeBank&&typeof e.recipeBank==="object"?Object.values(e.recipeBank).filter(Boolean):[]);e.manualGroceryItems=Array.isArray(e.manualGroceryItems)?e.manualGroceryItems:[];e.stores=Array.isArray(e.stores)?e.stores:getDefaultStores();e.departments=Array.isArray(e.departments)?e.departments:getDefaultDepts();e.groceryMeta=e.groceryMeta&&typeof e.groceryMeta==='object'?e.groceryMeta:{};e.auditLog=e.auditLog&&typeof e.auditLog==='object'?e.auditLog:{};e.storeRules=Array.isArray(e.storeRules)?e.storeRules:getDefaultRules();e.activeStores=Array.isArray(e.activeStores)?e.activeStores:null;e.mealTypes=Array.isArray(e.mealTypes)&&e.mealTypes.length?e.mealTypes:['Breakfast','Lunch','Dinner'];e.tripMemory=e.tripMemory&&typeof e.tripMemory==='object'?e.tripMemory:{preferences:[],restrictions:{},notes:[]};if(!e.tripMemory.storeMemory||typeof e.tripMemory.storeMemory!=='object')e.tripMemory.storeMemory={};e.dismissedDups=Array.isArray(e.dismissedDups)?e.dismissedDups:[];e.dishes.forEach(normalizeDish);e.recipeBank.forEach(normalizeDish);e.manualGroceryItems=e.manualGroceryItems.map(function(i){return{id:i.id||makeId(),item:i.item||'',quantity:i.quantity||'',unit:i.unit||'',department:i.department||'Pantry',store:i.store||'Unassigned'};}).filter(function(i){return i.item;});return e;}
 function normalizeDish(d){d.id=d.id||makeId();d.servings=d.servings||'';d.peopleEating=d.peopleEating||'';d.imageUrl=d.imageUrl||'';d.tags=Array.isArray(d.tags)?d.tags:[];d.ingredients=Array.isArray(d.ingredients)?d.ingredients:[];d.isEvent=!!d.isEvent;d.isVegetarian=!!d.isVegetarian;d.steps=Array.isArray(d.steps)?d.steps:[];d.timesUsed=d.timesUsed||0;d.lastUsed=d.lastUsed||'';d.source=d.source||'';d.savedAt=d.savedAt||'';d.addedBy=d.addedBy||'';d.addedAt=d.addedAt||'';d.cookTime=d.cookTime||'';d.personalNotes=d.personalNotes||'';d.rating=d.rating||0;d.dishStatus=d.dishStatus||'';d.assignedTo=d.assignedTo||'';d.assignedToPhoto=d.assignedToPhoto||'';d.assignedToInitials=d.assignedToInitials||'';d.owner=d.owner||'';d.usedInTrips=d.usedInTrips&&typeof d.usedInTrips==='object'?d.usedInTrips:{};d.ingredients=d.ingredients.map(function(i){try{if(typeof i==='string'){var s=i.trim();if(!s)return{quantity:'',displayedQuantity:'',unit:'',item:''};var p=parseIngLine(s);return{quantity:p.quantity||'',displayedQuantity:p.quantity||'',unit:p.unit||'',item:p.item||s,originalQuantity:p.quantity||'',qtyOverride:''};}return{quantity:String(i.quantity||i.displayedQuantity||''),displayedQuantity:String(i.displayedQuantity||i.quantity||''),unit:String(i.unit||''),item:String(i.item||i.name||''),originalQuantity:String(i.originalQuantity||i.quantity||''),groceryName:String(i.groceryName||''),groceryDept:String(i.groceryDept||''),qtyOverride:String(i.qtyOverride||'')};    }catch(e){return{quantity:'',displayedQuantity:'',unit:'',item:String(i||'')};}
   });return d;}
 
@@ -3892,6 +3892,12 @@ function aggregateRows(){
     row.checkedByPhoto=meta.checkedByPhoto||'';
     row.checkedByName=meta.checkedByName||'';
     row.storeAssignments=Array.isArray(meta.storeAssignments)?meta.storeAssignments:(row.manualStore&&row.manualStore!=='Unassigned'?[row.manualStore]:[]);
+    // v139 (G1): no explicit assignment → recall the remembered store, else a confident guess. Display-only (never written to groceryMeta) so reconcile stays clean and a renamed/edited item keeps its store. autoStoreFor returns '' for unknown one-offs → they stay in "Needs a store".
+    var _hasExplicit=(row.storeAssignments&&row.storeAssignments.length)||(typeof meta.store==='string'&&meta.store!==''); // any stored store (incl. a deliberate 'Unassigned') is the user's choice — don't re-guess over it
+    if(!_hasExplicit){
+      var _auto=autoStoreFor(row.item,row.department);
+      if(_auto&&_auto!=='Unassigned'){row.store=_auto;row.storeAssignments=[_auto];row.autoStore=true;}
+    }
     return row;
   });
   var possibleDupCounts={};
@@ -3965,13 +3971,38 @@ function groceryDeptFor(ing){
   return guessDept((ing&&(ing.groceryName||ing.item))||'');
 }
 
+// v139 (G1): first matching keyword rule (App Admin "Store Auto-Assignment Rules") wins. '' = no rule matched.
+function _matchStoreRule(name){
+  var n=String(name||'').toLowerCase();if(!n)return '';
+  var rules=(currentEvent&&Array.isArray(currentEvent.storeRules))?currentEvent.storeRules:[];
+  for(var i=0;i<rules.length;i++){
+    var r=rules[i];if(!r||!r.store)continue;
+    var kws=String(r.keywords||'').split(',').map(function(k){return k.trim().toLowerCase();}).filter(Boolean);
+    for(var j=0;j<kws.length;j++){if(n.indexOf(kws[j])>=0)return r.store;}
+  }
+  return '';
+}
+// Always returns a concrete store — used where a hard default is required (e.g. unchecking the last store).
 function guessStore(name,dept){
+  var rule=_matchStoreRule(name);if(rule)return rule;
   dept=dept||guessDept(name);
-
   if(dept==='Produce')return 'DeCiccio’s';
   if(dept==='Meat & Seafood')return 'DeCiccio’s';
   return 'Stop & Shop';
 }
+// v139 (G1): CONFIDENT auto-assign only. Memory → keyword rule → produce/meat dept. '' means "leave it Unassigned so it surfaces in Needs-a-store" (don't silently dump unknown one-offs into Stop & Shop).
+function autoStoreFor(name,dept){
+  var mem=recallStore(name);if(mem)return mem;
+  var rule=_matchStoreRule(name);if(rule)return rule;
+  dept=dept||guessDept(name);
+  if(dept==='Produce'||dept==='Meat & Seafood'||dept==='Meat'||dept==='Seafood')return 'DeCiccio’s';
+  return '';
+}
+/* ===== v139 (G1): per-name store memory — lives under tripMemory.storeMemory (NOT groceryMeta, so reconcileGroceryMeta can't delete it). Keyed by the unit-independent name norm so qty/unit/qtyOverride edits keep the store. ===== */
+function _storeMemKey(name){return (typeof _groceryNameNorm==='function'?_groceryNameNorm(name||''):String(name||'').toLowerCase().trim());}
+function getStoreMemory(){if(!currentEvent)return{};currentEvent.tripMemory=currentEvent.tripMemory||{};if(!currentEvent.tripMemory.storeMemory||typeof currentEvent.tripMemory.storeMemory!=='object')currentEvent.tripMemory.storeMemory={};return currentEvent.tripMemory.storeMemory;}
+function recallStore(name){var k=_storeMemKey(name);if(!k)return '';return getStoreMemory()[k]||'';}
+function rememberStore(name,store){if(!name||!store||store==='Unassigned')return;var k=_storeMemKey(name);if(!k)return;getStoreMemory()[k]=store;}
 
 
 function buildGroceryList(){
@@ -4094,6 +4125,10 @@ function renderGroceryTable(out,rows){
     var stores=r.storeAssignments&&r.storeAssignments.length?r.storeAssignments:[r.store||'Unassigned'];
     var storeTags=stores.map(function(s){return'<span class="grocery-tag">'+escHtml(s)+'</span>';}).join('');
     var multiStore=stores.length>1;
+    // v139 (G1): inline store reassign — quick fix a one-off without entering Assign-Stores mode
+    var _optStores=getActiveStores();if(_optStores.indexOf('Unassigned')<0)_optStores=['Unassigned'].concat(_optStores);
+    var _primary=stores[0]||'Unassigned';
+    var storeSelect='<select class="grocery-store-select" data-key="'+escAttr(r.key)+'" onclick="event.stopPropagation();" onchange="setRowStore(this.dataset.key,this.value)" style="font-size:11.5px;padding:3px 6px;width:auto;max-width:160px;margin-top:2px;">'+_optStores.map(function(s){return'<option'+(_primary===s?' selected':'')+'>'+escHtml(s)+'</option>';}).join('')+'</select>';
     var maybeDup=!!r.possibleDuplicate;
     var status=r.status||'Need';
     // Dish pills shown under ingredient name on mobile
@@ -4104,7 +4139,7 @@ function renderGroceryTable(out,rows){
       ?_dishOrder.map(function(did){var info=_byDish[did];return'<span class="grocery-dish-pill" style="cursor:pointer;" onclick="pickDishIngredient(\''+escAttr(did)+'\',\''+escAttr(info.idxs.join(','))+'\')" title="Tap to edit this dish’s item">'+escHtml(info.name)+'</span>';}).join('')
       :(r.dishes||[]).filter(function(d){return d&&d!=='Manual item';}).map(function(d){return'<span class="grocery-dish-pill">'+escHtml(d)+'</span>';}).join('');
     var dishPillsHtml=dishPills?'<div class="grocery-dish-pills">'+dishPills+'</div>':'';
-    return secRow+'<tr class="'+(status==='Bought'||status==='Have'?'bought':'')+'"><td><span class="grocery-item-name">'+escHtml(dispPlural(r.item,r.quantityText))+'</span>'+(maybeDup?'<span class="dup-badge" title="May be duplicate ingredient with another row that uses a different unit or wording">May be dup</span>':'')+(multiStore?'<span class="dup-badge" title="Assigned to more than one store">Multi-store</span>':'')+(r.isManual?'<span class="manual-badge">Manual</span><button class="icon-button" style="font-size:12px;padding:2px 7px;margin-left:4px;vertical-align:middle;" onclick="editManualGroceryItem(\''+r.manualId+'\')" title="Edit">✎</button><button class="icon-button" style="font-size:12px;padding:2px 7px;color:#ef4444;vertical-align:middle;" onclick="deleteManualGroceryItem(\''+r.manualId+'\')" title="Remove">×</button>':'')+dishPillsHtml+'</td><td><div class="grocery-item-sub" style="margin-bottom:4px;">'+storeTags+'</div><span class="grocery-qty">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'as needed')+'</span></td><td class="mobile-hide"><div class="grocery-dishes">'+escHtml(r.dishes.join(', '))+'</div></td><td class="mobile-hide"><select class="grocery-status-select" data-key="'+escAttr(r.key)+'"><option '+(status==='Need'?'selected':'')+'>Need</option><option '+(status==='Bought'?'selected':'')+'>Bought</option><option '+(status==='Have'?'selected':'')+'>Have</option></select></td><td class="got-col"><input type="checkbox" class="grocery-check" data-key="'+escAttr(r.key)+'" '+(status==='Bought'||status==='Have'?'checked':'')+' /></td></tr>';
+    return secRow+'<tr class="'+(status==='Bought'||status==='Have'?'bought':'')+'"><td><span class="grocery-item-name">'+escHtml(dispPlural(r.item,r.quantityText))+'</span>'+(maybeDup?'<span class="dup-badge" title="May be duplicate ingredient with another row that uses a different unit or wording">May be dup</span>':'')+(multiStore?'<span class="dup-badge" title="Assigned to more than one store">Multi-store</span>':'')+(r.isManual?'<span class="manual-badge">Manual</span><button class="icon-button" style="font-size:12px;padding:2px 7px;margin-left:4px;vertical-align:middle;" onclick="editManualGroceryItem(\''+r.manualId+'\')" title="Edit">✎</button><button class="icon-button" style="font-size:12px;padding:2px 7px;color:#ef4444;vertical-align:middle;" onclick="deleteManualGroceryItem(\''+r.manualId+'\')" title="Remove">×</button>':'')+dishPillsHtml+'</td><td><div class="grocery-item-sub" style="margin-bottom:4px;">'+(multiStore?storeTags+' ':'')+storeSelect+'</div><span class="grocery-qty">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'as needed')+'</span></td><td class="mobile-hide"><div class="grocery-dishes">'+escHtml(r.dishes.join(', '))+'</div></td><td class="mobile-hide"><select class="grocery-status-select" data-key="'+escAttr(r.key)+'"><option '+(status==='Need'?'selected':'')+'>Need</option><option '+(status==='Bought'?'selected':'')+'>Bought</option><option '+(status==='Have'?'selected':'')+'>Have</option></select></td><td class="got-col"><input type="checkbox" class="grocery-check" data-key="'+escAttr(r.key)+'" '+(status==='Bought'||status==='Have'?'checked':'')+' /></td></tr>';
   }).join('');
   out.innerHTML='<table class="grocery-table"><thead><tr><th>Ingredient</th><th>Qty</th><th>Dishes</th><th>Status</th><th class="got-col">✓</th></tr></thead><tbody>'+trows+'</tbody></table>';
   out.querySelectorAll('.grocery-check').forEach(function(cb){cb.addEventListener('change',function(){haptic();var row=cb.closest('tr');if(row){if(cb.checked){row.classList.add('just-checked');setTimeout(function(){row.classList.remove('just-checked');},500);}};updateGroceryMeta(cb.dataset.key,'status',cb.checked?'Bought':'Need');});});
@@ -4112,6 +4147,16 @@ function renderGroceryTable(out,rows){
   initGrocerySwipe(out);
   // Auto dedup check
   try{updateDedupBanner(aggregateRows());}catch(e){}
+}
+// v139 (G1): inline single-store reassign from List mode (no Assign-Stores round-trip). Writes store memory so the choice sticks across edits + future trips.
+function setRowStore(key,store){
+  if(!currentEvent)return;
+  currentEvent.groceryMeta=currentEvent.groceryMeta||{};
+  var m=currentEvent.groceryMeta[key]=currentEvent.groceryMeta[key]||{};
+  if(!store||store==='Unassigned'){m.storeAssignments=[];m.store='Unassigned';}
+  else{m.storeAssignments=[store];m.store=store;rememberStore(groceryKeyLabel(key),store);}
+  saveGroceryStateNow('Could not save store assignment. Your change may not sync to other users.');
+  buildGroceryList();
 }
 async function addManualGroceryItem(){
   if(!currentEvent)return;
@@ -4178,6 +4223,7 @@ function assignRowToStore(key,store,tr){
   currentEvent.groceryMeta=currentEvent.groceryMeta||{};
   var m=currentEvent.groceryMeta[key]=currentEvent.groceryMeta[key]||{};
   m.storeAssignments=[store];m.store=store;
+  rememberStore(groceryKeyLabel(key),store); // v139 (G1): remember so this name auto-lands here next time / after an edit
   tr.querySelectorAll('.assign-cell').forEach(function(td){var cb=td.querySelector('.assign-store-check');var on=!!(cb&&cb.dataset.store===store);if(cb)cb.checked=on;td.classList.toggle('assigned',on);});
   tr.classList.remove('unassigned');
   var nm=tr.querySelector('.assign-item-name');var ex=nm&&nm.querySelector('.dup-badge');if(ex)ex.remove();
@@ -4207,6 +4253,7 @@ function setItemStore(cb){
   currentEvent.groceryMeta[key].storeAssignments=a;
   // ONE SOURCE OF TRUTH: primary store for main list is first assignment
   currentEvent.groceryMeta[key].store=a.length?a[0]:(guessStore(groceryKeyLabel(key),guessDept(groceryKeyLabel(key))));
+  if(a.length)rememberStore(groceryKeyLabel(key),a[0]); // v139 (G1): remember the primary store for this name
   var row=cb.closest('tr');
   if(row){
     var nm=row.querySelector('.assign-item-name')||row.querySelector('td:first-child');
@@ -4223,10 +4270,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v138';
+var APP_VERSION='v139';
 var APP_BUILD_TIME='2026-06-27';
 
-var APP_VERSION_TAG='Meal Planner v137';
+var APP_VERSION_TAG='Meal Planner v139';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4276,14 +4323,15 @@ function renderShoppingList(out,rows){
   var q=(getValue('grocerySearch')||'').trim();
   var activeStores=getActiveStores(),groups={};
   rows.forEach(function(r){var a=r.storeAssignments&&r.storeAssignments.length?r.storeAssignments:[r.store||'Unassigned'];a.forEach(function(s){if(activeStores.indexOf(s)<0&&s!=='Unassigned')return;if(!groups[s])groups[s]=[];groups[s].push(r);});});
-  var keys=Object.keys(groups).sort(),total=new Set(rows.map(function(r){return r.key;})).size,bought=rows.filter(function(r){return r.status==='Bought';}).length,left=total-bought,pct=total?Math.round(bought/total*100):0;
+  /* v139 (G1): pin "Needs a store" (Unassigned) to the top */
+  var keys=Object.keys(groups).sort(function(a,b){if(a==='Unassigned')return -1;if(b==='Unassigned')return 1;return a.localeCompare(b);}),total=new Set(rows.map(function(r){return r.key;})).size,bought=rows.filter(function(r){return r.status==='Bought';}).length,left=total-bought,pct=total?Math.round(bought/total*100):0;
   if(_shopStoreFilter!=='All'&&keys.indexOf(_shopStoreFilter)<0)_shopStoreFilter='All';// chosen store no longer present → fall back to All
   var renderKeys=(_shopStoreFilter!=='All')?[_shopStoreFilter]:keys;
   var storeCounts={};rows.forEach(function(r){var a=r.storeAssignments&&r.storeAssignments.length?r.storeAssignments:[r.store||'Unassigned'];storeCounts[r.key]=a.filter(function(s){return activeStores.indexOf(s)>=0||s==='Unassigned';}).length;});
   // --- focused toolbar: Done · search/add · store chips · slim progress + Hide done ---
   var doneBtn='<button class="shop-done-btn" onclick="setGroceryMode(\'list\')">✕ Done</button>';
   var searchBox='<div class="shop-search-wrap"><input id="shopSearch" class="shop-search" type="search" placeholder="Search or add an item…" value="'+escAttr(q)+'" oninput="onShopSearch(this.value)" /></div>';
-  var storeChips=(keys.length>1)?'<div class="shopping-store-chips"><button class="shop-store-chip'+(_shopStoreFilter==='All'?' active':'')+'" data-store="All">All</button>'+keys.map(function(s){var sb=groups[s].filter(function(r){return r.status==='Bought';}).length;return'<button class="shop-store-chip'+(_shopStoreFilter===s?' active':'')+'" data-store="'+escAttr(s)+'">'+escHtml(s)+' <span class="shop-store-chip-count">'+(groups[s].length-sb)+'</span></button>';}).join('')+'</div>':'';
+  var storeChips=(keys.length>1)?'<div class="shopping-store-chips"><button class="shop-store-chip'+(_shopStoreFilter==='All'?' active':'')+'" data-store="All">All</button>'+keys.map(function(s){var sb=groups[s].filter(function(r){return r.status==='Bought';}).length;return'<button class="shop-store-chip'+(_shopStoreFilter===s?' active':'')+'" data-store="'+escAttr(s)+'">'+escHtml(s==='Unassigned'?'Needs a store':s)+' <span class="shop-store-chip-count">'+(groups[s].length-sb)+'</span></button>';}).join('')+'</div>':'';
   var progress='<div class="shop-progress-row"><div class="shopping-progress"><span><strong>'+left+'</strong> left · '+bought+' of '+total+'</span><div class="shopping-progress-bar"><div class="shopping-progress-fill" style="width:'+pct+'%;"></div></div></div><button class="shopping-toggle-btn'+(_shopHideBought?' active':'')+'" onclick="toggleShopHideBought()">'+(_shopHideBought?'☑':'☐')+' Hide done</button></div>';
   var uncheckBtn=(total>0)?'<button class="shop-uncheck-btn" onclick="resetGroceryCheckoffs()">↩ Uncheck all</button>':'';// v119: Uncheck all moved to the top, paired with Done
   var toolbar='<div class="shop-top"><div class="shop-done-row">'+doneBtn+uncheckBtn+'</div>'+searchBox+storeChips+progress+'</div>';
@@ -4294,7 +4342,7 @@ function renderShoppingList(out,rows){
     var allDone=items.length>0&&sb===items.length;
     var visible=_shopHideBought?items.filter(function(r){return r.status!=='Bought';}):items;
     if(!visible.length)return '';// when hiding done (or all bought), drop the section entirely
-    return'<div class="shopping-section'+(allDone?' done collapsed':'')+'"><div class="shopping-section-header" onclick="this.parentElement.classList.toggle(\'collapsed\')"><h3>'+(allDone?'✓ ':'')+escHtml(store)+'</h3><span class="shopping-section-count">'+sb+'/'+items.length+(allDone?' ✓':' done')+'</span></div><div class="shopping-section-body">'+visible.map(function(r){
+    return'<div class="shopping-section'+(allDone?' done collapsed':'')+'"><div class="shopping-section-header" onclick="this.parentElement.classList.toggle(\'collapsed\')"><h3>'+(allDone?'✓ ':'')+escHtml(store==='Unassigned'?'Needs a store':store)+'</h3><span class="shopping-section-count">'+sb+'/'+items.length+(allDone?' ✓':' done')+'</span></div><div class="shopping-section-body">'+visible.map(function(r){
       var iid='s-'+r.key.replace(/[^a-z0-9]/gi,'')+store.replace(/[^a-z0-9]/gi,''),isDup=storeCounts[r.key]>1,isBought=r.status==='Bought',isMe=isBought&&r.checkedBy===myInitials;
       var checkerAvatar=isBought?renderAvatarFromProfile({name:r.checkedByName||r.checkedBy,initials:r.checkedBy,photo:r.checkedByPhoto||''},18,'vertical-align:middle;margin-right:4px;'):'';
       var whoName=isMe?'You':(r.checkedByName||r.checkedBy||'');

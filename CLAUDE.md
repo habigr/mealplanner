@@ -147,8 +147,9 @@ Browser console tests — run before every push:
 
 ## ACTIVE WORK — index (full detail in BACKLOG.md)
 
-**Next up (Robbie's priority):**
-- **C0 — COOKING MODE REDESIGN** (its own session). Order: C0a persistent/parallel timers (also fixes timer-dies-on-exit bug) → C0f immediate Back/Exit → C0g status-bar overlap → C0h remove "cooking for # people" adjuster → C0d dish picture not emoji + clean view → C0b multi-dish dashboard → C0c coordination timeline → C0e QoL. Folds in C1/C2.
+**Next up (Robbie's priority) — GROCERY & RECIPE COMPONENT PROGRAM (brief 2026-06-27, full spec in BACKLOG.md):**
+- **G1 — one-off store auto-assignment (v139, SHIP FIRST, safe mid-trip).** Auto-`guessStore` on add/edit + `groceryName→lastStore` memory map (resolve: manual → memory → guess → Unassigned) + never-hide-Unassigned in Shop + inline per-row store `<select>`. **Supersedes/closes #10** (the `reconcileGroceryMeta` delete that drops the store on rename). ⚠️ DECIDE at build: re-wire `storeRules` into `guessStore` (currently DEAD — guessStore is a hardcoded dept→store map) or keep the hardcoded guess.
+- then **G-backbone** (source-aware grocery lines: `sources[]` on each aggregated line) → **G3** (smart purchase consolidation + retire dedup button; signed-delta override) → **G2** (recipe components; biggest lift, AI-import change). G2/G3 change the model → versioned, backup first, NOT mid-trip.
 
 **Queued (safe / small):**
 - **#25(i)** proactive image sourcing on save (fire sourceRecipeImage in saveDishFromModal bankOnly + self-heal pass)
@@ -156,7 +157,8 @@ Browser console tests — run before every push:
 - **#3 cleanup** run `cleanupDuplicateRecipes()` (dry-run) then `cleanupDuplicateRecipes({apply:true})` — tool is LIVE
 
 **Bigger / careful:**
-- **#28** trip header photos sync (per-device localStorage gallery; sync change — test on 2 devices)
+- ~~**#28** trip header photos sync~~ — **DROPPED** (v138 removed the entire photo-banner system; replaced by synced color schemes)
+- **C0 cooking mode** — DEPRIORITIZED (Robbie: not really used); spec still in BACKLOG.md
 - **Admin cluster #18 → #19 → #20** (its own session): #18 split universal vs trip settings (collapsible) → #19 user directory + cook dropdown → #20 Firebase security rules (untested rules can lock out all users — stage WITH Robbie)
 
 **Open bugs (not blockers):**

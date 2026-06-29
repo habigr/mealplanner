@@ -4234,7 +4234,7 @@ function renderGroceryTable(out,rows){
     var _byDish={},_dishOrder=[];
     (r.usedFor||[]).forEach(function(u){if(!u||!u.dishId||u.dish==='Manual item')return;if(!_byDish[u.dishId]){_byDish[u.dishId]={name:u.dish,idxs:[]};_dishOrder.push(u.dishId);}if(u.ingIdx!=null&&_byDish[u.dishId].idxs.indexOf(u.ingIdx)<0)_byDish[u.dishId].idxs.push(u.ingIdx);});
     var dishPills=_dishOrder.length
-      ?_dishOrder.map(function(did){var info=_byDish[did];return'<span class="grocery-dish-pill" style="cursor:pointer;" onclick="pickDishIngredient(\''+escAttr(did)+'\',\''+escAttr(info.idxs.join(','))+'\')" title="Tap to edit this dish’s item">'+escHtml(info.name)+'</span>';}).join('')
+      ?_dishOrder.map(function(did){var info=_byDish[did];return'<span class="grocery-dish-pill">'+escHtml(info.name)+'</span>';}).join('')/* v148: display-only — edit via the item name → item sheet (one edit path) */
       :(r.dishes||[]).filter(function(d){return d&&d!=='Manual item';}).map(function(d){return'<span class="grocery-dish-pill">'+escHtml(d)+'</span>';}).join('');
     var dishPillsHtml=dishPills?'<div class="grocery-dish-pills">'+dishPills+'</div>':'';
     return secRow+'<tr class="'+(status==='Bought'||status==='Have'?'bought':'')+'"><td><span class="grocery-item-name" onclick="openGroceryItemSheet(\''+escAttr(r.key)+'\')" style="cursor:pointer;" title="Tap to edit this item">'+escHtml(dispPlural(r.item,r.quantityText))+'</span>'+(maybeDup?'<span class="dup-badge" title="May be duplicate ingredient with another row that uses a different unit or wording">May be dup</span>':'')+(multiStore?'<span class="dup-badge" title="Assigned to more than one store">Multi-store</span>':'')+(r.isManual?'<span class="manual-badge">Manual</span><button class="icon-button" style="font-size:12px;padding:2px 7px;margin-left:4px;vertical-align:middle;" onclick="editManualGroceryItem(\''+r.manualId+'\')" title="Edit">✎</button><button class="icon-button" style="font-size:12px;padding:2px 7px;color:#ef4444;vertical-align:middle;" onclick="deleteManualGroceryItem(\''+r.manualId+'\')" title="Remove">×</button>':'')+dishPillsHtml+'</td><td><div class="grocery-item-sub" style="margin-bottom:4px;">'+(multiStore?storeTags+' ':'')+storeSelect+'</div><span class="grocery-qty">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'as needed')+'</span></td><td class="mobile-hide"><div class="grocery-dishes">'+escHtml(r.dishes.join(', '))+'</div></td><td class="mobile-hide"><select class="grocery-status-select" data-key="'+escAttr(r.key)+'"><option '+(status==='Need'?'selected':'')+'>Need</option><option '+(status==='Bought'?'selected':'')+'>Bought</option><option '+(status==='Have'?'selected':'')+'>Have</option></select></td><td class="got-col"><input type="checkbox" class="grocery-check" data-key="'+escAttr(r.key)+'" '+(status==='Bought'||status==='Have'?'checked':'')+' /></td></tr>';
@@ -4487,10 +4487,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v147';
+var APP_VERSION='v148';
 var APP_BUILD_TIME='2026-06-29';
 
-var APP_VERSION_TAG='Meal Planner v147';
+var APP_VERSION_TAG='Meal Planner v148';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

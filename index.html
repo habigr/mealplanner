@@ -347,26 +347,42 @@ body.shopping-mode #grocery .two-col{display:none!important;}/* v118: Shop is it
 .shop-done-btn{background:none;border:none;color:var(--theme-accent);font-size:14px;font-weight:800;cursor:pointer;padding:4px 0;-webkit-tap-highlight-color:transparent;}
 /* v140: grocery sub-tabs standalone (always visible incl. Shop) */
 .grocery-subtabs{margin-bottom:14px;}
-/* v140: grocery Item sheet — compact, mobile-first bottom sheet (tap an item name anywhere to edit it end-to-end) */
+/* v143 (brief 4b): grocery item sheet — a calm breakdown view (dishes + jump + one total). Bottom sheet, mobile-first. */
 .gis-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9996;display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .18s;}
 .gis-overlay.open{opacity:1;}
-.gis-sheet{background:var(--panel);width:100%;max-width:440px;border-radius:18px 18px 0 0;padding:6px 16px calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 36px rgba(0,0,0,.28);transform:translateY(100%);transition:transform .22s cubic-bezier(.2,.8,.2,1);max-height:90vh;overflow-y:auto;}
+.gis-sheet{background:var(--panel);width:100%;max-width:440px;border-radius:18px 18px 0 0;padding:6px 18px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 36px rgba(0,0,0,.28);transform:translateY(100%);transition:transform .22s cubic-bezier(.2,.8,.2,1);max-height:90vh;overflow-y:auto;}
 .gis-overlay.open .gis-sheet{transform:translateY(0);}
-.gis-handle{width:36px;height:4px;border-radius:999px;background:var(--border);margin:4px auto 10px;}
-.gis-label{display:flex;align-items:baseline;gap:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:13px 0 5px;}
-.gis-label:first-of-type{margin-top:2px;}
+.gis-handle{width:36px;height:4px;border-radius:999px;background:var(--border);margin:4px auto 14px;}
+.gis-head{margin-bottom:6px;}
+.gis-title{font-size:21px;font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1.15;}
+.gis-sub{font-size:12.5px;color:var(--muted);margin-top:2px;}
+.gis-label{display:flex;align-items:baseline;gap:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 7px;}
 .gis-hint{font-weight:600;text-transform:none;letter-spacing:0;font-size:10.5px;color:var(--muted);opacity:.8;}
-.gis-select,.gis-name,.gis-buy{width:100%;font-size:14px;padding:9px 11px;border-radius:10px;}
-.gis-from{display:flex;flex-wrap:wrap;gap:6px;}
-.gis-from-chip{background:var(--panel-soft);color:var(--theme-accent-dark);border:1px solid var(--border);border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600;box-shadow:none;cursor:pointer;}
-.gis-from-chip:hover{border-color:var(--theme-border);transform:none;}
-.gis-remove{display:block;background:none;border:none;color:var(--danger);font-size:12.5px;font-weight:700;padding:8px 0 0;margin-top:6px;cursor:pointer;box-shadow:none;text-align:left;}
-.gis-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.gis-bought-toggle{display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 12px;background:var(--panel-soft);border:1px solid var(--border);border-radius:11px;font-size:13.5px;font-weight:600;color:var(--text);cursor:pointer;}
-.gis-bought-toggle input{width:18px;height:18px;accent-color:var(--theme-accent);flex-shrink:0;}
-.gis-actions{display:flex;gap:9px;margin-top:16px;}
-.gis-cancel{flex:0 0 auto;background:var(--panel-soft);color:var(--text-secondary);border:1.5px solid var(--border);border-radius:11px;padding:11px 16px;font-weight:700;font-size:13.5px;cursor:pointer;}
-.gis-save{flex:1;background:var(--theme-accent);color:#fff;border:none;border-radius:11px;padding:11px;font-weight:800;font-size:14px;cursor:pointer;}
+.gis-name,.gis-buy{width:100%;font-size:15px;padding:10px 12px;border-radius:11px;}
+.gis-from-list{display:flex;flex-direction:column;gap:7px;}
+.gis-dish-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;background:var(--panel-soft);border:1px solid var(--border-light);border-radius:12px;padding:12px 14px;cursor:pointer;box-shadow:none;}
+.gis-dish-row:hover{border-color:var(--theme-border);background:var(--panel-warm);transform:none;box-shadow:none;}
+.gis-dish-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;}
+.gis-dish-name{font-size:14px;font-weight:700;color:var(--text);}
+.gis-dish-amt{font-size:12px;color:var(--muted);}
+.gis-dish-qty{font-size:13px;font-weight:700;color:var(--text-secondary);flex-shrink:0;white-space:nowrap;}
+.gis-chev{font-size:20px;color:var(--muted);flex-shrink:0;line-height:1;}
+.gis-tally-list{margin-top:10px;border-top:1px dashed var(--border);padding-top:6px;}
+.gis-tally-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 14px;font-size:13px;color:var(--muted);}
+.gis-tally-row .gis-dish-qty{color:var(--text-secondary);}
+.gis-adj-row .gis-dish-qty{color:var(--theme-accent-dark);}
+.gis-total-row{font-weight:800;color:var(--text);font-size:14px;border-top:1px solid var(--border-light);margin-top:4px;padding-top:9px;}
+.gis-total-row .gis-dish-qty{color:var(--text);font-size:15px;}
+.gis-unit-label{font-size:14px;font-weight:600;color:var(--muted);flex-shrink:0;}
+.gis-empty{font-size:12.5px;color:var(--muted);padding:4px 2px;}
+.gis-total{display:flex;align-items:center;gap:10px;}
+.gis-total .gis-buy{text-align:center;flex:1;font-weight:700;font-size:17px;}
+.gis-step{width:44px;height:44px;flex-shrink:0;border-radius:12px;background:var(--panel-soft);border:1.5px solid var(--border);color:var(--theme-accent-dark);font-size:22px;font-weight:700;line-height:1;cursor:pointer;box-shadow:none;display:flex;align-items:center;justify-content:center;}
+.gis-step:hover{background:var(--theme-accent-soft);border-color:var(--theme-border);transform:none;box-shadow:none;}
+.gis-remove{display:block;background:none;border:none;color:var(--danger);font-size:12.5px;font-weight:700;padding:10px 0 0;cursor:pointer;box-shadow:none;text-align:left;}
+.gis-actions{display:flex;gap:9px;margin-top:18px;}
+.gis-cancel{flex:0 0 auto;background:var(--panel-soft);color:var(--text-secondary);border:1.5px solid var(--border);border-radius:11px;padding:12px 18px;font-weight:700;font-size:13.5px;cursor:pointer;}
+.gis-save{flex:1;background:var(--theme-accent);color:#fff;border:none;border-radius:11px;padding:12px;font-weight:800;font-size:14.5px;cursor:pointer;}
 .shop-search-wrap{width:100%;}
 .shop-search{width:100%;font-size:15px;padding:11px 14px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--text);-webkit-appearance:none;box-sizing:border-box;}
 .shop-progress-row{display:flex;align-items:center;gap:12px;}
@@ -3295,7 +3311,7 @@ function openDishModal(dayId,meal,dishId,bankOnly){dishModalHydrating=true;dayId
   }
   if(!currentEvent.days.length&&!bankOnly){showToast('Create event days first.','error');return;}editingDishId=dishId;addToBankOnly=bankOnly;populateDishDayOptions();clearDishModal();setText('dishModalTitle',bankOnly?'Add Recipe to Bank':dishId?'Edit':'Add Dish');var db2=safeEl('deleteEntryButton'),di=safeEl('deleteEntryId');if(di)di.value=dishId&&!bankOnly?dishId:'';if(db2)db2.style.display=dishId?'inline-flex':'none';var af=safeEl('assignmentFields');if(af)af.style.display=bankOnly?'none':'grid';if(dayId){setValue('dishDay',dayId);setValue('eventDay',dayId);}if(meal){setValue('dishMeal',meal);setValue('eventMeal',meal);}var dm=safeEl('dishModal');if(dm){dm.classList.add('active');dm.classList.toggle('plan-mode',!bankOnly);dm.classList.toggle('library-mode',!!bankOnly);}dishModalDirty=false;var dn=safeEl('dishDirtyNote');if(dn)dn.style.display='none';setTimeout(function(){dishModalHydrating=false;},80);}
 function markDishModalDirty(){if(dishModalHydrating)return;dishModalDirty=true;var n=safeEl('dishDirtyNote');if(n)n.style.display='inline';}
-function closeDishModal(force){var m=safeEl('dishModal');if(!force&&dishModalDirty){confirmAction({title:'Discard unsaved changes?',message:'You have changes in this dish that have not been saved. Closing now will lose them.',confirmLabel:'Discard Changes',danger:true}).then(function(ok){if(ok)closeDishModal(true);});return;}if(m)m.classList.remove('active');editingDishId=null;addToBankOnly=false;dishModalDirty=false;window._tempLibraryMode=false;setValue('dishModalImportUrl','');setValue('peopleEatingPlan','');var n=safeEl('dishDirtyNote');if(n)n.style.display='none';}
+function closeDishModal(force){var m=safeEl('dishModal');if(!force&&dishModalDirty){confirmAction({title:'Discard unsaved changes?',message:'You have changes in this dish that have not been saved. Closing now will lose them.',confirmLabel:'Discard Changes',danger:true}).then(function(ok){if(ok)closeDishModal(true);});return;}if(m)m.classList.remove('active');editingDishId=null;addToBankOnly=false;dishModalDirty=false;window._tempLibraryMode=false;setValue('dishModalImportUrl','');setValue('peopleEatingPlan','');var n=safeEl('dishDirtyNote');if(n)n.style.display='none';if(_returnToGrocerySheet){var _gk=_returnToGrocerySheet;_returnToGrocerySheet='';setTimeout(function(){if(typeof openGroceryItemSheet==='function')openGroceryItemSheet(_gk);},70);}/* v143: came here from a grocery item → return to that item's sheet */}
 function switchEntryMode(mode){
   ['url','paste','manual','photo'].forEach(function(m){
     var tab=safeEl(m==='url'?'urlImportTab':m+'RecipeTab')||safeEl(m+'EntryTab');
@@ -3926,8 +3942,9 @@ function aggregateRows(){
       currentEvent.groceryMeta[row.key]=meta; // migrate old unsafe keys to Firebase-safe keys
     }
     if(!row.isManual)row.quantityText=row.numeric?fmtQty(row.quantityTotal):row.usedFor.map(function(u){return[u.quantity,u.unit].filter(Boolean).join(' ');}).join(' + ');
-    row.naturalQty=[row.quantityText,row.unit].filter(Boolean).join(' '); // v140: the auto-derived total, before any "how many to buy" override
-    if(meta.buyQty){row.quantityText=meta.buyQty;row.unit='';row.buyOverride=true;} // v140: a shopping-quantity override rides on top of the auto total
+    row.naturalQty=[row.quantityText,row.unit].filter(Boolean).join(' '); // v140: the auto-derived total, before any override
+    if(typeof meta.buyDelta==='number'&&meta.buyDelta!==0){var _np=_gisParseQty(row.naturalQty);if(_np){var _t=Math.max(0,(parseFloat(_np.num)||0)+meta.buyDelta);row.quantityText=String(Math.round(_t*100)/100)+(_np.unit?' '+_np.unit:'');row.unit='';row.buyOverride=true;row.buyDelta=meta.buyDelta;}} // v143: signed-delta adjustment rides on top of the recipe total (follows recipe changes)
+    else if(meta.buyQty){row.quantityText=meta.buyQty;row.unit='';row.buyOverride=true;} // legacy absolute override still honored
     row.department=meta.department||row.manualDept||row.aiDept||guessDept(row.item); // v105 (#27B): prefer the AI department
     row.store=primaryStore(meta);
     if(row.store==='Unassigned'&&row.manualStore)row.store=row.manualStore;
@@ -4202,69 +4219,106 @@ function setRowStore(key,store){
   saveGroceryStateNow('Could not save store assignment. Your change may not sync to other users.');
   buildGroceryList();
 }
-// v140: ONE consistent editor for any grocery item, opened by tapping the name anywhere (List/Shop/Assign). Two clearly-labelled names (grocery-list name vs recipe ingredient name), the adjusted shopping amount (recipe base shown for reference), store/dept/bought — one Save writes back to the meal plan AND the final list.
+var _returnToGrocerySheet='';
+// v143: tap a dish in the sheet → open its FULL meal-plan editor; remember the grocery key so saving (or closing) returns you to that item's sheet.
+function gisEditDish(did,key){var s=document.getElementById('groceryItemSheet');if(s)s.remove();_returnToGrocerySheet=key||'';if(typeof editDish==='function')editDish(did);}
+// v143 (brief 4b): tap a grocery line → calm breakdown. Recipe-sourced → each dish's contribution (tap a dish → its full editor; saving returns here), a tally (recipe total + your adjustment = buy total), and a signed ± adjustment that rides along as dishes change. Manual → name + qty.
 function openGroceryItemSheet(key){
   if(!currentEvent)return;
   var r=aggregateRows().find(function(x){return x.key===key;});if(!r)return;
   var ex=document.getElementById('groceryItemSheet');if(ex)ex.remove();
-  var stores=getActiveStores().slice();if(stores.indexOf('Unassigned')<0)stores=['Unassigned'].concat(stores);
-  var depts=(currentEvent.departments||getDefaultDepts());
-  var curStore=(r.storeAssignments&&r.storeAssignments.length?r.storeAssignments[0]:(r.store||'Unassigned'));
-  var curDept=r.department||'';
-  var bought=(r.status==='Bought'||r.status==='Have');
-  var buyVal=[r.quantityText,r.unit].filter(Boolean).join(' ');
-  var optStore=stores.map(function(s){return'<option'+(s===curStore?' selected':'')+'>'+escHtml(s)+'</option>';}).join('');
-  var optDept=['<option value=""'+(curDept?'':' selected')+'>Auto</option>'].concat(depts.map(function(d){return'<option'+(d===curDept?' selected':'')+'>'+escHtml(d)+'</option>';})).join('');
-  // "From" = a jump to the recipe (recipe editing stays in the meal plan, not embedded here)
-  var fromHtml='';
-  if(!r.isManual){
+  currentEvent.groceryMeta=currentEvent.groceryMeta||{};
+  var meta=currentEvent.groceryMeta[key]||{};
+  var natural=r.naturalQty||'';
+  var np=r.isManual?null:_gisParseQty(natural);
+  var body,sub;
+  if(r.isManual){
+    sub='Added manually';
+    var mqty=[r.quantityText,r.unit].filter(Boolean).join(' ')||(meta.buyQty||'');
+    body='<label class="gis-label">Item</label><input class="gis-name" value="'+escAttr(r.item||'')+'" placeholder="name">'
+      +'<label class="gis-label">How many to buy</label>'+_gisTotalControl(mqty)
+      +'<button class="gis-remove" onclick="document.getElementById(\'groceryItemSheet\').remove();deleteManualGroceryItem(\''+escAttr(r.manualId)+'\')">Remove item</button>';
+  }else{
     var byDish={},order=[];
-    (r.usedFor||[]).forEach(function(u){if(!u||u.dishId==null)return;if(!byDish[u.dishId]){byDish[u.dishId]={dish:u.dish,idxs:[]};order.push(u.dishId);}if(u.ingIdx!=null&&byDish[u.dishId].idxs.indexOf(u.ingIdx)<0)byDish[u.dishId].idxs.push(u.ingIdx);});
-    var chips=order.map(function(did){var info=byDish[did];return '<button class="gis-from-chip" onclick="document.getElementById(\'groceryItemSheet\').remove();pickDishIngredient(\''+escAttr(did)+'\',\''+escAttr(info.idxs.join(','))+'\')">'+escHtml(info.dish||'dish')+' →</button>';}).join('');
-    if(chips)fromHtml='<label class="gis-label">From <span class="gis-hint">tap to edit the recipe</span></label><div class="gis-from">'+chips+'</div>';
+    (r.usedFor||[]).forEach(function(u){if(!u||u.dishId==null)return;if(!byDish[u.dishId]){byDish[u.dishId]={dish:u.dish,idxs:[],amts:[]};order.push(u.dishId);}if(u.ingIdx!=null&&byDish[u.dishId].idxs.indexOf(u.ingIdx)<0)byDish[u.dishId].idxs.push(u.ingIdx);var a=[u.quantity,u.unit].filter(Boolean).join(' ');if(a)byDish[u.dishId].amts.push(a);});
+    var rows=order.map(function(did){
+      var info=byDish[did];
+      var d=(currentEvent.dishes||[]).find(function(x){return x.id===did;});
+      var ingName='';if(d&&info.idxs.length){var ing=(d.ingredients||[])[info.idxs[0]];if(ing)ingName=ing.item||'';}
+      var qty=info.amts.join(' + ')||'—';
+      return '<button class="gis-dish-row" onclick="gisEditDish(\''+escAttr(did)+'\',\''+escAttr(key)+'\')"><span class="gis-dish-info"><span class="gis-dish-name">'+escHtml(info.dish||'Dish')+'</span>'+(ingName?'<span class="gis-dish-amt">'+escHtml(ingName)+'</span>':'')+'</span><span class="gis-dish-qty">'+escHtml(qty)+'</span><span class="gis-chev">›</span></button>';
+    }).join('');
+    if(!rows)rows='<div class="gis-empty">No recipe source for this item.</div>';
+    sub='Used in '+order.length+' dish'+(order.length===1?'':'es');
+    var listHtml='<label class="gis-label">From your dishes <span class="gis-hint">tap a dish to edit it</span></label><div class="gis-from-list">'+rows+'</div>';
+    if(np){
+      var delta=0;
+      if(typeof meta.buyDelta==='number')delta=meta.buyDelta;
+      else if(meta.buyQty){var bp=_gisParseQty(meta.buyQty);if(bp&&bp.unit===np.unit)delta=(parseFloat(bp.num)||0)-(parseFloat(np.num)||0);}
+      var tally='<div class="gis-tally-list">'
+        +'<div class="gis-tally-row"><span>From dishes</span><span class="gis-dish-qty">'+escHtml(natural)+'</span></div>'
+        +'<div class="gis-tally-row gis-adj-row" id="gisAdjRow" style="display:none;"><span>Your adjustment</span><span class="gis-dish-qty" id="gisAdjVal"></span></div>'
+        +'<div class="gis-tally-row gis-total-row"><span>Total to buy</span><span class="gis-dish-qty" id="gisTotalVal"></span></div>'
+        +'</div>';
+      var control='<label class="gis-label">Adjust <span class="gis-hint">buy more or fewer than the recipes need</span></label>'
+        +'<div class="gis-total"><button type="button" class="gis-step" onclick="_gisAdjStep(-1)" aria-label="Fewer">−</button><input class="gis-delta" inputmode="numeric" value="'+escAttr(String(delta))+'" oninput="_gisRefreshTally()"><button type="button" class="gis-step" onclick="_gisAdjStep(1)" aria-label="More">+</button></div>';
+      body=listHtml+tally+control;
+    }else{
+      body=listHtml
+        +(natural?'<div class="gis-tally-list"><div class="gis-tally-row gis-total-row"><span>Total needed</span><span class="gis-dish-qty">'+escHtml(natural)+'</span></div></div>':'')
+        +'<label class="gis-label">Buy this many <span class="gis-hint">type a total (mixed units)</span></label>'+_gisTotalControl(meta.buyQty||natural);
+    }
   }
-  var removeHtml=r.isManual?'<button class="gis-remove" onclick="document.getElementById(\'groceryItemSheet\').remove();deleteManualGroceryItem(\''+escAttr(r.manualId)+'\')">Remove item</button>':'';
   var ov=document.createElement('div');ov.id='groceryItemSheet';ov.className='gis-overlay';
+  if(np){ov.dataset.natNum=np.num;ov.dataset.unit=np.unit;}
   ov.innerHTML='<div class="gis-sheet">'
     +'<div class="gis-handle"></div>'
-    +'<label class="gis-label">Name</label><input class="gis-name" value="'+escAttr(r.item||'')+'" placeholder="name">'
-    +'<label class="gis-label">How many to buy</label><input class="gis-buy" value="'+escAttr(buyVal)+'" placeholder="e.g. 6, or 2 lb">'
-    +'<div class="gis-grid2"><div><label class="gis-label">Store</label><select class="gis-select gis-store">'+optStore+'</select></div><div><label class="gis-label">Department</label><select class="gis-select gis-dept">'+optDept+'</select></div></div>'
-    +'<label class="gis-bought-toggle"><input type="checkbox" class="gis-bought" '+(bought?'checked':'')+'><span>Got it / already have</span></label>'
-    +fromHtml
-    +removeHtml
+    +'<div class="gis-head"><div class="gis-title">'+escHtml(r.item||'Item')+'</div><div class="gis-sub">'+escHtml(sub)+'</div></div>'
+    +body
     +'<div class="gis-actions"><button class="gis-cancel" onclick="document.getElementById(\'groceryItemSheet\').remove()">Cancel</button><button class="gis-save" onclick="saveGroceryItemSheet(\''+escAttr(key)+'\')">Save</button></div>'
     +'</div>';
   document.body.appendChild(ov);
   requestAnimationFrame(function(){ov.classList.add('open');});
+  _gisRefreshTally();
   ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
 }
+// Split "2 tbsp" → {num:'2', unit:'tbsp'}; mixed units ("2 cups + 1 oz") → null.
+function _gisParseQty(val){val=String(val||'').trim();if(!val||val.indexOf('+')>=0)return null;var m=val.match(/^(\d+(?:\.\d+)?)\s*(.*)$/);if(!m)return null;return {num:m[1],unit:(m[2]||'').trim()};}
+function _gisFmt(n){return String(Math.round(n*100)/100);}
+// signed-delta tally: total to buy = recipe total + your adjustment (live)
+function _gisRefreshTally(){var ov=document.getElementById('groceryItemSheet');if(!ov)return;var el=ov.querySelector('.gis-delta');if(!el)return;var natN=parseFloat(ov.dataset.natNum||'0')||0;var unit=ov.dataset.unit||'';var d=parseFloat(el.value);if(isNaN(d))d=0;if(natN+d<0){d=-natN;el.value=_gisFmt(d);}var total=natN+d;var adjRow=ov.querySelector('#gisAdjRow'),adjVal=ov.querySelector('#gisAdjVal'),totVal=ov.querySelector('#gisTotalVal');if(adjRow&&adjVal){if(d!==0){adjRow.style.display='';adjVal.textContent=(d>0?'+':'')+_gisFmt(d)+(unit?' '+unit:'');}else adjRow.style.display='none';}if(totVal)totVal.textContent=_gisFmt(total)+(unit?' '+unit:'');}
+function _gisAdjStep(d){var ov=document.getElementById('groceryItemSheet');if(!ov)return;var el=ov.querySelector('.gis-delta');if(!el)return;var n=parseFloat(el.value);if(isNaN(n))n=0;el.value=_gisFmt(n+d);_gisRefreshTally();}
+// manual / mixed absolute qty control (unit-aware ± when numeric)
+function _gisTotalControl(val){
+  var p=_gisParseQty(val);
+  if(p){
+    return '<div class="gis-total"><button type="button" class="gis-step" onclick="_gisStep(-1)" aria-label="Less">−</button><input class="gis-buy" data-unit="'+escAttr(p.unit)+'" inputmode="decimal" value="'+escAttr(p.num)+'">'+(p.unit?'<span class="gis-unit-label">'+escHtml(p.unit)+'</span>':'')+'<button type="button" class="gis-step" onclick="_gisStep(1)" aria-label="More">+</button></div>';
+  }
+  return '<input class="gis-buy" value="'+escAttr(String(val||'').trim())+'" placeholder="how many to buy">';
+}
+function _gisStep(d){var el=document.querySelector('#groceryItemSheet .gis-buy');if(!el)return;var n=parseFloat(el.value);if(isNaN(n))n=0;n=Math.max(0,n+d);el.value=_gisFmt(n);}
 function saveGroceryItemSheet(key){
   var sheet=document.getElementById('groceryItemSheet');if(!sheet||!currentEvent)return;
-  function v(sel){var el=sheet.querySelector(sel);return el?el.value:'';}
-  var name=String(v('.gis-name')||'').trim();
-  var buy=String(v('.gis-buy')||'').trim();
-  var store=v('.gis-store')||'Unassigned';
-  var dept=v('.gis-dept')||'';
-  var bought=!!(sheet.querySelector('.gis-bought')&&sheet.querySelector('.gis-bought').checked);
   var r=aggregateRows().find(function(x){return x.key===key;});
-  var natural=r?(r.naturalQty||''):'';
   currentEvent.groceryMeta=currentEvent.groceryMeta||{};
   var m=currentEvent.groceryMeta[key]=currentEvent.groceryMeta[key]||{};
+  var deltaEl=sheet.querySelector('.gis-delta');
   if(r&&r.isManual){
+    var buyEl=sheet.querySelector('.gis-buy'),nameEl=sheet.querySelector('.gis-name');
+    var name=nameEl?String(nameEl.value).trim():'';
+    var buy=buyEl?String(buyEl.value).trim():'';var u=buyEl?buyEl.getAttribute('data-unit'):'';if(u&&buy)buy=buy+' '+u;
     var mi=(currentEvent.manualGroceryItems||[]).find(function(x){return x.id===r.manualId;});
-    if(mi){if(name)mi.item=toTitleCaseIngredient(name);mi.quantity=buy;mi.unit='';if(dept)mi.department=dept;}
+    if(mi){if(name)mi.item=toTitleCaseIngredient(name);mi.quantity=buy;mi.unit='';}
+  }else if(deltaEl){
+    var delta=parseFloat(deltaEl.value);if(isNaN(delta))delta=0;
+    if(delta!==0)m.buyDelta=delta;else delete m.buyDelta;
+    delete m.buyQty; // supersede any legacy absolute override
   }else{
-    // rename the grocery line = set the grocery-list name on every contributing recipe ingredient (recipe ingredient NAMES stay in the plan)
-    if(r){(r.usedFor||[]).forEach(function(u){if(!u||u.dishId==null)return;var d=(currentEvent.dishes||[]).find(function(x){return x.id===u.dishId;});if(!d)return;var ing=(d.ingredients||[])[u.ingIdx];if(!ing)return;ing.groceryName=name;});}
-    // "how many to buy" override rides on top of the auto total; clearing or matching the total removes it
-    if(buy&&buy!==natural)m.buyQty=buy;else delete m.buyQty;
+    var buyEl2=sheet.querySelector('.gis-buy');var buy2=buyEl2?String(buyEl2.value).trim():'';var u2=buyEl2?buyEl2.getAttribute('data-unit'):'';if(u2&&buy2)buy2=buy2+' '+u2;
+    var natural=r?(r.naturalQty||''):'';
+    if(buy2&&buy2!==natural)m.buyQty=buy2;else delete m.buyQty;
+    delete m.buyDelta;
   }
-  if(!store||store==='Unassigned'){m.storeAssignments=[];m.store='Unassigned';}
-  else{m.storeAssignments=[store];m.store=store;rememberStore(name||groceryKeyLabel(key),store);}
-  m.department=dept;
-  if(bought){if(m.status!=='Bought'&&m.status!=='Have'){var u=getUser();m.status='Bought';m.checkedBy=u?u.initials:'?';m.checkedByName=u?(u.name||u.fullName||u.firstName||''):'';m.checkedByPhoto=u?u.photo||'':'';m.checkedAt=new Date().toISOString();}}
-  else{m.status='Need';m.checkedBy=null;m.checkedAt=null;}
   commitAndSync();
   sheet.remove();
   buildGroceryList();
@@ -4382,10 +4436,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v142';
+var APP_VERSION='v143';
 var APP_BUILD_TIME='2026-06-29';
 
-var APP_VERSION_TAG='Meal Planner v142';
+var APP_VERSION_TAG='Meal Planner v143';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

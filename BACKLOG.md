@@ -34,7 +34,14 @@ V. **Vegetarian indicator → VEG pill everywhere** — DONE on plan tab (v60), 
 
 ## GROCERY & RECIPE COMPONENT PROGRAM (Robbie brief, 2026-06-27 — corrected to live v138 code)
 
-Source: `MEALPLANNER_GROCERY_BRIEF.md` (hand-off doc). The brief was framed against v137 and a few of its assumptions drifted from the live code — corrections noted inline. **Build order: Item 1 → `sources` backbone → Item 3 → Item 2.** Each item = its own version, backup first. Items G2/G3 change the grocery data model → **never run their migrations mid-trip**; G1 is safe anytime.
+Source: `MEALPLANNER_GROCERY_BRIEF.md` (hand-off doc). **Brief v2 adopted 2026-06-29** (adds Item 4 = design/UX pass; full strategic read done). Build order being followed (resequenced to front-load Robbie's pain — design-system 4a applied to the grocery tab/sheet first, not a big-bang refactor):
+1. **Item 1 (store friction) — ✅ DONE v139.**
+2. **4c removals + 4d flat header — ✅ DONE v141** (✦ button, Save icon, gradient/scheme header → flat minimal/light; mobile clip fixed).
+3. **4b grocery item sheet** (dish-grouped breakdown + jump-to-dish + single "adjust total" delta) — rebuild the v140 sheet to spec; seed **4a design tokens** + **4e mobile grocery cleanup** in the same pass. Built on existing `usedFor` → no data-model change yet (FIP-safe). ← **NEXT**
+4. **`sources` backbone → Item 3** (AI cross-unit consolidation; upgrade v140's absolute `buyQty` → **signed delta**) → **Item 2** (components). Data-model changes → versioned, backup, **NOT mid-trip / never FIP**. Run the overdue `runRegressionTests()` 25/25 before this stage.
+5. Roll 4a tokens to remaining edit screens incrementally.
+
+⚠️ Brief text still says "Current build v137" and lists Item 1 as "ship first" — **stale**; Item 1 shipped v139, removals/header shipped v141. v140's `buyQty` is an absolute override; Item 3 changes it to a signed delta. Each item = its own version, backup first; G2/G3 never mid-trip.
 
 **⚠️ Code-accuracy corrections vs the brief (verified in v138):**
 - **`storeRules` is currently DEAD CODE.** The App Admin "Store Auto-Assignment Rules" keyword UI saves to `currentEvent.storeRules`, but `guessStore` (≈line 3968) does NOT read it — it's a hardcoded dept→store map (Produce/Meat&Seafood → DeCiccio's, else Stop & Shop). The brief assumes `guessStore` is the keyword-rule assigner; it isn't. **G1 must decide: re-wire `storeRules` into `guessStore`, or keep the hardcoded guess** (and either hide or honor the rules UI).

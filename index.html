@@ -36,7 +36,7 @@
   --ta:#1a3260;--tad:#0d1f42;--tas:#edf0fb;--tam:rgba(26,50,96,.07);--tw:#f4f6ff;--tb:#b0c2e8;
   --ff:'Plus Jakarta Sans',system-ui,sans-serif;
   --nav-h:68px;--safe-b:env(safe-area-inset-bottom,0px);
-  --header-h:148px;
+  --header-h:62px;
 }
 /* v138 color schemes — each sets the app accent palette (--ta/--tad/--tas/--tam/--tw/--tb) and the header gradient (--hg). Header text stays readable via the header::before overlay in both light + dark mode. */
 body.theme-midnight{--ta:#1a3260;--tad:#0d1f42;--tas:#edf0fb;--tam:rgba(26,50,96,.07);--tw:#f4f6ff;--tb:#b0c2e8;--hg:linear-gradient(115deg,#e3eafb 0%,#9fb6e6 60%,#1a3260 130%);}
@@ -177,13 +177,23 @@ label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-t
 #appScreen.visible{display:flex;}
 
 /* Header — fixed consistent height */
-header{position:sticky;top:0;z-index:20;height:var(--header-h);background-color:var(--theme-accent-soft);background-image:var(--hg,linear-gradient(115deg,var(--theme-accent-soft),var(--theme-accent)));background-size:cover;background-position:center;background-repeat:no-repeat;border-bottom:1px solid rgba(255,255,255,.15);flex-shrink:0;}
-header::before{content:'';position:absolute;inset:0;background:linear-gradient(110deg,rgba(255,255,255,.93) 0%,rgba(255,255,255,.72) 30%,rgba(255,255,255,.06) 100%);backdrop-filter:blur(1px);pointer-events:none;}
-.header-row{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;height:100%;padding:16px 28px 20px;max-width:1380px;margin:0 auto;width:100%;}
-.header-left{display:flex;flex-direction:column;justify-content:flex-end;min-width:0;flex:1;}
+/* v141: flat minimal header — no gradient, no photo, no scheme. Light surface, dark title, thin accent rule. */
+header{position:sticky;top:0;z-index:20;height:var(--header-h);background:var(--panel);border-bottom:1px solid var(--theme-border);flex-shrink:0;}
+header::before{display:none;}
+.header-row{position:relative;z-index:1;display:flex;align-items:center;gap:18px;height:100%;padding:0 24px;max-width:1380px;margin:0 auto;width:100%;}
+.header-left{display:flex;align-items:baseline;gap:9px;min-width:0;flex:1;}
 .header-eyebrow{font-size:9.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--theme-accent);margin-bottom:5px;opacity:.85;}
-#currentTripChip{font-size:30px;font-weight:800;color:#0a1828;margin:0;letter-spacing:-.03em;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-.header-dates{font-size:12.5px;font-weight:600;color:var(--theme-accent-dark);opacity:.85;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+#currentTripChip{font-size:20px;font-weight:800;color:#0a1828;margin:0;letter-spacing:-.02em;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.header-dates{font-size:12.5px;font-weight:600;color:var(--muted);white-space:nowrap;flex-shrink:0;}
+.header-left .header-dates::before{content:'·';margin-right:9px;color:var(--border-light);font-weight:700;}
+/* v141 Option A: single-bar header pieces */
+.hdr-back{display:inline-flex;align-items:center;gap:5px;background:transparent;color:var(--muted);font-size:13px;font-weight:600;padding:7px 11px;border-radius:999px;border:1px solid transparent;box-shadow:none;flex-shrink:0;}
+.hdr-back:hover{background:var(--panel-soft);color:var(--text);transform:none;box-shadow:none;}
+.header-nav{display:flex;gap:4px;flex-shrink:0;}
+.header-nav .top-tab{padding:8px 15px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--muted);background:transparent;border:none;bottom:0;box-shadow:none;letter-spacing:0;}
+.header-nav .top-tab:hover:not(.active){background:var(--panel-soft);color:var(--text-secondary);transform:none;box-shadow:none;}
+.header-nav .top-tab.active{background:var(--theme-accent-soft);color:var(--theme-accent-dark);border-bottom:none;}
+@media(max-width:768px){.hdr-back,.header-nav{display:none;}.header-left{flex-direction:column;align-items:flex-start;gap:0;}.header-left .header-dates{margin-top:2px;}.header-left .header-dates::before{content:none;margin:0;}}
 .header-actions{display:flex;gap:8px;flex-shrink:0;align-items:center;padding-bottom:2px;}
 .back-btn{background:rgba(255,255,255,.88);border:1.5px solid rgba(255,255,255,.5);color:var(--text-secondary);backdrop-filter:blur(6px);box-shadow:var(--shadow-sm);font-size:12px;padding:7px 13px;border-radius:var(--r-sm);font-weight:700;}
 .back-btn:hover{background:#fff;color:var(--text);}
@@ -679,7 +689,7 @@ html.tap-feedback button:active, html.tap-feedback .dish:active, html.tap-feedba
   main{border-radius:0;border:none;border-top:1px solid var(--border-light);box-shadow:none;margin-top:0;min-height:auto;}
   .page{padding:14px;}
   .header-row{padding:calc(env(safe-area-inset-top,0px) + 6px) 10px 8px;align-items:flex-end;gap:6px;}
-  #currentTripChip{font-size:16px;max-width:calc(100vw - 178px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #currentTripChip{font-size:18px;max-width:calc(100vw - 132px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .header-eyebrow{font-size:8px;margin-bottom:2px;}
   .header-actions{gap:4px;align-items:center;flex-shrink:0;padding-bottom:0;}
   .header-actions button{font-size:10px;padding:0;width:30px;height:30px;min-width:30px;border-radius:8px;}
@@ -1188,10 +1198,10 @@ tr.bought .grocery-item-name{text-decoration:line-through;opacity:.5;transition:
 .pull-refresh-indicator{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:50%;transform:translateX(-50%) translateY(-24px);opacity:0;z-index:800;background:var(--text);color:#fff;border-radius:999px;padding:8px 14px;font-size:12px;font-weight:800;box-shadow:var(--shadow);transition:all .18s ease;}
 .pull-refresh-indicator.visible{opacity:1;transform:translateX(-50%) translateY(0);}
 @media(max-width:768px){
-  :root{--header-h:104px;}
+  :root{--header-h:calc(64px + env(safe-area-inset-top,0px));}/* v141: compact mobile header (name+dates+icons; tabs live in the bottom nav) */
   header{height:var(--header-h);}
-  .header-row{align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;gap:8px;}
-  #currentTripChip{font-size:17px;max-width:calc(100vw - 180px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .header-row{align-items:center;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px;gap:10px;}
+  #currentTripChip{font-size:18px;max-width:calc(100vw - 132px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .header-actions{gap:5px;align-self:center;}
   .hdr-btn{width:32px;height:32px;min-width:32px;}
   .audit-drawer-header{padding-top:calc(18px + env(safe-area-inset-top,0px));}
@@ -1508,8 +1518,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .toast.success{background:rgba(16,120,70,.85);}
 .toast.error{background:rgba(180,42,42,.85);}
 .page{animation:pageFade .3s cubic-bezier(.25,.46,.45,.94);}
-/* Cinematic banner: bottom vignette for depth + title legibility — does NOT touch the per-theme image or position */
-header{box-shadow:inset 0 -72px 56px -34px rgba(0,0,0,.5);}
+/* v141: removed the v135 cinematic banner vignette (was a dark inset fade for the old photo banner; read as a gradient on the flat header) */
 /* "Living" landing hero — slow drift/pulse on the purely-decorative rings */
 .landing-hero-ring{animation:heroDrift 16s ease-in-out infinite alternate;}
 .landing-hero::after{animation:heroPulse 7s ease-in-out infinite;}
@@ -1604,11 +1613,21 @@ header{box-shadow:inset 0 -72px 56px -34px rgba(0,0,0,.5);}
 
 <!-- APP SCREEN -->
 <div id="appScreen">
+  <!-- v141 Option A: single slim bar — trip name + dates · section tabs · icons (no double-decker, no "Meal Planner" eyebrow, gear folded into the Trip Settings tab) -->
   <header>
     <div class="header-row">
+      <button class="hdr-back" onclick="goToLanding()" title="All Trips" aria-label="All Trips">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span>Trips</span>
+      </button>
       <div class="header-left">
-        <div><div class="header-eyebrow">Meal Planner</div><h1 id="currentTripChip">Untitled Trip</h1><div id="headerTripDates" class="header-dates"></div></div>
+        <h1 id="currentTripChip">Untitled Trip</h1>
+        <div id="headerTripDates" class="header-dates"></div>
       </div>
+      <nav class="header-nav" aria-label="Sections">
+        <button class="top-tab active" data-tab="planner" onclick="navTo('planner')">Meal Plan</button>
+        <button class="top-tab" data-tab="grocery" onclick="navTo('grocery')">Groceries</button>
+        <button class="top-tab" data-tab="setup" onclick="navTo('setup')">Trip Settings</button>
+      </nav>
       <div class="header-actions">
         <div id="syncDot" class="sync-dot" title="Sync status"></div>
         <div class="presence-wrap">
@@ -1617,28 +1636,12 @@ header{box-shadow:inset 0 -72px 56px -34px rgba(0,0,0,.5);}
           </button>
           <div class="presence-badge" id="presenceBadge"></div>
         </div>
-        <button class="hdr-btn header-setup-btn" onclick="toggleAdminPanel(true)" title="Event Setup">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-        </button>
-        <button class="hdr-btn" onclick="saveCurrentTrip()" title="Save">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
-        </button>
         <button class="hdr-btn" id="profileAvatarBtn" onclick="toggleProfilePanel(event)" title="Your profile" style="overflow:hidden;padding:0;">
           <div id="headerAvatarInner" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;"></div>
         </button>
       </div>
     </div>
   </header>
-  <div class="top-nav">
-    <div class="top-nav-inner">
-      <button class="top-tab top-back-tab" onclick="goToLanding()" title="All Trips">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:5px;vertical-align:middle;"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>All Trips
-      </button>
-      <button class="top-tab active" data-tab="planner" onclick="navTo('planner')">Meal Plan</button>
-      <button class="top-tab" data-tab="grocery" onclick="navTo('grocery')">Groceries</button>
-      <button class="top-tab" data-tab="setup" onclick="navTo('setup')">Trip Settings</button>
-    </div>
-  </div>
   <div class="app-wrap">
     <div id="offlineBanner" style="display:none;background:#fef3c7;border-bottom:1.5px solid #fcd34d;padding:8px 16px;font-size:12px;font-weight:600;color:#78350f;text-align:center;">📡 Offline — changes saved locally and will sync when you reconnect</div>
     <main>
@@ -1683,7 +1686,6 @@ header{box-shadow:inset 0 -72px 56px -34px rgba(0,0,0,.5);}
           <div class="grocery-actions-row">
             <div class="grocery-icon-actions" aria-label="Grocery actions">
               <button class="grocery-icon-btn" type="button" onclick="addManualGroceryItem()" title="Add item">+</button>
-              <button class="grocery-icon-btn" type="button" onclick="runGroceryDedup()" title="AI: Find duplicate ingredients" style="font-size:14px;">✦</button>
               <button class="grocery-icon-btn" type="button" onclick="exportGroceryList()" title="Share grocery list">↗</button>
               <button class="grocery-icon-btn" type="button" onclick="refreshCurrentTrip(true)" title="Sync">↻</button>
               <button class="grocery-icon-btn" type="button" onclick="clearGroceryFilters()" title="Reset all filters" style="font-size:13px;width:auto;padding:0 10px;gap:4px;">↺ <span style="font-size:10px;font-weight:800;letter-spacing:.04em;">Reset</span></button>
@@ -1800,12 +1802,6 @@ header{box-shadow:inset 0 -72px 56px -34px rgba(0,0,0,.5);}
 
   <div class="section-title">Trip</div>
   <div class="field"><label for="eventName">Trip Name</label><input id="eventName" placeholder="e.g., Fire Island Summer" oninput="autosave()" /></div>
-  <div class="field"><label for="tripTheme">Color Scheme</label>
-    <select id="tripTheme" onchange="applyTheme(getValue('tripTheme'));autosave();">
-      <option value="midnight">Midnight</option><option value="ocean">Ocean</option><option value="forest">Forest</option><option value="sunset">Sunset</option><option value="plum">Plum</option><option value="slate">Slate</option><option value="cherry">Cherry</option><option value="pride">Pride 🏳️‍🌈</option>
-    </select>
-  </div>
-  <div class="small-note">Sets the header gradient and the app's accent color. Syncs to everyone on the trip.</div>
   <div class="two-col">
     <div class="field"><label for="startDate">Start</label><input id="startDate" type="date" oninput="autosave()" /></div>
     <div class="field"><label for="endDate">End</label><input id="endDate" type="date" oninput="autosave()" /></div>
@@ -3051,7 +3047,7 @@ function renderLanding(){
   if(!trips.length){wrap.innerHTML='<div class="landing-empty"><span class="landing-empty-icon">🍴</span><h3>No trips yet</h3><p>Create your first trip to start planning meals and building grocery lists.</p></div>';return;}
   // v129: split active vs archived (archived = code flagged in the user's account, _archivedTripCodes)
   function tripCardHtml(ev){
-    var cls=mapTheme(ev.theme),dateStr=ev.startDate?formatDateShort(ev.startDate)+(ev.endDate?' – '+formatDateShort(ev.endDate):''):'No dates',dishes=(ev.dishes||[]).length;
+    var cls='midnight',dateStr=ev.startDate?formatDateShort(ev.startDate)+(ev.endDate?' – '+formatDateShort(ev.endDate):''):'No dates',dishes=(ev.dishes||[]).length;
     return'<div class="trip-card-wrap" data-code="'+escAttr(ev.code||'')+'">'+
       '<button class="trip-del-btn" onclick="event.stopPropagation();deleteTripFromDevice(\''+escAttr(ev.code||'')+'\')" aria-label="Delete">'+TRASH_SVG+'Delete</button>'+
       '<div class="trip-card" onclick="loadTrip(\''+escAttr(ev.code||'')+'\')" role="button">'+
@@ -3116,11 +3112,11 @@ function optionList(opts,sel){return(opts||[]).map(function(o){return'<option'+(
 
 /* ===== SYNC EVENT FIELDS ===== */
 function syncEventFieldsFromInputs(){if(!currentEvent)return;currentEvent.name=getValue('eventName').trim();currentEvent.startDate=getValue('startDate');currentEvent.endDate=getValue('endDate');currentEvent.theme=getValue('tripTheme')||currentEvent.theme||'midnight';}
-function syncInputsFromEvent(){setValue('eventName',currentEvent.name||'');setValue('startDate',currentEvent.startDate||'');setValue('endDate',currentEvent.endDate||'');setValue('tripTheme',mapTheme(currentEvent.theme));setText('currentTripChip',currentEvent.name||themeDisplayName(currentEvent.theme)||'Untitled Trip');setText('headerTripDates',tripDateRange(currentEvent));applyTheme(currentEvent.theme);renderActiveStoresList();renderProfileDisplay();var tct=safeEl('drawerTripCodeText');if(tct)tct.textContent=currentCode||'';}
+function syncInputsFromEvent(){setValue('eventName',currentEvent.name||'');setValue('startDate',currentEvent.startDate||'');setValue('endDate',currentEvent.endDate||'');setValue('tripTheme',mapTheme(currentEvent.theme));setText('currentTripChip',currentEvent.name||'Untitled Trip');setText('headerTripDates',tripDateRange(currentEvent));applyTheme(currentEvent.theme);renderActiveStoresList();renderProfileDisplay();var tct=safeEl('drawerTripCodeText');if(tct)tct.textContent=currentCode||'';}
 // v138 color schemes — map legacy photo themes onto the new scheme keys; everything else falls back to midnight.
 var THEME_SCHEMES=['midnight','ocean','forest','sunset','plum','slate','cherry','pride'];
 function mapTheme(t){var legacy={larchmont:'midnight','fire-island':'ocean',adirondacks:'forest'};t=legacy[t]||t;return THEME_SCHEMES.indexOf(t)>=0?t:'midnight';}
-function applyTheme(theme){var scheme=mapTheme(theme);document.body.classList.remove.apply(document.body.classList,THEME_SCHEMES.map(function(s){return'theme-'+s;}));document.body.classList.add('theme-'+scheme);}
+function applyTheme(theme){document.body.classList.remove.apply(document.body.classList,THEME_SCHEMES.map(function(s){return'theme-'+s;}));document.body.classList.add('theme-midnight');} // v141: single professional accent (navy); scheme picker removed
 function themeDisplayName(t){return mapTheme(t).charAt(0).toUpperCase()+mapTheme(t).slice(1);}
 function tripDateRange(ev){if(!ev||!ev.startDate)return'';return formatDateShort(ev.startDate)+(ev.endDate?' – '+formatDateShort(ev.endDate):'');}
 function renderAll(){
@@ -4170,7 +4166,7 @@ function renderGroceryTable(out,rows){
   out.querySelectorAll('.grocery-status-select').forEach(function(sel){sel.addEventListener('change',function(){haptic();updateGroceryMeta(sel.dataset.key,'status',sel.value);});});
   initGrocerySwipe(out);
   // Auto dedup check
-  try{updateDedupBanner(aggregateRows());}catch(e){}
+  // v141: dedup banner retired (✦ removed) — name-normalization at import handles identical dups; cross-unit consolidation is the separate G3 build
 }
 // v139 (G1): inline single-store reassign from List mode (no Assign-Stores round-trip). Writes store memory so the choice sticks across edits + future trips.
 function setRowStore(key,store){
@@ -4362,10 +4358,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v140';
-var APP_BUILD_TIME='2026-06-28';
+var APP_VERSION='v141';
+var APP_BUILD_TIME='2026-06-29';
 
-var APP_VERSION_TAG='Meal Planner v140';
+var APP_VERSION_TAG='Meal Planner v141';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

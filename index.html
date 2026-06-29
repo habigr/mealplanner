@@ -3141,7 +3141,7 @@ function normalizeDish(d){d.id=d.id||makeId();d.servings=d.servings||'';d.people
 function showToast(msg,type){var c=safeEl('toastContainer');if(!c)return;var t=document.createElement('div');t.className='toast '+(type||'');t.innerHTML='<span>'+(type==='success'?'✓':type==='error'?'⚠':'ℹ')+'</span><span>'+escHtml(msg)+'</span>';t.addEventListener('click',function(){dismissToast(t);});c.appendChild(t);requestAnimationFrame(function(){t.classList.add('show');});setTimeout(function(){dismissToast(t);},3400);}
 function dismissToast(t){if(!t.classList.contains('show'))return;t.classList.remove('show');setTimeout(function(){t.remove();},240);}
 function confirmAction(o){return new Promise(function(resolve){o=o||{};var bd=safeEl('confirmBackdrop');setText('confirmTitle',o.title||'Confirm');setText('confirmMessage',o.message||'Are you sure?');var ok=safeEl('confirmAccept'),cn=safeEl('confirmCancel');ok.textContent=o.confirmLabel||'Confirm';ok.className=o.danger?'danger':'';var done=function(r){bd.classList.remove('active');ok.onclick=null;cn.onclick=null;bd.onclick=null;resolve(r);};ok.onclick=function(){done(true);};cn.onclick=function(){done(false);};bd.onclick=function(e){if(e.target===bd)done(false);};bd.classList.add('active');setTimeout(function(){ok.focus();},50);});}
-function promptAction(o){return new Promise(function(resolve){o=o||{};var bd=safeEl('promptBackdrop');setText('promptTitle',o.title||'Input');setText('promptMessage',o.message||'');var inp=safeEl('promptInput');inp.value=o.defaultValue||'';inp.placeholder=o.placeholder||'';var ok=safeEl('promptAccept'),cn=safeEl('promptCancel');ok.textContent=o.confirmLabel||'OK';var done=function(r){bd.classList.remove('active');ok.onclick=null;cn.onclick=null;inp.onkeydown=null;bd.onclick=null;resolve(r);};ok.onclick=function(){done(inp.value.trim()||null);};cn.onclick=function(){done(null);};bd.onclick=function(e){if(e.target===bd)done(null);};inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();done(inp.value.trim()||null);}};bd.classList.add('active');setTimeout(function(){inp.focus();inp.select();},50);});}
+function promptAction(o){return new Promise(function(resolve){o=o||{};var bd=safeEl('promptBackdrop');setText('promptTitle',o.title||'Input');setText('promptMessage',o.message||'');var inp=safeEl('promptInput');inp.value=o.defaultValue||'';inp.placeholder=o.placeholder||'';var _pdl=safeEl('promptDatalist');if(o.suggestions&&o.suggestions.length){if(!_pdl){_pdl=document.createElement('datalist');_pdl.id='promptDatalist';document.body.appendChild(_pdl);}_pdl.innerHTML=o.suggestions.map(function(s){return'<option value="'+escAttr(s)+'"></option>';}).join('');inp.setAttribute('list','promptDatalist');}else{inp.removeAttribute('list');}var ok=safeEl('promptAccept'),cn=safeEl('promptCancel');ok.textContent=o.confirmLabel||'OK';var done=function(r){bd.classList.remove('active');ok.onclick=null;cn.onclick=null;inp.onkeydown=null;bd.onclick=null;inp.removeAttribute('list');resolve(r);};ok.onclick=function(){done(inp.value.trim()||null);};cn.onclick=function(){done(null);};bd.onclick=function(e){if(e.target===bd)done(null);};inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();done(inp.value.trim()||null);}};bd.classList.add('active');setTimeout(function(){inp.focus();inp.select();},50);});}
 
 /* ===== HELPERS ===== */
 function safeEl(id){return document.getElementById(id);}
@@ -4220,6 +4220,16 @@ function setRowStore(key,store){
   buildGroceryList();
 }
 var _returnToGrocerySheet='';
+// v144: every distinct purchase name already in the trip (deduped by normalized key) → powers the "Buy as" suggestions so you reuse "Lime" instead of inventing "Limes".
+function getTripGroceryNames(){
+  if(!currentEvent)return [];
+  var seen={},out=[];
+  function add(n){n=String(n||'').trim();if(!n)return;var k=(typeof _groceryNameNorm==='function'?_groceryNameNorm(n):n.toLowerCase());if(!k||seen[k])return;seen[k]=true;out.push(n);}
+  (currentEvent.dishes||[]).forEach(function(d){(d.ingredients||[]).forEach(function(i){add(i.groceryName||i.item);});});
+  (currentEvent.manualGroceryItems||[]).forEach(function(mi){add(mi.item);});
+  out.sort(function(a,b){return String(a).toLowerCase().localeCompare(String(b).toLowerCase());});
+  return out;
+}
 // v143: tap a dish in the sheet → open its FULL meal-plan editor; remember the grocery key so saving (or closing) returns you to that item's sheet.
 function gisEditDish(did,key){var s=document.getElementById('groceryItemSheet');if(s)s.remove();_returnToGrocerySheet=key||'';if(typeof editDish==='function')editDish(did);}
 // v143 (brief 4b): tap a grocery line → calm breakdown. Recipe-sourced → each dish's contribution (tap a dish → its full editor; saving returns here), a tally (recipe total + your adjustment = buy total), and a signed ± adjustment that rides along as dishes change. Manual → name + qty.
@@ -4231,11 +4241,12 @@ function openGroceryItemSheet(key){
   var meta=currentEvent.groceryMeta[key]||{};
   var natural=r.naturalQty||'';
   var np=r.isManual?null:_gisParseQty(natural);
+  var suggest='<datalist id="gisNameSuggest">'+getTripGroceryNames().map(function(n){return'<option value="'+escAttr(n)+'"></option>';}).join('')+'</datalist>';
   var body,sub;
   if(r.isManual){
     sub='Added manually';
     var mqty=[r.quantityText,r.unit].filter(Boolean).join(' ')||(meta.buyQty||'');
-    body='<label class="gis-label">Item</label><input class="gis-name" value="'+escAttr(r.item||'')+'" placeholder="name">'
+    body='<label class="gis-label">Item <span class="gis-hint">reuse a name already in the trip</span></label><input class="gis-name gis-buyname" list="gisNameSuggest" value="'+escAttr(r.item||'')+'" placeholder="name">'
       +'<label class="gis-label">How many to buy</label>'+_gisTotalControl(mqty)
       +'<button class="gis-remove" onclick="document.getElementById(\'groceryItemSheet\').remove();deleteManualGroceryItem(\''+escAttr(r.manualId)+'\')">Remove item</button>';
   }else{
@@ -4272,6 +4283,7 @@ function openGroceryItemSheet(key){
   var ov=document.createElement('div');ov.id='groceryItemSheet';ov.className='gis-overlay';
   if(np){ov.dataset.natNum=np.num;ov.dataset.unit=np.unit;}
   ov.innerHTML='<div class="gis-sheet">'
+    +suggest
     +'<div class="gis-handle"></div>'
     +'<div class="gis-head"><div class="gis-title">'+escHtml(r.item||'Item')+'</div><div class="gis-sub">'+escHtml(sub)+'</div></div>'
     +body
@@ -4304,20 +4316,22 @@ function saveGroceryItemSheet(key){
   var m=currentEvent.groceryMeta[key]=currentEvent.groceryMeta[key]||{};
   var deltaEl=sheet.querySelector('.gis-delta');
   if(r&&r.isManual){
-    var buyEl=sheet.querySelector('.gis-buy'),nameEl=sheet.querySelector('.gis-name');
+    var nameEl=sheet.querySelector('.gis-name'),buyEl=sheet.querySelector('.gis-buy');
     var name=nameEl?String(nameEl.value).trim():'';
     var buy=buyEl?String(buyEl.value).trim():'';var u=buyEl?buyEl.getAttribute('data-unit'):'';if(u&&buy)buy=buy+' '+u;
     var mi=(currentEvent.manualGroceryItems||[]).find(function(x){return x.id===r.manualId;});
     if(mi){if(name)mi.item=toTitleCaseIngredient(name);mi.quantity=buy;mi.unit='';}
-  }else if(deltaEl){
-    var delta=parseFloat(deltaEl.value);if(isNaN(delta))delta=0;
-    if(delta!==0)m.buyDelta=delta;else delete m.buyDelta;
-    delete m.buyQty; // supersede any legacy absolute override
   }else{
-    var buyEl2=sheet.querySelector('.gis-buy');var buy2=buyEl2?String(buyEl2.value).trim():'';var u2=buyEl2?buyEl2.getAttribute('data-unit'):'';if(u2&&buy2)buy2=buy2+' '+u2;
-    var natural=r?(r.naturalQty||''):'';
-    if(buy2&&buy2!==natural)m.buyQty=buy2;else delete m.buyQty;
-    delete m.buyDelta;
+    if(deltaEl){
+      var delta=parseFloat(deltaEl.value);if(isNaN(delta))delta=0;
+      if(delta!==0)m.buyDelta=delta;else delete m.buyDelta;
+      delete m.buyQty; // supersede any legacy absolute override
+    }else{
+      var buyEl2=sheet.querySelector('.gis-buy');var buy2=buyEl2?String(buyEl2.value).trim():'';var u2=buyEl2?buyEl2.getAttribute('data-unit'):'';if(u2&&buy2)buy2=buy2+' '+u2;
+      var natural=r?(r.naturalQty||''):'';
+      if(buy2&&buy2!==natural)m.buyQty=buy2;else delete m.buyQty;
+      delete m.buyDelta;
+    }
   }
   commitAndSync();
   sheet.remove();
@@ -4436,10 +4450,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v143';
+var APP_VERSION='v144';
 var APP_BUILD_TIME='2026-06-29';
 
-var APP_VERSION_TAG='Meal Planner v143';
+var APP_VERSION_TAG='Meal Planner v144';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -6659,7 +6673,7 @@ async function editGroceryName(type,id,idx){
   else{var d=currentEvent&&(currentEvent.dishes||[]).find(function(x){return x.id===id;});if(!d)return;ings=d.ingredients||[];persist=function(){if(typeof commitAndSync==='function')commitAndSync();};}
   var ing=ings[idx];if(!ing||typeof ing!=='object')return;
   var cur=(ing.groceryName&&String(ing.groceryName).trim())||groceryDisplayName(ing);
-  var val=await promptAction({title:'Grocery-list name',message:'How should "'+(ing.item||'')+'" appear on the grocery list? Items with the same name are combined.',defaultValue:cur,placeholder:'e.g. crushed tomatoes',confirmLabel:'Save'});
+  var val=await promptAction({title:'Grocery-list name',message:'How should "'+(ing.item||'')+'" appear on the grocery list? Items with the same name are combined — reuse a name already in the trip.',defaultValue:cur,placeholder:'e.g. crushed tomatoes',confirmLabel:'Save',suggestions:getTripGroceryNames()});
   if(val==null)return; // cancelled
   ing.groceryName=val;
   persist();

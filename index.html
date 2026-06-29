@@ -84,7 +84,10 @@ label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-t
 /* sync dot */
 .sync-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;flex-shrink:0;transition:background .4s;cursor:help;}
 /* Header icon buttons */
-.hdr-btn{width:34px;height:34px;min-width:34px;border-radius:9px;background:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.5);backdrop-filter:blur(6px);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:0;}
+.hdr-btn{width:34px;height:34px;min-width:34px;border-radius:9px;background:transparent;border:1px solid transparent;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;box-shadow:none;padding:0;}
+.hdr-btn:hover{background:var(--panel-soft);color:var(--text);transform:none;box-shadow:none;}
+/* v142: Recipe Library launcher — labeled pill on desktop, icon-only on mobile (global tool, distinct from the trip section tabs) */
+.hdr-library{width:auto;min-width:0;padding:0 13px;gap:6px;font-size:13px;font-weight:600;}
 .hdr-btn:hover{background:rgba(255,255,255,.95);box-shadow:0 4px 14px rgba(0,0,0,.1);transform:translateY(-1px);color:var(--text);}
 .hdr-btn svg{pointer-events:none;}
 /* Presence */
@@ -178,7 +181,7 @@ label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-t
 
 /* Header — fixed consistent height */
 /* v141: flat minimal header — no gradient, no photo, no scheme. Light surface, dark title, thin accent rule. */
-header{position:sticky;top:0;z-index:20;height:var(--header-h);background:var(--panel);border-bottom:1px solid var(--theme-border);flex-shrink:0;}
+header{position:sticky;top:0;z-index:20;height:var(--header-h);background:var(--panel);border-bottom:1px solid var(--theme-border);box-shadow:0 1px 2px rgba(15,23,42,.04);flex-shrink:0;}
 header::before{display:none;}
 .header-row{position:relative;z-index:1;display:flex;align-items:center;gap:18px;height:100%;padding:0 24px;max-width:1380px;margin:0 auto;width:100%;}
 .header-left{display:flex;align-items:baseline;gap:9px;min-width:0;flex:1;}
@@ -193,7 +196,7 @@ header::before{display:none;}
 .header-nav .top-tab{padding:8px 15px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--muted);background:transparent;border:none;bottom:0;box-shadow:none;letter-spacing:0;}
 .header-nav .top-tab:hover:not(.active){background:var(--panel-soft);color:var(--text-secondary);transform:none;box-shadow:none;}
 .header-nav .top-tab.active{background:var(--theme-accent-soft);color:var(--theme-accent-dark);border-bottom:none;}
-@media(max-width:768px){.hdr-back,.header-nav{display:none;}.header-left{flex-direction:column;align-items:flex-start;gap:0;}.header-left .header-dates{margin-top:2px;}.header-left .header-dates::before{content:none;margin:0;}}
+@media(max-width:768px){.hdr-back,.header-nav{display:none;}.header-left{flex-direction:column;align-items:flex-start;gap:0;}.header-left .header-dates{margin-top:2px;}.header-left .header-dates::before{content:none;margin:0;}.hdr-library{width:34px;min-width:34px;padding:0;}.hdr-library-label{display:none;}header{box-shadow:0 2px 10px rgba(15,23,42,.07);}}
 .header-actions{display:flex;gap:8px;flex-shrink:0;align-items:center;padding-bottom:2px;}
 .back-btn{background:rgba(255,255,255,.88);border:1.5px solid rgba(255,255,255,.5);color:var(--text-secondary);backdrop-filter:blur(6px);box-shadow:var(--shadow-sm);font-size:12px;padding:7px 13px;border-radius:var(--r-sm);font-weight:700;}
 .back-btn:hover{background:#fff;color:var(--text);}
@@ -452,6 +455,11 @@ async function deleteTripEverywhere(code){if(!await confirmAction({title:'Delete
 .drawer-backdrop.active{opacity:1;pointer-events:auto;}
 .admin-drawer{position:fixed;top:0;left:0;height:100vh;height:100dvh;width:min(420px,93vw);background:var(--panel);border-right:1px solid var(--border);box-shadow:var(--drawer-shadow);padding:calc(env(safe-area-inset-top,0px) + 20px) 20px max(24px,env(safe-area-inset-bottom));overflow-y:auto;transform:translateX(-108%);transition:transform .26s cubic-bezier(.25,.46,.45,.94);z-index:100;}
 .admin-drawer.active{transform:translateX(0);}
+@media(min-width:769px){
+  /* v142: Trip Settings = centered window on desktop (mobile keeps the sliding pane) */
+  .admin-drawer{top:50%;left:50%;right:auto;height:auto;max-height:86vh;width:min(560px,92vw);border-radius:18px;border:1px solid var(--border);transform:translate(-50%,-50%) scale(.97);opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;}
+  .admin-drawer.active{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto;}
+}
 .audit-drawer{position:fixed;top:0;right:0;height:100vh;height:100dvh;width:min(480px,100vw);background:var(--panel);border-left:1px solid var(--border);box-shadow:var(--drawer-shadow);padding:0;overflow-y:auto;transform:translateX(108%);transition:transform .26s cubic-bezier(.25,.46,.45,.94);z-index:101;}
 .audit-drawer.active{transform:translateX(0);}
 .audit-drawer-header{padding:20px 20px 16px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--panel);z-index:2;}
@@ -482,6 +490,13 @@ async function deleteTripEverywhere(code){if(!await confirmAction({title:'Delete
 .admin-card{border:1px solid var(--border);background:var(--panel-warm);border-radius:var(--r);padding:18px;margin-bottom:16px;}
 .admin-card h3{margin:0 0 4px;font-size:15px;font-weight:700;}
 .admin-card .card-desc{font-size:12.5px;color:var(--muted);margin:0 0 14px;line-height:1.45;}
+/* v142: Trip Settings — clean grouped cards */
+.set-section{background:var(--panel);border:1px solid var(--border-light);border-radius:14px;padding:15px 16px;margin-bottom:12px;}
+.set-section-title{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;margin:0 0 12px;}
+.set-section .field:last-of-type{margin-bottom:12px;}
+.set-code{font-family:'SFMono-Regular',ui-monospace,monospace;font-size:13px;font-weight:700;color:var(--text-secondary);background:var(--panel-soft);border:1px solid var(--border-light);border-radius:9px;padding:10px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:9px;}
+.set-actions{display:flex;gap:8px;margin-bottom:4px;}
+.set-actions button{flex:1;}
 .app-admin-tabs{display:flex;gap:2px;padding:14px 0 0;margin-bottom:20px;border-bottom:2px solid var(--border-light);overflow-x:auto;}
 .app-admin-tab{background:transparent;color:var(--muted);border-radius:0;padding:12px 18px;font-size:13px;font-weight:700;border:none;border-bottom:3px solid transparent;position:relative;bottom:-2px;box-shadow:none;white-space:nowrap;transition:color .15s,border-color .15s;}
 .app-admin-tab.active{color:var(--theme-accent-dark);border-bottom-color:var(--theme-accent);background:transparent;box-shadow:none;}
@@ -1630,6 +1645,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       </nav>
       <div class="header-actions">
         <div id="syncDot" class="sync-dot" title="Sync status"></div>
+        <button class="hdr-btn hdr-library" onclick="openMenuLibraryFromLanding()" title="Recipe Library">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="hdr-library-label">Recipe Library</span>
+        </button>
         <div class="presence-wrap">
           <button class="hdr-btn" id="presenceBtn" onclick="togglePresencePanel()" title="Who's online">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -1798,44 +1816,52 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 <!-- SETUP DRAWER -->
 <div id="adminBackdrop" class="drawer-backdrop" onclick="toggleAdminPanel(false)"></div>
 <aside id="adminDrawer" class="admin-drawer">
-  <div class="admin-header"><div><h2>Trip Details</h2><p>Trip settings and preferences.</p></div><button class="ghost" type="button" onclick="toggleAdminPanel(false)">Close</button></div>
+  <div class="admin-header"><div><h2>Trip settings</h2><p>Settings for this trip.</p></div><button class="ghost" type="button" onclick="toggleAdminPanel(false)">Close</button></div>
 
-  <div class="section-title">Trip</div>
-  <div class="field"><label for="eventName">Trip Name</label><input id="eventName" placeholder="e.g., Fire Island Summer" oninput="autosave()" /></div>
-  <div class="two-col">
-    <div class="field"><label for="startDate">Start</label><input id="startDate" type="date" oninput="autosave()" /></div>
-    <div class="field"><label for="endDate">End</label><input id="endDate" type="date" oninput="autosave()" /></div>
-  </div>
-  <button id="createDaysBtn" type="button" style="width:100%;margin-bottom:4px;">Refresh Days</button>
-  <div class="small-note">Rebuilds the day layout when dates change. Existing dishes are preserved.</div>
-
-  <div class="section-title">Stores</div>
-  <div class="small-note" style="margin-bottom:8px;">Only checked stores appear in Shopping and Assign.</div>
-  <div id="activeStoresList" class="active-stores-grid"></div>
-
-  <div class="section-title">Who's Here</div>
-  <div id="onlineUsersDisplay" style="margin-bottom:9px;"></div>
-
-  <div class="section-title">Trip Code</div>
-  <div style="font-family:monospace;font-size:13px;font-weight:700;color:var(--theme-accent);background:var(--theme-accent-soft);padding:9px 13px;border-radius:var(--r-sm);border:1px solid var(--theme-border);display:flex;justify-content:space-between;align-items:center;gap:8px;">
-    <span id="drawerTripCodeText" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
-    <div style="display:flex;gap:4px;flex-shrink:0;">
-      <button class="ghost" type="button" onclick="shareTripLink(this)" style="font-size:11px;padding:4px 9px;">Share Trip</button>
-      <button class="ghost" type="button" onclick="shareAppLink(this)" style="font-size:11px;padding:4px 9px;">Share App</button>
+  <div class="set-section">
+    <div class="set-section-title">Details</div>
+    <div class="field"><label for="eventName">Trip name</label><input id="eventName" placeholder="e.g., Fire Island Summer" oninput="autosave()" /></div>
+    <div class="two-col">
+      <div class="field"><label for="startDate">Start</label><input id="startDate" type="date" oninput="autosave()" /></div>
+      <div class="field"><label for="endDate">End</label><input id="endDate" type="date" oninput="autosave()" /></div>
     </div>
+    <button id="createDaysBtn" class="secondary" type="button" style="width:100%;">Refresh days</button>
+    <div class="small-note">Rebuilds the day layout when dates change. Existing dishes are preserved.</div>
   </div>
-  <div class="small-note">Share Trip sends a direct join link. Share App sends the app URL for easy texting.</div>
 
-  <div class="section-title">Activity</div>
-  <button class="secondary" type="button" style="width:100%;" onclick="openAuditDrawer()">&#128336; View Audit Log</button>
+  <div class="set-section">
+    <div class="set-section-title">Stores</div>
+    <div class="small-note" style="margin:-2px 0 11px;">Only checked stores appear in Shopping and Assign.</div>
+    <div id="activeStoresList" class="active-stores-grid"></div>
+  </div>
 
-  <div class="section-title">Archive</div>
-  <button id="archiveTripBtn" class="secondary" type="button" style="width:100%;" onclick="toggleArchiveCurrentTrip()">Archive Trip</button>
-  <div class="small-note">Archived trips move to the “Archived” section on the home screen. Per-user — only affects your view, not the trip data.</div>
+  <div class="set-section">
+    <div class="set-section-title">Who's here</div>
+    <div id="onlineUsersDisplay"></div>
+  </div>
 
-  <div class="section-title">Advanced</div>
-  <button class="secondary" type="button" style="width:100%;margin-bottom:8px;" onclick="toggleAppAdmin(true)">Open App Admin</button>
-  <button class="secondary" type="button" style="width:100%;" onclick="saveCurrentTrip()">Save Trip Now</button>
+  <div class="set-section">
+    <div class="set-section-title">Share</div>
+    <div class="set-code"><span id="drawerTripCodeText"></span></div>
+    <div class="set-actions">
+      <button class="secondary" type="button" onclick="shareTripLink(this)">Share trip</button>
+      <button class="secondary" type="button" onclick="shareAppLink(this)">Share app</button>
+    </div>
+    <div class="small-note">Share trip sends a direct join link. Share app sends the app URL.</div>
+  </div>
+
+  <div class="set-section">
+    <div class="set-section-title">Activity</div>
+    <button class="secondary" type="button" style="width:100%;" onclick="openAuditDrawer()">View audit log</button>
+  </div>
+
+  <div class="set-section">
+    <div class="set-section-title">Manage</div>
+    <button id="archiveTripBtn" class="secondary" type="button" style="width:100%;margin-bottom:8px;" onclick="toggleArchiveCurrentTrip()">Archive trip</button>
+    <button class="secondary" type="button" style="width:100%;margin-bottom:8px;" onclick="toggleAppAdmin(true)">App admin — stores, rules, AI</button>
+    <button class="secondary" type="button" style="width:100%;" onclick="saveCurrentTrip()">Save trip now</button>
+    <div class="small-note">Archived trips move to the “Archived” section on the home screen (per-user; trip data is untouched).</div>
+  </div>
 </aside>
 
 <!-- AUDIT LOG DRAWER -->
@@ -3126,7 +3152,7 @@ function renderAll(){
   if(!Array.isArray(currentEvent.dishes)){console.warn('[MealPlanner] renderAll: dishes not array, skipping');return;}
   syncInputsFromEvent();renderPlanner();renderRecipeBank();renderStoreRules();populateGroceryFilters();populateDishDayOptions();populateIngredientSuggestions();populateTagSuggestions();enableIngredientDropZone();autosave();updateSortButtons();initDishTouchDrag();initDayTouchDrag();
 }
-function restoreLastTab(){try{var t=localStorage.getItem('mealPlanner.lastTab')||'planner';if(t==='shop')t='grocery';if(t==='recipes')t='planner';if(t==='setup')navTo('setup');else switchTab(t);}catch(e){switchTab('planner');}}
+function restoreLastTab(){try{var t=localStorage.getItem('mealPlanner.lastTab')||'planner';if(t==='shop')t='grocery';if(t==='recipes')t='planner';if(t==='setup')t='planner';switchTab(t);}catch(e){switchTab('planner');}}
 
 /* ===== ACTIVE STORES ===== */
 function getActiveStores(){if(!currentEvent.activeStores||!currentEvent.activeStores.length)return currentEvent.stores||getDefaultStores();return currentEvent.activeStores;}
@@ -3153,11 +3179,9 @@ function isMobileView(){return window.matchMedia&&window.matchMedia('(max-width:
 function navTo(tab){
   if(tab==='recipes')tab='planner'; // Recipe Library no longer in trip nav
   if(tab==='setup'){
-    setActiveNav('setup');
-    document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+    // v142: Trip Settings is a pure launcher — opens OVER the current page, never blanks it, and is not persisted as lastTab (fixes the stuck-blank-page bug)
     document.body.classList.toggle('mobile-setup-mode',isMobileView());
     toggleAdminPanel(true);
-    try{localStorage.setItem('mealPlanner.lastTab','setup');}catch(e){}
     return;
   }
   document.body.classList.remove('mobile-setup-mode');
@@ -4358,10 +4382,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v141';
+var APP_VERSION='v142';
 var APP_BUILD_TIME='2026-06-29';
 
-var APP_VERSION_TAG='Meal Planner v141';
+var APP_VERSION_TAG='Meal Planner v142';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

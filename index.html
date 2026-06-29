@@ -565,11 +565,13 @@ async function deleteTripEverywhere(code){if(!await confirmAction({title:'Delete
 .ingredient-row{display:grid;grid-template-columns:18px 72px 88px 1fr 28px;gap:6px;align-items:center;padding:7px 8px;border:1px solid var(--border-light);border-radius:var(--r-sm);background:var(--panel);}
 .ingredient-row input{padding:5px 8px;border-radius:6px;font-size:12.5px;border:1.5px solid var(--border-light);}
 /* v145: per-ingredient grocery-list name nested under the ingredient name (aligned, both breakpoints) */
-.ingredient-row .ing-item-cell{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.ingredient-row .ing-item-cell{display:flex;flex-direction:column;gap:3px;min-width:0;}
 .ingredient-row .ing-item-cell .ing-item{width:100%;}
-.ingredient-row .ing-gname{align-self:flex-start;max-width:100%;background:transparent;border:none;box-shadow:none;color:var(--muted);font-size:10.5px;font-weight:600;padding:0 4px;cursor:pointer;text-align:left;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-tap-highlight-color:transparent;}
-.ingredient-row .ing-gname.has-name{color:var(--theme-accent-dark);}
-.ingredient-row .ing-gname:hover{color:var(--theme-accent);background:transparent;transform:none;box-shadow:none;}
+.ingredient-row .ing-meta-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+.ingredient-row .ing-gname,.ingredient-row .ing-section{max-width:100%;background:transparent;border:none;box-shadow:none;color:var(--muted);font-size:10.5px;font-weight:600;padding:0 2px;cursor:pointer;text-align:left;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-tap-highlight-color:transparent;}
+.ingredient-row .ing-gname.has-name,.ingredient-row .ing-section.has-name{color:var(--theme-accent-dark);}
+.ingredient-row .ing-gname:hover,.ingredient-row .ing-section:hover{color:var(--theme-accent);background:transparent;transform:none;box-shadow:none;}
+.recipe-comp-heading{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--theme-accent-dark);margin:14px 0 6px;}
 .drag-handle{color:var(--border);cursor:grab;user-select:none;text-align:center;font-size:14px;}
 .ingredient-row.dragging{opacity:.5;border-style:dashed;border-color:var(--theme-accent);}
 .remove-ingredient{width:24px;height:24px;padding:0;border-radius:6px;color:var(--muted);background:transparent;border:1px solid transparent;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:none;}
@@ -3152,7 +3154,7 @@ function normalizeDish(d){d.id=d.id||makeId();d.servings=d.servings||'';d.people
 function showToast(msg,type){var c=safeEl('toastContainer');if(!c)return;var t=document.createElement('div');t.className='toast '+(type||'');t.innerHTML='<span>'+(type==='success'?'✓':type==='error'?'⚠':'ℹ')+'</span><span>'+escHtml(msg)+'</span>';t.addEventListener('click',function(){dismissToast(t);});c.appendChild(t);requestAnimationFrame(function(){t.classList.add('show');});setTimeout(function(){dismissToast(t);},3400);}
 function dismissToast(t){if(!t.classList.contains('show'))return;t.classList.remove('show');setTimeout(function(){t.remove();},240);}
 function confirmAction(o){return new Promise(function(resolve){o=o||{};var bd=safeEl('confirmBackdrop');setText('confirmTitle',o.title||'Confirm');setText('confirmMessage',o.message||'Are you sure?');var ok=safeEl('confirmAccept'),cn=safeEl('confirmCancel');ok.textContent=o.confirmLabel||'Confirm';ok.className=o.danger?'danger':'';var done=function(r){bd.classList.remove('active');ok.onclick=null;cn.onclick=null;bd.onclick=null;resolve(r);};ok.onclick=function(){done(true);};cn.onclick=function(){done(false);};bd.onclick=function(e){if(e.target===bd)done(false);};bd.classList.add('active');setTimeout(function(){ok.focus();},50);});}
-function promptAction(o){return new Promise(function(resolve){o=o||{};var bd=safeEl('promptBackdrop');setText('promptTitle',o.title||'Input');setText('promptMessage',o.message||'');var inp=safeEl('promptInput');inp.value=o.defaultValue||'';inp.placeholder=o.placeholder||'';var _pdl=safeEl('promptDatalist');if(o.suggestions&&o.suggestions.length){if(!_pdl){_pdl=document.createElement('datalist');_pdl.id='promptDatalist';document.body.appendChild(_pdl);}_pdl.innerHTML=o.suggestions.map(function(s){return'<option value="'+escAttr(s)+'"></option>';}).join('');inp.setAttribute('list','promptDatalist');}else{inp.removeAttribute('list');}var ok=safeEl('promptAccept'),cn=safeEl('promptCancel');ok.textContent=o.confirmLabel||'OK';var done=function(r){bd.classList.remove('active');ok.onclick=null;cn.onclick=null;inp.onkeydown=null;bd.onclick=null;inp.removeAttribute('list');resolve(r);};ok.onclick=function(){done(inp.value.trim()||null);};cn.onclick=function(){done(null);};bd.onclick=function(e){if(e.target===bd)done(null);};inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();done(inp.value.trim()||null);}};bd.classList.add('active');setTimeout(function(){inp.focus();inp.select();},50);});}
+function promptAction(o){return new Promise(function(resolve){o=o||{};var bd=safeEl('promptBackdrop');setText('promptTitle',o.title||'Input');setText('promptMessage',o.message||'');var inp=safeEl('promptInput');inp.value=o.defaultValue||'';inp.placeholder=o.placeholder||'';var _pdl=safeEl('promptDatalist');if(o.suggestions&&o.suggestions.length){if(!_pdl){_pdl=document.createElement('datalist');_pdl.id='promptDatalist';document.body.appendChild(_pdl);}_pdl.innerHTML=o.suggestions.map(function(s){return'<option value="'+escAttr(s)+'"></option>';}).join('');inp.setAttribute('list','promptDatalist');}else{inp.removeAttribute('list');}var ok=safeEl('promptAccept'),cn=safeEl('promptCancel');ok.textContent=o.confirmLabel||'OK';var done=function(r){bd.classList.remove('active');ok.onclick=null;cn.onclick=null;inp.onkeydown=null;bd.onclick=null;inp.removeAttribute('list');resolve(r);};ok.onclick=function(){done(inp.value.trim()||(o.allowEmpty?'':null));};cn.onclick=function(){done(null);};bd.onclick=function(e){if(e.target===bd)done(null);};inp.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();done(inp.value.trim()||(o.allowEmpty?'':null));}};bd.classList.add('active');setTimeout(function(){inp.focus();inp.select();},50);});}
 
 /* ===== HELPERS ===== */
 function safeEl(id){return document.getElementById(id);}
@@ -3613,19 +3615,31 @@ function addIngredientFromText(line){
   var p=parseIngLine(line);if(!p.quantity&&!p.unit&&!p.item)return;addIngredientRow(p.quantity,p.unit,p.item,'',p.packageNote);
 }
 function markIngredientOverride(inp,blur){var row=inp.closest('.ingredient-row');if(!row)return;var v=inp.value.trim();if(!v){if(blur){inp.value=scaleQty(row.dataset.baseQty||'',getCurrentModalScale());}row.dataset.override='';inp.classList.remove('is-override');return;}var auto=scaleQty(row.dataset.baseQty||'',getCurrentModalScale());if(v===auto){row.dataset.override='';inp.classList.remove('is-override');}else{row.dataset.override='1';inp.classList.add('is-override');}}
-function addIngredientRow(q,u,it,adjusted,packageNote,override,groceryName,component){var wrap=safeEl('ingredientRows');if(!wrap)return;var row=document.createElement('div');row.className='ingredient-row';row.draggable=true;u=abbrUnit(u||'');it=toTitleCaseIngredient(it||'');var hasOv=!!(override&&String(override).trim());var adj=hasOv?String(override):(adjusted||q||'');row.dataset.baseQty=q||'';row.dataset.packageNote=packageNote||'';row.dataset.override=hasOv?'1':'';row.dataset.groceryName=groceryName||'';row.dataset.component=component||'';/* v145: carry groceryName + component through the edit pipeline so saving a dish never drops them */row.innerHTML='<span class="drag-handle">⋮⋮</span><input class="ing-qty ing-original" placeholder="Orig" value="'+escAttr(q||'')+'" oninput="this.closest(&quot;.ingredient-row&quot;).dataset.baseQty=this.value;updateScaledIngredientDisplay()"><input class="ing-adjusted'+(hasOv?' is-override':'')+'" placeholder="Adj" value="'+escAttr(adj)+'" title="Adjusted amount. Auto-scales from servings — type your own to override (✎), clear the box to revert." oninput="markIngredientOverride(this)" onblur="markIngredientOverride(this,1)"><input class="ing-unit" placeholder="Unit" value="'+escAttr(u||'')+'"><div class="ing-item-cell"><input class="ing-item" list="ingredientSuggestions" placeholder="Ingredient" value="'+escAttr(it||'')+'"><button type="button" class="ing-gname'+(groceryName?' has-name':'')+'" onclick="editRowGroceryName(this)" title="Set how this appears on the grocery list">🛒 <span class="ing-gname-txt">'+(groceryName?escHtml(groceryName):'Grocery name')+'</span></button></div><button class="remove-ingredient" onclick="this.parentElement.remove()">×</button>';wrap.appendChild(row);row.addEventListener('dragstart',function(){row.classList.add('dragging');});row.addEventListener('dragend',function(){row.classList.remove('dragging');});}
+function addIngredientRow(q,u,it,adjusted,packageNote,override,groceryName,component){var wrap=safeEl('ingredientRows');if(!wrap)return;var row=document.createElement('div');row.className='ingredient-row';row.draggable=true;u=abbrUnit(u||'');it=toTitleCaseIngredient(it||'');var hasOv=!!(override&&String(override).trim());var adj=hasOv?String(override):(adjusted||q||'');row.dataset.baseQty=q||'';row.dataset.packageNote=packageNote||'';row.dataset.override=hasOv?'1':'';row.dataset.groceryName=groceryName||'';row.dataset.component=component||'';/* v145: carry groceryName + component through the edit pipeline so saving a dish never drops them */row.innerHTML='<span class="drag-handle">⋮⋮</span><input class="ing-qty ing-original" placeholder="Orig" value="'+escAttr(q||'')+'" oninput="this.closest(&quot;.ingredient-row&quot;).dataset.baseQty=this.value;updateScaledIngredientDisplay()"><input class="ing-adjusted'+(hasOv?' is-override':'')+'" placeholder="Adj" value="'+escAttr(adj)+'" title="Adjusted amount. Auto-scales from servings — type your own to override (✎), clear the box to revert." oninput="markIngredientOverride(this)" onblur="markIngredientOverride(this,1)"><input class="ing-unit" placeholder="Unit" value="'+escAttr(u||'')+'"><div class="ing-item-cell"><input class="ing-item" list="ingredientSuggestions" placeholder="Ingredient" value="'+escAttr(it||'')+'"><div class="ing-meta-row"><button type="button" class="ing-gname'+(groceryName?' has-name':'')+'" onclick="editRowGroceryName(this)" title="Set how this appears on the grocery list">🛒 <span class="ing-gname-txt">'+(groceryName?escHtml(groceryName):'Grocery name')+'</span></button><button type="button" class="ing-section'+(component?' has-name':'')+'" onclick="editRowSection(this)" title="Group this ingredient under a recipe section (e.g. Sauce)">📂 <span class="ing-section-txt">'+(component?escHtml(component):'Section')+'</span></button></div></div><button class="remove-ingredient" onclick="this.parentElement.remove()">×</button>';wrap.appendChild(row);row.addEventListener('dragstart',function(){row.classList.add('dragging');});row.addEventListener('dragend',function(){row.classList.remove('dragging');});}
 // v145: edit an ingredient's grocery-list name from inside the dish edit modal — same prompt + trip-name suggestions as the view. Updates the row (saved with the dish via collectIngredients).
 async function editRowGroceryName(btn){
   var row=btn.closest('.ingredient-row');if(!row)return;
   var itemInp=row.querySelector('.ing-item');
   var cur=row.dataset.groceryName||(itemInp?String(itemInp.value).trim():'')||'';
-  var val=await promptAction({title:'Grocery-list name',message:'How should this appear on the grocery list? Items with the same name are combined — reuse a name already in the trip.',defaultValue:cur,placeholder:'e.g. Limes',confirmLabel:'Save',suggestions:getTripGroceryNames()});
+  var val=await promptAction({title:'Grocery-list name',message:'How should this appear on the grocery list? Items with the same name are combined — reuse a name already in the trip.',defaultValue:cur,placeholder:'e.g. Limes',confirmLabel:'Save',suggestions:getTripGroceryNames(),allowEmpty:true});
   if(val==null)return;
   row.dataset.groceryName=val;
   var txt=row.querySelector('.ing-gname-txt');if(txt)txt.textContent=val||'Grocery name';
   btn.classList.toggle('has-name',!!val);
   if(typeof markDishModalDirty==='function')markDishModalDirty();
 }
+// v147: assign an ingredient to a recipe section (component) from the edit modal — free text + suggestions of this dish's existing sections. Saved with the dish via collectIngredients.
+async function editRowSection(btn){
+  var row=btn.closest('.ingredient-row');if(!row)return;
+  var cur=row.dataset.component||'';
+  var val=await promptAction({title:'Recipe section',message:'Group this ingredient under a part of the recipe — e.g. "Sauce", "Marinade", "For the topping". Leave blank for none.',defaultValue:cur,placeholder:'e.g. Sauce',confirmLabel:'Save',suggestions:getModalSectionNames(),allowEmpty:true});
+  if(val==null)return;
+  row.dataset.component=val.trim();
+  var txt=row.querySelector('.ing-section-txt');if(txt)txt.textContent=val.trim()||'Section';
+  btn.classList.toggle('has-name',!!val.trim());
+  if(typeof markDishModalDirty==='function')markDishModalDirty();
+}
+function getModalSectionNames(){var seen={},out=[];document.querySelectorAll('#ingredientRows .ingredient-row').forEach(function(r){var c=(r.dataset.component||'').trim();if(c&&!seen[c.toLowerCase()]){seen[c.toLowerCase()]=1;out.push(c);}});return out;}
 function parseBulkIngredients(){var t=getValue('bulkIngredients').trim();if(!t)return;t.split('\n').map(function(l){return l.trim();}).filter(Boolean).forEach(addIngredientFromText);setValue('bulkIngredients','');updateScaledIngredientDisplay();}
 function collectIngredients(){return Array.from(document.querySelectorAll('#ingredientRows .ingredient-row')).map(function(row){var oq=row.querySelector('.ing-original')||row.querySelector('.ing-qty'),aq=row.querySelector('.ing-adjusted'),unit=row.querySelector('.ing-unit'),item=row.querySelector('.ing-item');var q=(oq?oq.value:'').trim(),adj=(aq?aq.value:q).trim(),u=(unit?unit.value:'').trim(),it=toTitleCaseIngredient((item?item.value:'').trim());var ov=(row.dataset.override==='1')?adj:'';return{quantity:q,displayedQuantity:adj,unit:abbrUnit(u),item:it,packageNote:row.dataset.packageNote||'',qtyOverride:ov,groceryName:row.dataset.groceryName||'',component:row.dataset.component||''};}).filter(function(i){return i.quantity||i.unit||i.item;});}
 function parseTags(){return [];}
@@ -4473,10 +4487,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v146';
+var APP_VERSION='v147';
 var APP_BUILD_TIME='2026-06-29';
 
-var APP_VERSION_TAG='Meal Planner v146';
+var APP_VERSION_TAG='Meal Planner v147';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -6681,10 +6695,19 @@ function renderGroupedIngredientsHtml(ings,ctx){
   } else if(_ingSortMode==='recipe'){
     listHtml='<ul class="recipe-ing-list">'+ings.map(liFor).join('')+'</ul>';
   } else { // section (default)
-    var groups={},order=[];
-    ings.forEach(function(ing){var dept=(typeof ing==='string')?(guessDept(ing)||'Other'):(groceryDeptFor(ing)||'Other');if(!groups[dept]){groups[dept]=[];order.push(dept);}groups[dept].push(ing);}); // v105 (#27B): AI dept
-    if(order.length<=1){listHtml='<ul class="recipe-ing-list">'+ings.map(liFor).join('')+'</ul>';}
-    else{order.forEach(function(dept){listHtml+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 4px;">'+getDeptIcon(dept)+' '+escHtml(dept)+'</div><ul class="recipe-ing-list">'+groups[dept].map(liFor).join('')+'</ul>';});}
+    // v147: if the recipe has 2+ named sections (components), group by those (the recipe's own parts); else fall back to grouping by grocery department
+    var comps={},corder=[];
+    ings.forEach(function(ing){var c=(typeof ing==='object'&&ing.component)?String(ing.component).trim():'';if(c){if(!comps[c]){comps[c]=[];corder.push(c);}comps[c].push(ing);}});
+    if(corder.length>=2){
+      var ungrouped=ings.filter(function(ing){return !(typeof ing==='object'&&ing.component&&String(ing.component).trim());});
+      corder.forEach(function(c){listHtml+='<div class="recipe-comp-heading">'+escHtml(c)+'</div><ul class="recipe-ing-list">'+comps[c].map(liFor).join('')+'</ul>';});
+      if(ungrouped.length)listHtml+='<div class="recipe-comp-heading">Other</div><ul class="recipe-ing-list">'+ungrouped.map(liFor).join('')+'</ul>';
+    } else {
+      var groups={},order=[];
+      ings.forEach(function(ing){var dept=(typeof ing==='string')?(guessDept(ing)||'Other'):(groceryDeptFor(ing)||'Other');if(!groups[dept]){groups[dept]=[];order.push(dept);}groups[dept].push(ing);}); // v105 (#27B): AI dept
+      if(order.length<=1){listHtml='<ul class="recipe-ing-list">'+ings.map(liFor).join('')+'</ul>';}
+      else{order.forEach(function(dept){listHtml+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 4px;">'+getDeptIcon(dept)+' '+escHtml(dept)+'</div><ul class="recipe-ing-list">'+groups[dept].map(liFor).join('')+'</ul>';});}
+    }
   }
   var hint=(ctx&&ctx.id)?'<div style="font-size:11px;color:var(--muted);margin:-2px 0 8px;">Tap an ingredient to set its 🛒 grocery-list name.</div>':'';
   return'<div class="recipe-detail-section"><div class="recipe-section-heading">Ingredients</div>'+hint+bar+listHtml+'</div>';
@@ -6696,7 +6719,7 @@ async function editGroceryName(type,id,idx){
   else{var d=currentEvent&&(currentEvent.dishes||[]).find(function(x){return x.id===id;});if(!d)return;ings=d.ingredients||[];persist=function(){if(typeof commitAndSync==='function')commitAndSync();};}
   var ing=ings[idx];if(!ing||typeof ing!=='object')return;
   var cur=(ing.groceryName&&String(ing.groceryName).trim())||groceryDisplayName(ing);
-  var val=await promptAction({title:'Grocery-list name',message:'How should "'+(ing.item||'')+'" appear on the grocery list? Items with the same name are combined — reuse a name already in the trip.',defaultValue:cur,placeholder:'e.g. crushed tomatoes',confirmLabel:'Save',suggestions:getTripGroceryNames()});
+  var val=await promptAction({title:'Grocery-list name',message:'How should "'+(ing.item||'')+'" appear on the grocery list? Items with the same name are combined — reuse a name already in the trip.',defaultValue:cur,placeholder:'e.g. crushed tomatoes',confirmLabel:'Save',suggestions:getTripGroceryNames(),allowEmpty:true});
   if(val==null)return; // cancelled
   ing.groceryName=val;
   persist();

@@ -4629,10 +4629,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v158';
-var APP_BUILD_TIME='2026-07-01';
+var APP_VERSION='v159';
+var APP_BUILD_TIME='2026-07-02';
 
-var APP_VERSION_TAG='Meal Planner v158';
+var APP_VERSION_TAG='Meal Planner v159';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5051,12 +5051,26 @@ function getAiChatContext(){
   if(!currentEvent)return 'No trip loaded.';
   var today=getTodayStr(),tomorrow=getTomorrowStr();
   var people=(currentEvent.dishes||[]).reduce(function(m,d){return Math.max(m,parseInt(d.peopleEating)||0);},0);
+  // v159: include each dish's EXACT ingredients (name + section + grocery name) so the assistant edits precisely instead of guessing/duplicating
+  function _ingLine(ing){
+    if(!ing||typeof ing!=='object')return String(ing||'');
+    var s=[ing.quantity,ing.unit,ing.item].filter(Boolean).join(' ')||(ing.item||'');
+    var extra=[];
+    if(ing.component&&String(ing.component).trim())extra.push('section: '+ing.component);
+    if(ing.groceryName&&String(ing.groceryName).trim()&&ing.groceryName.toLowerCase()!==String(ing.item||'').toLowerCase())extra.push('grocery: '+ing.groceryName);
+    return s+(extra.length?' ('+extra.join('; ')+')':'');
+  }
   var planLines=(currentEvent.days||[]).map(function(day,i){
     var label=day.date?formatDayDate(day.date):(day.label||'Day '+(i+1));
     var tag=day.date===today?' (TODAY)':day.date===tomorrow?' (TOMORROW)':'';
     var dayDishes=(currentEvent.dishes||[]).filter(function(d){return d.dayId===day.id;});
-    var dishStr=dayDishes.length?dayDishes.map(function(d){return d.meal+': '+(d.eventName||d.name)+(d.isVegetarian?' 🌿':'');}).join(' | '):'Nothing planned';
-    return 'Day '+i+' '+label+tag+' — '+dishStr;
+    if(!dayDishes.length)return 'Day '+i+' '+label+tag+' — Nothing planned';
+    var body=dayDishes.map(function(d){
+      var head=d.meal+': '+(d.eventName||d.name)+(d.isVegetarian?' 🌿':'');
+      if(d.isEvent||!(d.ingredients||[]).length)return '  '+head;
+      return '  '+head+'\n    ingredients: '+d.ingredients.map(_ingLine).join(' | ');
+    }).join('\n');
+    return 'Day '+i+' '+label+tag+':\n'+body;
   }).join('\n');
   var groceryRows=[];
   // v154: richer grocery context incl. consolidation reasoning so the assistant can explain how a combined buy-count was reached (e.g. limes)
@@ -5141,6 +5155,8 @@ function getAiSystemPrompt(){
     +'  • Grocery line (aggregated, not edited directly): store, department, status (Need/Bought), buyDelta (the user\'s +/- adjustment), consolidation breakdown. Change store via assign_store; change how items group by editing their groceryName.\n'
     +'  • Trip: name, dates, days[] (each with meals[]), mealTypes, stores[], storeRules, tripMemory (preferences/restrictions/notes). \n'
     +'If a user asks to change something, map it to the field above and use the matching action — do not say you can\'t; you can edit essentially everything in the app.\n'
+    +'IMPORTANT: the Meal plan context above lists EVERY dish\'s exact ingredients (with their section + grocery name). Use those exact names — NEVER ask the user to list ingredients you can already see. Act in one shot.\n'
+    +'CLEANUP PATTERN: if an ingredient name has a bracketed section tag baked in (e.g. "Powdered Sugar [icing]"), fix it with ONE edit_ingredient per item: newName="Powdered Sugar" AND component="icing". Do this for all of them at once (multiple actions in the array). Never re-add an item that already exists — edit it.\n'
     +'STORES: each line has a store; the app remembers a grocery name→store choice so it sticks. Use assign_store to change.\n\n'
     +'== SMART SCALING (do better than raw math) ==\n'
     +'When scaling servings, do not blindly multiply. Round to sensible purchasable amounts (2.5 onions → 3), keep "to taste"/"pinch"/"for serving" unchanged, scale spices/salt sub-linearly (they rarely need full multiplication), and keep whole-item counts whole. Use edit_ingredient to fix any that don\'t scale linearly after a scale_dish.\n\n'
@@ -5357,8 +5373,10 @@ function executeEditIngredient(a){
   var dish=findDishByHint(a.dish,a.day,a.meal);
   if(!dish)return{ok:false,msg:'Could not find dish: '+(a.dish||'')};
   dish.ingredients=Array.isArray(dish.ingredients)?dish.ingredients:[];
-  var hint=(a.ingredient||'').toLowerCase();
-  var ing=hint?dish.ingredients.find(function(i){return String(i.item||'').toLowerCase().indexOf(hint)>=0;}):null;
+  // v159: forgiving match — ignore [bracket] tags + whitespace so "cake mix" matches "Cake Mix [cake]" (edits instead of duplicating)
+  var _n=function(s){return String(s||'').toLowerCase().replace(/\[[^\]]*\]/g,'').replace(/\s+/g,' ').trim();};
+  var nh=_n(a.ingredient);
+  var ing=nh?(dish.ingredients.find(function(i){return _n(i.item)===nh;})||dish.ingredients.find(function(i){var ni=_n(i.item);return ni&&(ni.indexOf(nh)>=0||nh.indexOf(ni)>=0);})):null;
   if(!ing){
     if(a.remove)return{ok:false,warn:true,msg:'"'+(a.ingredient||'')+'" is not in "'+dish.name+'" — nothing to remove'};
     // v158: not found → ADD it (so "change/add X" just works instead of failing)

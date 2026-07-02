@@ -149,7 +149,12 @@ Browser console tests — run before every push:
 
 ## ACTIVE WORK — index (full detail in BACKLOG.md)
 
-**Next up (Robbie's priority) — GROCERY & RECIPE COMPONENT PROGRAM (brief 2026-06-27, full spec in BACKLOG.md):**
+**IMMEDIATE QUEUE (Robbie, 2026-07-02, in this order):**
+1. **Tab-bar icons** — IN PROGRESS. `navpreview.html` is live (open `navpreview.html?v=2` in a fresh Safari tab, NOT the PWA); Robbie picks a style (D/E/F/G) → wire the winner into the real bottom nav. (v178's icons weren't landing + were hidden by PWA cache.)
+2. **AI agent — add recipe steps (A2)** + **image bugs**: (a) many recipes missing images (root cause unknown — audit `sourceRecipeImage`/#25(i)); (b) wrong-image match (watermelon pulled "al pastor" — tighten image-search relevance). Full spec in BACKLOG.md "AI AGENT" + "IMAGE ISSUES". ⚠️ image writes are data-adjacent.
+3. **Modernize the GROCERY VIEW** — bring the grocery/shop screens up to the v134/v167 modern look (ties into #36/#27A). Render-first; anything touching `groceryMeta` is must-ask.
+
+**Then — GROCERY & RECIPE COMPONENT PROGRAM (brief 2026-06-27, full spec in BACKLOG.md):**
 - **G1 — one-off store auto-assignment (v139, SHIP FIRST, safe mid-trip).** Auto-`guessStore` on add/edit + `groceryName→lastStore` memory map (resolve: manual → memory → guess → Unassigned) + never-hide-Unassigned in Shop + inline per-row store `<select>`. **Supersedes/closes #10** (the `reconcileGroceryMeta` delete that drops the store on rename). ⚠️ DECIDE at build: re-wire `storeRules` into `guessStore` (currently DEAD — guessStore is a hardcoded dept→store map) or keep the hardcoded guess.
 - then **G-backbone** (source-aware grocery lines: `sources[]` on each aggregated line) → **G3** (smart purchase consolidation + retire dedup button; signed-delta override) → **G2** (recipe components; biggest lift, AI-import change). G2/G3 change the model → versioned, backup first, NOT mid-trip.
 

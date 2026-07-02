@@ -111,6 +111,13 @@ C2. **Cooking mode — meal-level Cook button FIXED v82; per-dish view-mode butt
 
 A1. **AI agent is clunky and ugly** — works well functionally but the UX/visual design needs work. Improve the chat panel look, input area, message styling, and overall interaction flow. Its own design session (like the dish view). v73 raised its z-index so it's reachable over modals; v74 polished bubbles; this is the broader polish.
 
+### A2. AI agent — MISSING FUNCTIONALITY: cannot add recipe steps (Robbie, 2026-07-02, PRIORITY — do after the tab-bar project, before the grocery-view modernization)
+The agent can create/edit recipes but **cannot add/edit the `steps` (method/instructions)**. Add a tool/intent so the agent can append or set recipe steps (mirror how it handles ingredients). Check the agent's tool/function schema + the executeX handlers (e.g. near `executeRemoveDish`) and the recipe data shape (`dish.steps` / recipe method field). Acceptance: ask the agent "add steps to <recipe>: 1)… 2)…" and it writes them to the recipe, visible in the editor/view.
+
+### IMAGE ISSUES (Robbie, 2026-07-02, same session as A2)
+- **Many recipes missing images — root cause unknown.** Audit the image-sourcing path (`sourceRecipeImage` / image-key sync #29 / proactive sourcing #25(i)). Figure out WHY images don't populate (API key missing? rate-limited? search returns nothing? not triggered on save?) before adding more self-heal. Log findings.
+- **Wrong-image bug: a watermelon recipe pulled an "al pastor" photo.** Image search matched the wrong dish → the query/relevance is too loose (possibly matching on a stale/other field, or the search term isn't the dish name). Investigate the query built for image search + how results are picked; tighten relevance so the fetched image matches the recipe name. ⚠️ Images write to the recipe/trip — treat as data-adjacent; verify no bad-image write clobbers a good one.
+
 ---
 
 ## NEW FEATURES / queued

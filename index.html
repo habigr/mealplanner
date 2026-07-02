@@ -825,6 +825,27 @@ section#recipes{display:none!important;}
 .nav-btn::before{content:'';position:absolute;top:6px;left:50%;transform:translateX(-50%);width:52px;height:30px;border-radius:999px;background:transparent;transition:background .15s ease;z-index:0;}
 .nav-btn.active::before{background:var(--theme-accent-soft);}
 .nav-btn>*{position:relative;z-index:1;}
+/* ===== v167: modernized Meal Plan — flat clean cards, no gradients, cohesive with the edit/view look ===== */
+.day-card{background:var(--panel)!important;border:1px solid var(--border-light)!important;border-left:1px solid var(--border-light)!important;border-radius:16px!important;box-shadow:var(--shadow-sm)!important;}
+.day-header{background:var(--panel)!important;border-bottom:1px solid var(--border-light)!important;}
+.day-title{color:var(--text)!important;font-weight:800;}
+.meal-summary{color:var(--muted)!important;}
+.meal-block{background:transparent!important;border:none!important;border-top:1px solid var(--border-light)!important;border-radius:0!important;box-shadow:none!important;margin-bottom:0!important;}
+.day-body .meal-block:first-child{border-top:none!important;}
+.meal-head{background:transparent!important;}
+.meal-label{color:var(--muted)!important;}
+.dish{background:var(--panel)!important;border:1px solid var(--border-light)!important;border-radius:12px!important;box-shadow:var(--shadow-sm);transition:transform .12s ease,box-shadow .15s ease,border-color .15s ease;}
+@media(hover:hover){.dish:hover{border-color:var(--theme-border);box-shadow:var(--shadow);transform:translateY(-1px);}}
+.dish-title{font-weight:700;color:var(--text);}
+/* v168: smaller plan edit controls + tighter day cards on mobile */
+@media(max-width:768px){
+  .day-tools button{font-size:10px!important;padding:3px 6px!important;}
+  .day-header{padding:10px 12px 8px!important;}
+  .day-title{font-size:14px!important;}
+  .meal-head{padding-top:8px!important;}
+  .dish{padding:8px 10px!important;}
+  .dish-title{font-size:13.5px!important;}
+}
 /* let the ingredient list flow (no cramped inner scrollbar) — one calm scroll like the view */
 #dishModal .ingredient-list-editor{max-height:none!important;overflow:visible!important;}
 #dishModal h3#dishModalTitle{font-size:24px;font-weight:800;letter-spacing:-.02em;}
@@ -3408,7 +3429,7 @@ function renderPlanner(){var grid=safeEl('dayGrid');if(!grid)return;
 function renderMealBlock(day,meal){var dishes=currentEvent.dishes.filter(function(d){return d.dayId===day.id&&d.meal===meal;});var icon=getMealIcon(meal);
   // v82 (P0): scan recipeBank ∪ _menuLibrary (same source cookMeal resolves from) so library recipes show the Cook button. Also count a dish's own steps.
   var cookable=(currentEvent.recipeBank||[]).concat(_menuLibrary||[]);
-  var hasCookable=dishes.some(function(d){return(d.steps&&d.steps.length)||cookable.some(function(r){return r.steps&&r.steps.length&&(d.name.toLowerCase()===r.name.toLowerCase()||d.bankRecipeId===r.id);});});var cookMealBtn=hasCookable?'<button class="cook-meal-btn" onclick="cookMeal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">👨‍🍳 Cook</button>':'';return'<div class="meal-block" data-meal="'+escAttr(meal)+'"><div class="meal-head"><div class="meal-label-wrap"><span class="meal-label">'+escHtml(meal)+'</span><button class="remove-meal-btn" onclick="removeMealFromDay(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" title="Remove this meal from day">×</button></div><div style="display:flex;align-items:center;gap:6px;">'+cookMealBtn+'<button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">+</button></div></div><div class="meal-body" data-day-id="'+escAttr(day.id)+'" data-meal="'+escAttr(meal)+'" ondragover="handleMealDragOver(event)" ondragleave="handleMealDragLeave(event)" ondrop="handleMealDrop(event)">'+(dishes.length?dishes.map(renderDish).join(''):'<div class="meal-empty" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" style="cursor:pointer;"></div>')+'</div></div>';}
+  var hasCookable=dishes.some(function(d){return(d.steps&&d.steps.length)||cookable.some(function(r){return r.steps&&r.steps.length&&(d.name.toLowerCase()===r.name.toLowerCase()||d.bankRecipeId===r.id);});});var cookMealBtn='';/* v168: Cook removed from the meal-plan tab — cook from the dish detail/edit screen */return'<div class="meal-block" data-meal="'+escAttr(meal)+'"><div class="meal-head"><div class="meal-label-wrap"><span class="meal-label">'+escHtml(meal)+'</span><button class="remove-meal-btn" onclick="removeMealFromDay(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" title="Remove this meal from day">×</button></div><div style="display:flex;align-items:center;gap:6px;">'+cookMealBtn+'<button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">+</button></div></div><div class="meal-body" data-day-id="'+escAttr(day.id)+'" data-meal="'+escAttr(meal)+'" ondragover="handleMealDragOver(event)" ondragleave="handleMealDragLeave(event)" ondrop="handleMealDrop(event)">'+(dishes.length?dishes.map(renderDish).join(''):'<div class="meal-empty" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" style="cursor:pointer;"></div>')+'</div></div>';}
 function renderDish(dish){
   if(dish.isEvent){
     return'<div class="dish dish-event" draggable="true" data-dish-id="'+escAttr(dish.id)+'" ondragstart="handleDishDragStart(event,\''+escAttr(dish.id)+'\')" ondragend="handleDishDragEnd(event)" ondragover="event.preventDefault();dragOverDishId=this.dataset.dishId"><div class="dish-title-row"><span class="dish-drag-handle" title="Drag to move">⠿</span><div style="flex:1;min-width:0;"><div class="dish-event-name" onclick="event.stopPropagation();showDishDetail(\''+escAttr(dish.id)+'\');" style="cursor:pointer;">'+escHtml(dish.eventName||'Going out')+'</div>'+(dish.notes?'<div class="dish-note">'+escHtml(dish.notes)+'</div>':'')+'</div></div></div>';
@@ -4765,10 +4786,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v166';
+var APP_VERSION='v168';
 var APP_BUILD_TIME='2026-07-02';
 
-var APP_VERSION_TAG='Meal Planner v166';
+var APP_VERSION_TAG='Meal Planner v168';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

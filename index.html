@@ -3615,7 +3615,7 @@ function addIngredientFromText(line){
   var p=parseIngLine(line);if(!p.quantity&&!p.unit&&!p.item)return;addIngredientRow(p.quantity,p.unit,p.item,'',p.packageNote);
 }
 function markIngredientOverride(inp,blur){var row=inp.closest('.ingredient-row');if(!row)return;var v=inp.value.trim();if(!v){if(blur){inp.value=scaleQty(row.dataset.baseQty||'',getCurrentModalScale());}row.dataset.override='';inp.classList.remove('is-override');return;}var auto=scaleQty(row.dataset.baseQty||'',getCurrentModalScale());if(v===auto){row.dataset.override='';inp.classList.remove('is-override');}else{row.dataset.override='1';inp.classList.add('is-override');}}
-function addIngredientRow(q,u,it,adjusted,packageNote,override,groceryName,component){var wrap=safeEl('ingredientRows');if(!wrap)return;var row=document.createElement('div');row.className='ingredient-row';row.draggable=true;u=abbrUnit(u||'');it=toTitleCaseIngredient(it||'');var hasOv=!!(override&&String(override).trim());var adj=hasOv?String(override):(adjusted||q||'');row.dataset.baseQty=q||'';row.dataset.packageNote=packageNote||'';row.dataset.override=hasOv?'1':'';row.dataset.groceryName=groceryName||'';row.dataset.component=component||'';/* v145: carry groceryName + component through the edit pipeline so saving a dish never drops them */row.innerHTML='<span class="drag-handle">⋮⋮</span><input class="ing-qty ing-original" placeholder="Orig" value="'+escAttr(q||'')+'" oninput="this.closest(&quot;.ingredient-row&quot;).dataset.baseQty=this.value;updateScaledIngredientDisplay()"><input class="ing-adjusted'+(hasOv?' is-override':'')+'" placeholder="Adj" value="'+escAttr(adj)+'" title="Adjusted amount. Auto-scales from servings — type your own to override (✎), clear the box to revert." oninput="markIngredientOverride(this)" onblur="markIngredientOverride(this,1)"><input class="ing-unit" placeholder="Unit" value="'+escAttr(u||'')+'"><div class="ing-item-cell"><input class="ing-item" list="ingredientSuggestions" placeholder="Ingredient" value="'+escAttr(it||'')+'"><div class="ing-meta-row"><button type="button" class="ing-gname'+(groceryName?' has-name':'')+'" onclick="editRowGroceryName(this)" title="Set how this appears on the grocery list">🛒 <span class="ing-gname-txt">'+(groceryName?escHtml(groceryName):'Grocery name')+'</span></button><button type="button" class="ing-section'+(component?' has-name':'')+'" onclick="editRowSection(this)" title="Group this ingredient under a recipe section (e.g. Sauce)">📂 <span class="ing-section-txt">'+(component?escHtml(component):'Section')+'</span></button></div></div><button class="remove-ingredient" onclick="this.parentElement.remove()">×</button>';wrap.appendChild(row);row.addEventListener('dragstart',function(){row.classList.add('dragging');});row.addEventListener('dragend',function(){row.classList.remove('dragging');});}
+function addIngredientRow(q,u,it,adjusted,packageNote,override,groceryName,component){var wrap=safeEl('ingredientRows');if(!wrap)return;var row=document.createElement('div');row.className='ingredient-row';row.draggable=true;u=abbrUnit(u||'');it=toTitleCaseIngredient(it||'');var hasOv=!!(override&&String(override).trim());var adj=hasOv?String(override):(adjusted||q||'');row.dataset.baseQty=q||'';row.dataset.packageNote=packageNote||'';row.dataset.override=hasOv?'1':'';row.dataset.groceryName=groceryName||'';row.dataset.component=component||'';row.dataset.origItem=it||'';/* v145: carry groceryName + component through the edit pipeline; v150: origItem snapshot for rename detection */row.innerHTML='<span class="drag-handle">⋮⋮</span><input class="ing-qty ing-original" placeholder="Orig" value="'+escAttr(q||'')+'" oninput="this.closest(&quot;.ingredient-row&quot;).dataset.baseQty=this.value;updateScaledIngredientDisplay()"><input class="ing-adjusted'+(hasOv?' is-override':'')+'" placeholder="Adj" value="'+escAttr(adj)+'" title="Adjusted amount. Auto-scales from servings — type your own to override (✎), clear the box to revert." oninput="markIngredientOverride(this)" onblur="markIngredientOverride(this,1)"><input class="ing-unit" placeholder="Unit" value="'+escAttr(u||'')+'"><div class="ing-item-cell"><input class="ing-item" list="ingredientSuggestions" placeholder="Ingredient" value="'+escAttr(it||'')+'"><div class="ing-meta-row"><button type="button" class="ing-gname'+(groceryName?' has-name':'')+'" onclick="editRowGroceryName(this)" title="Set how this appears on the grocery list">🛒 <span class="ing-gname-txt">'+(groceryName?escHtml(groceryName):'Grocery name')+'</span></button><button type="button" class="ing-section'+(component?' has-name':'')+'" onclick="editRowSection(this)" title="Group this ingredient under a recipe section (e.g. Sauce)">📂 <span class="ing-section-txt">'+(component?escHtml(component):'Section')+'</span></button></div></div><button class="remove-ingredient" onclick="this.parentElement.remove()">×</button>';wrap.appendChild(row);row.addEventListener('dragstart',function(){row.classList.add('dragging');});row.addEventListener('dragend',function(){row.classList.remove('dragging');});}
 // v145: edit an ingredient's grocery-list name from inside the dish edit modal — same prompt + trip-name suggestions as the view. Updates the row (saved with the dish via collectIngredients).
 async function editRowGroceryName(btn){
   var row=btn.closest('.ingredient-row');if(!row)return;
@@ -3623,6 +3623,7 @@ async function editRowGroceryName(btn){
   var cur=row.dataset.groceryName||(itemInp?String(itemInp.value).trim():'')||'';
   var val=await promptAction({title:'Grocery-list name',message:'How should this appear on the grocery list? Items with the same name are combined — reuse a name already in the trip.',defaultValue:cur,placeholder:'e.g. Limes',confirmLabel:'Save',suggestions:getTripGroceryNames(),allowEmpty:true});
   if(val==null)return;
+  noteGroceryRename(cur,val); // v150 fix: carry store + record rename before the re-key
   row.dataset.groceryName=val;
   var txt=row.querySelector('.ing-gname-txt');if(txt)txt.textContent=val||'Grocery name';
   btn.classList.toggle('has-name',!!val);
@@ -3646,6 +3647,7 @@ function parseTags(){return [];}
 function saveDishFromModal(){
   var savedDishName='';
   try{
+    if(typeof _noteRowRenamesBeforeSave==='function')_noteRowRenamesBeforeSave(); // v150 fix: carry store across any ingredient/grocery-name rename made in this edit
     if(!currentEvent||(!currentCode&&!addToBankOnly)){showToast('No trip is open, so the dish cannot be saved.','error');return;}
     currentEvent=normalizeEvent(currentEvent);
     currentEvent.dishes=Array.isArray(currentEvent.dishes)?currentEvent.dishes:[];
@@ -4018,6 +4020,29 @@ function reconcileGroceryMeta(options){
   var rows=aggregateRows();
   var live={};
   rows.forEach(function(r){live[r.key]=true;if(r.legacyKey)live[r.legacyKey]=false;});
+  // v150 (#10 Stage 0): MIGRATE, don't lose — before deleting an orphaned meta key (from a rename/edit re-key),
+  // carry its store/bought/adjustment to a live line with the SAME normalized purchase name. Only when unambiguous
+  // (exactly one live match) and only into fields the target doesn't already have (never clobber a fresh choice).
+  var liveByName={};
+  rows.forEach(function(r){if(r.isManual)return;var n=_groceryNameNorm(groceryKeyLabel(r.key));if(!n)return;(liveByName[n]=liveByName[n]||[]).push(r.key);});
+  Object.keys(currentEvent.groceryMeta).forEach(function(key){
+    if(String(key).indexOf('manual|')===0)return;
+    if(live[key])return; // still live — nothing to migrate
+    var meta=currentEvent.groceryMeta[key]||{};
+    var hasState=!!(meta&&(meta.store||(meta.storeAssignments&&meta.storeAssignments.length)||meta.status==='Bought'||meta.status==='Have'||typeof meta.buyDelta==='number'||meta.buyQty));
+    if(!hasState)return; // nothing worth carrying; the delete loop will clear it
+    var orphanNorm=_groceryNameNorm(groceryKeyLabel(key));
+    var lookupNorm=_groceryRenames[orphanNorm]||orphanNorm; // v150 fix: follow a recorded rename old→new
+    var targets=liveByName[lookupNorm]||[];
+    if(targets.length!==1)return; // ambiguous (or gone) → fall back to today's delete
+    var tm=currentEvent.groceryMeta[targets[0]]=currentEvent.groceryMeta[targets[0]]||{};
+    if(meta.storeAssignments&&meta.storeAssignments.length&&!(tm.storeAssignments&&tm.storeAssignments.length)){tm.storeAssignments=meta.storeAssignments.slice();if(!tm.store)tm.store=meta.store||tm.storeAssignments[0];}
+    else if(meta.store&&!tm.store){tm.store=meta.store;}
+    if((meta.status==='Bought'||meta.status==='Have')&&!tm.status){tm.status=meta.status;tm.checkedBy=meta.checkedBy;tm.checkedByName=meta.checkedByName;tm.checkedByPhoto=meta.checkedByPhoto;tm.checkedAt=meta.checkedAt;}
+    if(typeof meta.buyDelta==='number'&&typeof tm.buyDelta!=='number')tm.buyDelta=meta.buyDelta;
+    if(meta.buyQty&&!tm.buyQty&&typeof tm.buyDelta!=='number')tm.buyQty=meta.buyQty;
+    if(meta.department&&!tm.department)tm.department=meta.department;
+  });
   Object.keys(currentEvent.groceryMeta).forEach(function(key){
     var isManual=String(key).indexOf('manual|')===0;
     if(isManual)return;
@@ -4102,6 +4127,27 @@ function _storeMemKey(name){return (typeof _groceryNameNorm==='function'?_grocer
 function getStoreMemory(){if(!currentEvent)return{};currentEvent.tripMemory=currentEvent.tripMemory||{};if(!currentEvent.tripMemory.storeMemory||typeof currentEvent.tripMemory.storeMemory!=='object')currentEvent.tripMemory.storeMemory={};return currentEvent.tripMemory.storeMemory;}
 function recallStore(name){var k=_storeMemKey(name);if(!k)return '';return getStoreMemory()[k]||'';}
 function rememberStore(name,store){if(!name||!store||store==='Unassigned')return;var k=_storeMemKey(name);if(!k)return;getStoreMemory()[k]=store;}
+// v150 fix: when a grocery name is RENAMED (old→new differ), carry the store to the new name's memory AND record the rename so reconcileGroceryMeta migrates bought/adjustment across the re-key (the same-name matcher can't, since the name changed).
+var _groceryRenames={};
+function noteGroceryRename(oldName,newName){
+  if(!currentEvent||!newName)return;
+  var oldNorm=_groceryNameNorm(oldName||''),newNorm=_groceryNameNorm(newName);
+  if(!oldNorm||oldNorm===newNorm)return;
+  _groceryRenames[oldNorm]=newNorm;
+  // carry the old line's RESOLVED store (incl. auto-assigned/remembered — not just what's in groceryMeta) to the new name so it doesn't fall back to "Needs a store"
+  var store='';
+  try{var rows=aggregateRows();for(var i=0;i<rows.length;i++){var r=rows[i];if(r.isManual)continue;if(_groceryNameNorm(groceryKeyLabel(r.key))!==oldNorm)continue;var s=(r.storeAssignments&&r.storeAssignments[0])||r.store;if(s&&s!=='Unassigned'){store=s;break;}}}catch(e){}
+  if(store)rememberStore(newName,store);
+}
+// v150 fix: catch ingredient-TEXT renames in the edit modal too (changing the item name re-keys the line just like a grocery-name change). Snapshot each row's original grocery identity, and before saving note any that changed → carry the store.
+function _noteRowRenamesBeforeSave(){
+  document.querySelectorAll('#ingredientRows .ingredient-row').forEach(function(row){
+    var itemInp=row.querySelector('.ing-item');
+    var oldName=(row.dataset.groceryName||row.dataset.origItem||'').trim();
+    var newName=((row.dataset.groceryName||'').trim())||(itemInp?String(itemInp.value).trim():'');
+    if(oldName&&newName&&_groceryNameNorm(oldName)!==_groceryNameNorm(newName))noteGroceryRename(oldName,newName);
+  });
+}
 
 
 function buildGroceryList(){
@@ -4488,10 +4534,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v149';
+var APP_VERSION='v150';
 var APP_BUILD_TIME='2026-07-01';
 
-var APP_VERSION_TAG='Meal Planner v149';
+var APP_VERSION_TAG='Meal Planner v150';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -6722,6 +6768,7 @@ async function editGroceryName(type,id,idx){
   var cur=(ing.groceryName&&String(ing.groceryName).trim())||groceryDisplayName(ing);
   var val=await promptAction({title:'Grocery-list name',message:'How should "'+(ing.item||'')+'" appear on the grocery list? Items with the same name are combined — reuse a name already in the trip.',defaultValue:cur,placeholder:'e.g. crushed tomatoes',confirmLabel:'Save',suggestions:getTripGroceryNames(),allowEmpty:true});
   if(val==null)return; // cancelled
+  noteGroceryRename(cur,val); // v150 fix: carry store + record rename before the re-key
   ing.groceryName=val;
   persist();
   if(currentEvent&&typeof buildGroceryList==='function')buildGroceryList();

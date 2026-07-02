@@ -1540,6 +1540,8 @@ body.planner-edit-mode .dish-title{margin-bottom:4px;}
 .ai-quick-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px;}
 .ai-chip{background:var(--panel);color:var(--theme-accent-dark);border:1px solid var(--border);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:none;transition:all .15s;}
 .ai-chip:hover{border-color:var(--theme-border);background:var(--theme-accent-soft);transform:none;}
+.ai-md-list{margin:4px 0;padding-left:20px;}
+.ai-md-list li{margin:2px 0;}
 /* v153c: header identity — chat-bubble avatar + online dot; icon header buttons */
 .ai-head-id{display:flex;align-items:center;gap:10px;min-width:0;}
 .ai-head-avatar{width:32px;height:32px;border-radius:50%;background:var(--theme-accent);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -4627,10 +4629,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v153';
+var APP_VERSION='v154';
 var APP_BUILD_TIME='2026-07-01';
 
-var APP_VERSION_TAG='Meal Planner v153';
+var APP_VERSION_TAG='Meal Planner v154';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5057,7 +5059,14 @@ function getAiChatContext(){
     return 'Day '+i+' '+label+tag+' — '+dishStr;
   }).join('\n');
   var groceryRows=[];
-  try{groceryRows=aggregateRows().slice(0,25).map(function(r){return r.item+(r.unit?' ('+r.unit+')':'')+(r.status==='Bought'?' ✓':'');});}catch(e){}
+  // v154: richer grocery context incl. consolidation reasoning so the assistant can explain how a combined buy-count was reached (e.g. limes)
+  try{groceryRows=aggregateRows().slice(0,60).map(function(r){
+    var line=r.item+': '+(r.quantityText||r.naturalQty||'')+(r.store&&r.store!=='Unassigned'?' @'+r.store:'')+(r.status==='Bought'||r.status==='Have'?' ✓':'');
+    if(r.aiConsolidated){var m=currentEvent.groceryMeta[r.key],c=m&&m._consol;if(c){var pp=(c.parts||[]).map(function(p){return (p.from||'')+'→'+(p.approx||'');}).filter(function(x){return x!=='→';}).join(', ');line+=' [combined: '+(pp||'multiple forms')+(c.note?'; '+c.note:'')+']';}}
+    else if(r.mixedUnits){line+=' [mixed units: '+(r.partsList||[]).join(' + ')+' — buy amount not set]';}
+    if(r.buyDelta)line+=' [your adjustment '+(r.buyDelta>0?'+':'')+r.buyDelta+']';
+    return line;
+  });}catch(e){}
   var bankRecipes=(_menuLibrary.length?_menuLibrary:(currentEvent.recipeBank||[]));
   var bankSummary=bankRecipes.map(function(r){return r.name+(r.isVegetarian?' 🌿':'')+(r.steps&&r.steps.length?' (steps ready)':'');}).join(', ');
   return 'TODAY: '+today+'\nTODAY IN WORDS: '+new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})
@@ -5112,15 +5121,24 @@ function getAiSystemPrompt(){
     +'- For bulk destructive actions (clear all dishes, remove many items), confirm count in response\n'
     +'- Always include real recipe URLs when adding dishes (Serious Eats, NYT Cooking, Smitten Kitchen etc.)\n'
     +'- After acting, your text response should be brief — the action card shows what was done\n'
-    +'- IMPORTANT: Never use **bold**, *italic* or markdown — it renders as literal asterisks. Use plain text and bullet points only\n'
+    +'- FORMATTING: you MAY use **bold** and "- " bullet lists (they render properly). Keep it clean — bold for labels, bullets for lists of dishes/ingredients. No other markdown.\n'
     +'- CRITICAL: When the user gives you a URL, ALWAYS use import_recipe_url action. NEVER use add_dish for URLs.\n'
     +'- When using import_recipe_url: after calling it, tell the user "Review the import panel below and tap Save to complete" — do NOT claim the dish is already added since the user must confirm first.\n'
     +'- CRITICAL: NEVER ask the user where they want to add a recipe, which trip, which day, or which meal. When a user shares a URL or asks to import/add a recipe, use the appropriate action immediately — the app handles trip/day/meal selection automatically via a picker.\n'
     +'- CRITICAL: NEVER claim a dish has been added to the trip plan. Use add_bank_recipe to save recipes, and the app will automatically show the Add to Plan picker. Never use add_dish when the user asks to "add to the plan" from a URL or new recipe — use add_bank_recipe only, and the picker will handle the rest.\n'
     +'- CRITICAL: NEVER delete, remove, or replace existing dishes unless the user explicitly says "replace", "swap", "delete", or "remove". When adding a dish to a slot that already has something, ADD alongside it — never remove the existing dish.\n'
     +'- When adding a dish from a URL: use import_recipe_url (includes full ingredients and steps). Use add_dish ONLY for simple dishes without a URL.\n'
-    +'- Scale ingredients automatically when servings change if ingredients are listed\n'
-    +'- Remember: you can do multiple actions in one <actions> array';
+    +'- Remember: you can do multiple actions in one <actions> array\n\n'
+    +'== HOW THIS APP WORKS (so you can explain it) ==\n'
+    +'GROCERY LIST: ingredients from every planned dish are aggregated into the grocery list. Lines are grouped by their PURCHASE NAME (the "grocery name" the user sets on an ingredient — e.g. lime juice, lime zest, and a whole lime can all be named "Lime" so they become ONE line). To change grouping, set an ingredient\'s grocery name via edit_ingredient (newName) — items sharing a grocery name merge.\n'
+    +'CONSOLIDATION: when a merged line mixes units (e.g. 2 cups juice + 1 oz zest + 1 whole), the app computes ONE buy-count. In your context each such line shows "[combined: 2 cups juice→~4, 1 oz zest→~1; note]". If asked how a number was reached (e.g. "why 5 limes?"), explain using that breakdown — the per-form conversions that sum to the total.\n'
+    +'ADJUSTMENT: the user can nudge a line\'s buy-count up/down; that shows as "[your adjustment +1]" and rides on top of the computed total. Respect it — the final buy amount = computed total + their adjustment.\n'
+    +'COMPONENTS: a recipe can have named sections (e.g. "Sauce", "Marinade"); an ingredient\'s component groups it under that heading. Same ingredient can appear in two sections.\n'
+    +'STORES: each line has a store; the app remembers a grocery name→store choice so it sticks. Use assign_store to change.\n\n'
+    +'== SMART SCALING (do better than raw math) ==\n'
+    +'When scaling servings, do not blindly multiply. Round to sensible purchasable amounts (2.5 onions → 3), keep "to taste"/"pinch"/"for serving" unchanged, scale spices/salt sub-linearly (they rarely need full multiplication), and keep whole-item counts whole. Use edit_ingredient to fix any that don\'t scale linearly after a scale_dish.\n\n'
+    +'== VEGETARIAN / DIETARY ==\n'
+    +'To make a dish vegetarian, swap the meat/fish for a sensible plant protein that suits the dish (e.g. chicken→chickpeas or tofu, ground beef→lentils or plant crumbles, fish→hearts of palm/tofu) and adjust cooking notes; use edit_ingredient for the swaps and set isVegetarian:true. Honor any restrictions in trip memory across suggestions.';
 }
 
 async function sendAiChat(){
@@ -5155,7 +5173,7 @@ async function sendAiChat(){
     var res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1600,system:getAiSystemPrompt(),messages:aiChatHistory})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,system:getAiSystemPrompt(),messages:aiChatHistory})/* v154: chat on Sonnet for smarter planning/scaling/ideas; batch jobs (grocery cleanup/consolidation) stay on cheap Haiku */
     });
     if(!res.ok){var err=await res.json().catch(function(){return{};});throw new Error('API error: '+(err.error&&err.error.message?err.error.message:res.status));}
     var data=await res.json();
@@ -5187,9 +5205,7 @@ async function sendAiChat(){
       .replace(/<suggestions>[\s\S]*?<\/suggestions>/g,'')
       .replace(/function_calls?>[\s\S]*?<\/function_calls?>/g,'')
       .replace(/<[a-z_]+>[\s\S]*?<\/[a-z_]+>/g,'')
-      .replace(/\*\*([^*]+)\*\*/g,'$1')
-      .replace(/\*([^*]+)\*/g,'$1')
-      .trim();
+      .trim();/* v154: keep bold + lists — _mdToHtml renders them now */
     aiChatHistory.push({role:'assistant',content:full});
     replaceChatMsg(lid,display,null,actionResults);
   }catch(e){removeChatMsg(lid);appendChatMsg('assistant','Something went wrong: '+(e.message||String(e)));}
@@ -5507,10 +5523,20 @@ function appendChatMsg(role,text,id,loading){
   msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
 }
 
+// v154: lightweight markdown → HTML (bold + bullet lists) so replies read cleanly instead of flat blobs. Escapes first (safe).
+function _mdToHtml(text){
+  var esc=escHtml(String(text||'')).replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
+  var parts=[],listBuf=[];
+  function flush(){if(listBuf.length){parts.push('<ul class="ai-md-list">'+listBuf.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>');listBuf=[];}}
+  esc.split('\n').forEach(function(ln){var m=ln.match(/^\s*[-•]\s+(.*)$/);if(m)listBuf.push(m[1]);else{flush();parts.push(ln);}});
+  flush();
+  var out='';parts.forEach(function(p,i){var isList=p.indexOf('<ul')===0;if(i===0){out+=p;}else{var prevList=parts[i-1].indexOf('<ul')===0;out+=(isList||prevList)?p:'<br>'+p;}});
+  return out;
+}
 function replaceChatMsg(id,text,suggestions,actionResults){
   var msgs=safeEl('aiChatMessages'),old=document.getElementById(id);if(!msgs)return;
   var d=document.createElement('div');d.className='ai-msg assistant';
-  if(text){text.split('\n').forEach(function(line,i){if(i>0)d.appendChild(document.createElement('br'));d.appendChild(document.createTextNode(line));});}
+  if(text){d.innerHTML=_mdToHtml(text);}
   if(old)msgs.replaceChild(d,old);else msgs.appendChild(d);
 
   // Action results card

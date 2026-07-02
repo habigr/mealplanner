@@ -783,6 +783,68 @@ section#recipes{display:none!important;}
 /* Mobile ingredient rows - using original layout */
 /* People eating prominent in plan mode */
 #dishModal.plan-mode #planPeopleEating{display:none!important;}
+/* ===== v160 (edit=view): calm, view-like edit screen — clean underlined fields, NO gray boxes (works at every width) ===== */
+/* FIX: the shared .modal uses a translucent "glass" bg (looks gray over the dark backdrop). Make the edit modal a SOLID white surface so transparent fields read clean/white. */
+/* solid, slightly-off-white canvas so the white ingredient panes pop; thin scrollbar keeps all corners rounded */
+#dishModal .modal{max-width:640px;background:var(--panel-warm)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+#dishModal .modal::-webkit-scrollbar{width:8px;}
+#dishModal .modal::-webkit-scrollbar-track{background:transparent;}
+#dishModal .modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;border:2px solid transparent;background-clip:padding-box;}
+/* hero recipe image at the top, like the view */
+.dishmodal-hero{margin:-26px -26px 16px;overflow:hidden;}
+.dishmodal-hero img{width:100%;height:200px;object-fit:cover;display:block;}
+@media(max-width:768px){.dishmodal-hero{margin:-14px -14px 12px;}.dishmodal-hero img{height:150px;}}
+/* Going out + Cook sit together as matching small pills */
+.dish-action-row{display:flex;gap:8px;align-items:center;margin:16px 0 4px;flex-wrap:wrap;}
+#dishModal .goingout-btn{background:transparent;color:var(--text-secondary);border:1.5px solid var(--border);}
+#dishModal .goingout-btn:hover{border-color:var(--theme-border);color:var(--theme-accent-dark);background:transparent;}
+#dishModal .goingout-btn.active{background:var(--theme-accent);color:#fff;border-color:var(--theme-accent);}
+#dishModal #modalCookBtn{margin-top:0!important;}
+/* let the ingredient list flow (no cramped inner scrollbar) — one calm scroll like the view */
+#dishModal .ingredient-list-editor{max-height:none!important;overflow:visible!important;}
+#dishModal h3#dishModalTitle{font-size:24px;font-weight:800;letter-spacing:-.02em;}
+#dishModal>.modal>p{color:var(--muted);font-size:12.5px;}
+/* fields are transparent with a hairline underline → clearly editable, stays clean/white; accent underline on focus */
+#dishModal input:not([type=checkbox]):not([type=radio]):not([type=file]),
+#dishModal select,
+#dishModal textarea{
+  background:transparent!important;border:none;border-bottom:1px solid var(--border-light);border-radius:0;box-shadow:none;transition:border-color .15s;
+}
+#dishModal textarea{border:1px solid var(--border-light);border-radius:10px;}/* multiline keeps a light box so it reads as a text area */
+#dishModal input:not([type=checkbox]):not([type=radio]):not([type=file]):focus,
+#dishModal select:focus{border-bottom:1.5px solid var(--theme-accent);box-shadow:none;}
+#dishModal textarea:focus{border-color:var(--theme-accent);box-shadow:0 0 0 3px var(--theme-accent-muted);}
+/* keep the "manually set" override cue visible */
+#dishModal .ingredient-row .ing-adjusted.is-override{background:var(--theme-accent-soft)!important;border-radius:6px;border-bottom-color:var(--theme-border)!important;}
+/* v160b: each ingredient is its own defined pane (card) with a subtle wiggle on hover */
+#dishModal .ingredient-row{border:1px solid var(--border-light);border-bottom:1px solid var(--border-light);background:var(--panel);border-radius:12px;padding:10px 12px;margin-bottom:8px;box-shadow:var(--shadow-sm);transition:transform .12s ease,box-shadow .15s ease,border-color .15s ease;}
+@media(hover:hover){
+  #dishModal .ingredient-row:hover{border-color:var(--theme-border);box-shadow:var(--shadow);animation:ingWiggle .32s ease;}
+}
+@keyframes ingWiggle{0%,100%{transform:translateX(0);}20%{transform:translateX(-2px) rotate(-.3deg);}60%{transform:translateX(2px) rotate(.3deg);}}
+@media(prefers-reduced-motion:reduce){#dishModal .ingredient-row:hover{animation:none;}}
+/* v160b: declutter grocery-name + section — empty ones hide until you hover the row (desktop); set ones show as chips */
+#dishModal .ing-gname,#dishModal .ing-section{font-size:11px;padding:2px 8px;border-radius:999px;}
+#dishModal .ing-gname.has-name,#dishModal .ing-section.has-name{background:var(--theme-accent-soft);color:var(--theme-accent-dark);}
+@media(hover:hover){
+  #dishModal .ing-gname:not(.has-name),#dishModal .ing-section:not(.has-name){opacity:0;transition:opacity .15s;}
+  #dishModal .ingredient-row:hover .ing-gname:not(.has-name),#dishModal .ingredient-row:hover .ing-section:not(.has-name){opacity:.6;}
+}
+/* section cards read as the view's open sections, not heavy boxes */
+#dishModal .detail-card{border:none;border-top:1px solid var(--border-light);border-radius:0;background:transparent;padding:16px 2px;margin-bottom:0;}
+#dishModal .detail-card-header{margin-bottom:10px;}
+/* v160 declutter: smaller import button, compact Day/Meal, smaller "Going out" toggle */
+#dishModal .library-import-btn{padding:10px 16px;font-size:13px;border-width:1.5px;border-radius:10px;background:var(--panel-soft);}
+#dishModal #assignmentFields{gap:10px;margin-bottom:10px;}
+#dishModal #assignmentFields .field>label{font-size:9.5px;}
+#dishModal #eventFields label span{font-size:12px!important;}
+/* editing an existing dish: drop the Day/Meal picker + import chrome + "Recipe Details" heading — it's a calm edit-in-place screen */
+#dishModal.editing-existing #assignmentFields,
+#dishModal.editing-existing #planModeImport,
+#dishModal.editing-existing #importCard,
+#dishModal.editing-existing .final-details-heading{display:none!important;}
+/* smaller Cook button (cooking mode is de-emphasized) */
+#dishModal #modalCookBtn{width:auto!important;padding:7px 12px!important;font-size:12px!important;margin-top:12px!important;}
 /* All Trips mobile nav back button */
 .nav-back-btn{opacity:.7;}
 .nav-back-btn:active{opacity:1;}
@@ -894,14 +956,17 @@ section#recipes{display:none!important;}
   #dishModal .ingredient-row{
     display:grid!important;
     grid-template-columns:16px 1fr 1fr 1fr 24px!important;
-    grid-template-areas:"drag orig scaled unit rm" "name name name name name"!important;
-    gap:3px 6px!important;
-    padding:6px 2px!important;
-    margin:0!important;
-    border:none!important;border-bottom:1px solid var(--border-light)!important;border-radius:0!important;
-    background:transparent!important;
+    grid-template-areas:"drag orig scaled unit rm" "name name name name name" "meta meta meta meta meta"!important;
+    gap:4px 6px!important;
+    padding:9px 11px!important;
+    margin:0 0 8px 0!important;
+    border:1px solid var(--border-light)!important;border-radius:12px!important;
+    background:var(--panel)!important;box-shadow:var(--shadow-sm);
     align-items:center;
   }
+  /* mobile: keep grocery/section visible but compact (no hover to reveal) */
+  #dishModal .ingredient-row .ing-item-cell{grid-area:name;}
+  #dishModal .ingredient-row .ing-meta-row{grid-area:meta;}
   #dishModal .ingredient-row .drag-handle{grid-area:drag;font-size:13px!important;}
   #dishModal .ingredient-row .ing-original{grid-area:orig;display:block!important;font-size:15px!important;padding:6px 4px!important;text-align:center;}
   #dishModal .ingredient-row .ing-adjusted{grid-area:scaled;display:block!important;font-size:15px!important;padding:6px 4px!important;text-align:center;background:var(--theme-accent-soft)!important;color:var(--theme-accent-dark)!important;border-color:var(--theme-border)!important;font-weight:700;}
@@ -3307,7 +3372,7 @@ function renderDish(dish){
   if(!libRecipe&&((dish.steps&&dish.steps.length)||(dish.ingredients&&dish.ingredients.length))){libRecipe=dish;}
   var inLib=libRecipe&&libRecipe.id!==dish.id;
   var hasSteps=libRecipe&&(libRecipe.steps||[]).length>0;
-  var planCookBtn=hasSteps?'<button class="dish-cook-plan-btn" onclick="event.stopPropagation();cookRecipe(\''+escAttr(libRecipe.id||dish.bankRecipeId||dish.id)+'\')" title="Cook this recipe">👨‍🍳</button>':'';
+  var planCookBtn='';/* v160: Cook removed from the meal-plan card — cook only from the dish detail/edit screen */
   // Assign avatar
   var assignHtml;
   if(dish.assignedTo&&dish.assignedTo!=='undefined'&&dish.assignedTo!=='null'){var storedP={name:dish.assignedTo,photo:dish.assignedToPhoto||'',initials:dish.assignedToInitials||dish.assignedTo.slice(0,2)};var ava=renderAvatarFromProfile(dish.assignedToPhoto?storedP:resolvePersonProfile(dish.assignedTo),20,'vertical-align:middle;cursor:pointer;');assignHtml='<span title="'+escAttr(dish.assignedTo)+'" onclick="event.stopPropagation();assignDish(\''+escAttr(dish.id)+'\'" style="cursor:pointer;display:inline-flex;align-items:center;">'+ava+'</span>';}
@@ -3349,14 +3414,28 @@ function populateIngredientSuggestions(){var dl=safeEl('ingredientSuggestions');
 function populateTagSuggestions(){var dl=safeEl('tagSuggestions');if(!dl)return;var seen={};currentEvent.dishes.concat(currentEvent.recipeBank).forEach(function(dish){(dish.tags||[]).forEach(function(t){var v=t.trim();if(v)seen[v.toLowerCase()]=v;});});dl.innerHTML=Object.keys(seen).sort().map(function(k){return'<option value="'+escAttr(seen[k])+'">'; }).join('');}
 
 /* ===== DISH MODAL ===== */
-function toggleEventMode(){var isEvent=safeEl('isEventCheck')&&safeEl('isEventCheck').checked;var ef=safeEl('eventFields');if(ef)ef.style.display=isEvent?'block':'none';var af=safeEl('assignmentFields'),ic=safeEl('importCard'),is=safeEl('ingredientSection');var fh=document.querySelector('.final-details-heading');var dcs=document.querySelectorAll('#dishModal .detail-card');[af,ic,is].forEach(function(el){if(el)el.style.display=isEvent?'none':'';});dcs.forEach(function(el){el.style.display=isEvent?'none':'';});if(fh)fh.style.display=isEvent?'none':'';}
+function toggleEventMode(){var isEvent=safeEl('isEventCheck')&&safeEl('isEventCheck').checked;var ef=safeEl('eventFields');if(ef)ef.style.display=isEvent?'block':'none';var af=safeEl('assignmentFields'),ic=safeEl('importCard'),is=safeEl('ingredientSection');var fh=document.querySelector('.final-details-heading');var dcs=document.querySelectorAll('#dishModal .detail-card');[af,ic,is].forEach(function(el){if(el)el.style.display=isEvent?'none':'';});dcs.forEach(function(el){el.style.display=isEvent?'none':'';});if(fh)fh.style.display=isEvent?'none':'';syncGoingOutBtn();}
+// v160: reflect event state on the Going-out pill
+function syncGoingOutBtn(){var b=safeEl('goingOutBtn'),c=safeEl('isEventCheck');if(b&&c)b.classList.toggle('active',!!c.checked);}
+// v160: recipe image hero at the top of the edit screen (mirrors the view). Clears if none.
+function setDishModalHero(dish){
+  var h=safeEl('dishModalHero');if(!h)return;
+  var url='';
+  try{
+    if(dish&&!dish.isEvent){url=_displayImageUrl(dish)||'';
+      if(!url){var lib=null;if(dish.bankRecipeId)lib=_menuLibrary.find(function(r){return r.id===dish.bankRecipeId;});if(!lib&&dish.name)lib=_menuLibrary.find(function(r){return (r.name||'').toLowerCase()===(dish.name||'').toLowerCase();});if(lib)url=_displayImageUrl(lib)||'';}
+    }
+  }catch(e){}
+  if(url){h.innerHTML='<img src="'+escAttr(url)+'" referrerpolicy="no-referrer" onerror="this.closest(&quot;#dishModalHero&quot;).style.display=\'none\'">';h.style.display='block';}
+  else{h.innerHTML='';h.style.display='none';}
+}
 function openDishModal(dayId,meal,dishId,bankOnly){dishModalHydrating=true;dayId=dayId||null;meal=meal||null;dishId=dishId||null;bankOnly=!!bankOnly;
   if(!currentEvent&&!bankOnly){showToast('Open a trip first.','error');return;}
   if(!currentEvent&&bankOnly){
     // Bank-only mode without a trip — create minimal context
     if(!window._tempLibraryMode){window._tempLibraryMode=true;currentEvent={days:[],dishes:[],recipeBank:[],groceryMeta:{},manualGroceryItems:[],tripMemory:{},dismissedDups:[],stores:[],departments:[],storeRules:[],mealTypes:['Breakfast','Lunch','Dinner'],name:'',code:'',id:makeId()};}
   }
-  if(!currentEvent.days.length&&!bankOnly){showToast('Create event days first.','error');return;}editingDishId=dishId;addToBankOnly=bankOnly;populateDishDayOptions();clearDishModal();setText('dishModalTitle',bankOnly?'Add Recipe to Bank':dishId?'Edit':'Add Dish');var db2=safeEl('deleteEntryButton'),di=safeEl('deleteEntryId');if(di)di.value=dishId&&!bankOnly?dishId:'';if(db2)db2.style.display=dishId?'inline-flex':'none';var af=safeEl('assignmentFields');if(af)af.style.display=bankOnly?'none':'grid';if(dayId){setValue('dishDay',dayId);setValue('eventDay',dayId);}if(meal){setValue('dishMeal',meal);setValue('eventMeal',meal);}var dm=safeEl('dishModal');if(dm){dm.classList.add('active');dm.classList.toggle('plan-mode',!bankOnly);dm.classList.toggle('library-mode',!!bankOnly);}dishModalDirty=false;var dn=safeEl('dishDirtyNote');if(dn)dn.style.display='none';setTimeout(function(){dishModalHydrating=false;},80);}
+  if(!currentEvent.days.length&&!bankOnly){showToast('Create event days first.','error');return;}editingDishId=dishId;addToBankOnly=bankOnly;populateDishDayOptions();clearDishModal();setText('dishModalTitle',bankOnly?'Add Recipe to Bank':dishId?'Edit':'Add Dish');var db2=safeEl('deleteEntryButton'),di=safeEl('deleteEntryId');if(di)di.value=dishId&&!bankOnly?dishId:'';if(db2)db2.style.display=dishId?'inline-flex':'none';var af=safeEl('assignmentFields');if(af)af.style.display=bankOnly?'none':'grid';if(dayId){setValue('dishDay',dayId);setValue('eventDay',dayId);}if(meal){setValue('dishMeal',meal);setValue('eventMeal',meal);}var dm=safeEl('dishModal');if(dm){dm.classList.add('active');dm.classList.toggle('plan-mode',!bankOnly);dm.classList.toggle('library-mode',!!bankOnly);dm.classList.toggle('editing-existing',!!dishId);}/* v160: editing an existing dish hides the Day/Meal + import chrome (calm view-like edit) */dishModalDirty=false;var dn=safeEl('dishDirtyNote');if(dn)dn.style.display='none';setTimeout(function(){dishModalHydrating=false;},80);}
 function markDishModalDirty(){if(dishModalHydrating)return;dishModalDirty=true;var n=safeEl('dishDirtyNote');if(n)n.style.display='inline';}
 function closeDishModal(force){var m=safeEl('dishModal');if(!force&&dishModalDirty){confirmAction({title:'Discard unsaved changes?',message:'You have changes in this dish that have not been saved. Closing now will lose them.',confirmLabel:'Discard Changes',danger:true}).then(function(ok){if(ok)closeDishModal(true);});return;}if(m)m.classList.remove('active');editingDishId=null;addToBankOnly=false;dishModalDirty=false;window._tempLibraryMode=false;setValue('dishModalImportUrl','');setValue('peopleEatingPlan','');var n=safeEl('dishDirtyNote');if(n)n.style.display='none';if(_returnToGrocerySheet){var _gk=_returnToGrocerySheet;_returnToGrocerySheet='';setTimeout(function(){if(typeof openGroceryItemSheet==='function')openGroceryItemSheet(_gk);},70);}/* v143: came here from a grocery item → return to that item's sheet */}
 function switchEntryMode(mode){
@@ -3368,7 +3447,7 @@ function switchEntryMode(mode){
   });
   if(mode==='photo'&&typeof _ensurePhotoImportWired==='function')_ensurePhotoImportWired(); // v87: enable paste/drop
 }
-function clearDishModal(){setValue('dishName','');setValue('dishUrl','');setValue('servings','');setValue('peopleEating','');setValue('dishNotes','');setValue('bulkIngredients','');setValue('pasteRecipeText','');setValue('eventName2','');setValue('eventTime','');setValue('eventAddress','');setValue('eventOtherNotes','');var vc=safeEl('isVegetarianCheck');if(vc)vc.checked=false;var ec=safeEl('isEventCheck');if(ec){ec.checked=false;}var ef=safeEl('eventFields');if(ef)ef.style.display='none';var af=safeEl('assignmentFields'),ic=safeEl('importCard'),is=safeEl('ingredientSection'),fh=document.querySelector('.final-details-heading');[af,ic,is].forEach(function(el){if(el)el.style.display='';});if(fh)fh.style.display='';document.querySelectorAll('#dishModal .detail-card').forEach(function(el){el.style.display='';});setPasteStatus('Paste any recipe text — from any website, cookbook, or message.','');hideParsePreview();switchEntryMode('url');toggleImportCard(false);var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';addIngredientRow();populateSteps([]);var ownerSel=safeEl('dishOwner');if(ownerSel){if(!Object.keys(_knownUsers||{}).length)loadKnownUsers();var users=getAssignableUsers();ownerSel.innerHTML='<option value="">— unassigned —</option>'+users.map(function(u){return'<option value="'+escAttr(u.name)+'">'+escHtml(u.name)+'</option>';}).join('');}var olbl=safeEl('dishOwnerLabel');if(olbl)olbl.textContent=addToBankOnly?'Owner':'Cook';}
+function clearDishModal(){setValue('dishName','');setValue('dishUrl','');setValue('servings','');setValue('peopleEating','');setValue('dishNotes','');setValue('bulkIngredients','');setValue('pasteRecipeText','');setValue('eventName2','');setValue('eventTime','');setValue('eventAddress','');setValue('eventOtherNotes','');var vc=safeEl('isVegetarianCheck');if(vc)vc.checked=false;var ec=safeEl('isEventCheck');if(ec){ec.checked=false;}var ef=safeEl('eventFields');if(ef)ef.style.display='none';var af=safeEl('assignmentFields'),ic=safeEl('importCard'),is=safeEl('ingredientSection'),fh=document.querySelector('.final-details-heading');[af,ic,is].forEach(function(el){if(el)el.style.display='';});if(fh)fh.style.display='';document.querySelectorAll('#dishModal .detail-card').forEach(function(el){el.style.display='';});setPasteStatus('Paste any recipe text — from any website, cookbook, or message.','');hideParsePreview();switchEntryMode('url');toggleImportCard(false);var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';addIngredientRow();populateSteps([]);var _hero=safeEl('dishModalHero');if(_hero){_hero.innerHTML='';_hero.style.display='none';}var _cb0=safeEl('modalCookBtn');if(_cb0)_cb0.remove();syncGoingOutBtn();var ownerSel=safeEl('dishOwner');if(ownerSel){if(!Object.keys(_knownUsers||{}).length)loadKnownUsers();var users=getAssignableUsers();ownerSel.innerHTML='<option value="">— unassigned —</option>'+users.map(function(u){return'<option value="'+escAttr(u.name)+'">'+escHtml(u.name)+'</option>';}).join('');}var olbl=safeEl('dishOwnerLabel');if(olbl)olbl.textContent=addToBankOnly?'Owner':'Cook';}
 function toggleImportCard(forceOpen){var c=safeEl('importCard');if(!c)return;var open=typeof forceOpen==='boolean'?forceOpen:c.classList.contains('collapsed');c.classList.toggle('collapsed',!open);}
 
 /* ===== SMART PASTE ===== */
@@ -3768,7 +3847,7 @@ function saveDishFromModal(){
 function editDish(id){
   var dish=currentEvent&&currentEvent.dishes.find(function(d){return d.id===id;}),isBank=false;
   if(!dish){dish=(currentEvent&&(currentEvent.recipeBank||[]).find(function(r){return r.id===id;}))||_menuLibrary.find(function(r){return r.id===id;});isBank=!!dish;}
-  if(!dish)return;openDishModal(dish.dayId,dish.meal,id,isBank);if(dish.isEvent){var ec=safeEl('isEventCheck');if(ec)ec.checked=true;toggleEventMode();setValue('eventDay',dish.dayId||'');setValue('eventMeal',dish.meal||'Dinner');setValue('eventName2',dish.eventName||'');setValue('eventTime',dish.eventTime||'');setValue('eventAddress',dish.eventAddress||'');setValue('eventOtherNotes',dish.notes||'');}else{setValue('dishName',dish.name||'');setValue('dishUrl',dish.url||'');setValue('servings',dish.servings||'');setValue('peopleEating',dish.peopleEating||'');setValue('dishNotes',dish.notes||'');var vc=safeEl('isVegetarianCheck');if(vc)vc.checked=!!(dish.isVegetarian||(dish.tags||[]).some(function(t){return /veg|vegetarian/i.test(t);}));toggleImportCard(false);var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';(dish.ingredients||[]).forEach(function(i){addIngredientRow(i.quantity||i.displayedQuantity||'',i.unit||'',i.item||'','',i.packageNote||'',i.qtyOverride||'',i.groceryName||'',i.component||'');});if(!(dish.ingredients||[]).length)addIngredientRow();updateScaledIngredientDisplay();// Pre-fill steps
+  if(!dish)return;openDishModal(dish.dayId,dish.meal,id,isBank);setDishModalHero(dish);if(dish.isEvent){var ec=safeEl('isEventCheck');if(ec)ec.checked=true;toggleEventMode();setValue('eventDay',dish.dayId||'');setValue('eventMeal',dish.meal||'Dinner');setValue('eventName2',dish.eventName||'');setValue('eventTime',dish.eventTime||'');setValue('eventAddress',dish.eventAddress||'');setValue('eventOtherNotes',dish.notes||'');}else{setValue('dishName',dish.name||'');setValue('dishUrl',dish.url||'');setValue('servings',dish.servings||'');setValue('peopleEating',dish.peopleEating||'');setValue('dishNotes',dish.notes||'');var vc=safeEl('isVegetarianCheck');if(vc)vc.checked=!!(dish.isVegetarian||(dish.tags||[]).some(function(t){return /veg|vegetarian/i.test(t);}));toggleImportCard(false);var rows=safeEl('ingredientRows');if(rows)rows.innerHTML='';(dish.ingredients||[]).forEach(function(i){addIngredientRow(i.quantity||i.displayedQuantity||'',i.unit||'',i.item||'','',i.packageNote||'',i.qtyOverride||'',i.groceryName||'',i.component||'');});if(!(dish.ingredients||[]).length)addIngredientRow();updateScaledIngredientDisplay();// Pre-fill steps
 populateSteps(dish.steps||[]);window._pendingLibraryRecipe=dish;window._pendingBankRecipeId=dish.bankRecipeId||null;setValue('dishOwner',isBank?(dish.owner||dish.addedBy||''):(dish.assignedTo||dish.owner||''));setTimeout(updateScaledIngredientDisplay,80);
     // Add cook button if recipe has steps - check both library and dish directly
     var existCook=document.getElementById('modalCookBtn');if(existCook)existCook.remove();
@@ -3779,12 +3858,11 @@ populateSteps(dish.steps||[]);window._pendingLibraryRecipe=dish;window._pendingB
       if(stepsToUse.length){
         var cookId=libR?libR.id:(dish.bankRecipeId||dish.id);
         var cb=document.createElement('button');cb.id='modalCookBtn';cb.className='recipe-cook-btn';
-        cb.style.cssText='width:100%;margin-top:10px;padding:12px;font-size:14px;font-weight:700;';
-        cb.innerHTML='👨‍🍳 Cook This Recipe';
+        cb.innerHTML='👨‍🍳 Cook';
         cb.onclick=function(){closeDishModal(false);setTimeout(function(){cookRecipe(cookId);},200);};
-        var saveRow=document.querySelector('#dishModal .modal-save-row')||document.querySelector('#dishModal .modal-footer');
-        if(saveRow){saveRow.parentNode.insertBefore(cb,saveRow);}
-        else{var mc=safeEl('dishModal');if(mc)mc.appendChild(cb);}
+        var actionRow=safeEl('dishActionRow');
+        if(actionRow){actionRow.appendChild(cb);}
+        else{var saveRow=document.querySelector('#dishModal .modal-footer');if(saveRow)saveRow.parentNode.insertBefore(cb,saveRow);}
       }
     }
   }}
@@ -4629,10 +4707,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v159';
+var APP_VERSION='v160';
 var APP_BUILD_TIME='2026-07-02';
 
-var APP_VERSION_TAG='Meal Planner v159';
+var APP_VERSION_TAG='Meal Planner v160';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -8726,6 +8804,7 @@ document.addEventListener('DOMContentLoaded',function(){
 <datalist id="tagSuggestions"></datalist>
 <div id="dishModal" class="modal-backdrop">
   <div class="modal">
+    <div id="dishModalHero" class="dishmodal-hero" style="display:none;"></div>
     <h3 id="dishModalTitle">Add Recipe <span id="dishDirtyNote" class="modal-dirty-note" style="display:none;">Unsaved changes</span></h3>
     <p>Add a dish to your plan, or import from the Recipe Library.</p>
 
@@ -8795,14 +8874,14 @@ document.addEventListener('DOMContentLoaded',function(){
       <div class="detail-card compact">
         <div class="field-inline field-stack-mobile"><label for="dishName">Name</label><input id="dishName" placeholder="e.g., Lobster Rolls" /></div>
         <div class="field-inline field-stack-mobile"><label for="dishUrl">Link</label><input id="dishUrl" type="url" placeholder="https://…" /></div>
-        <div class="field-inline"><label for="servings" title="Base recipe serving size — changing this affects ingredient scaling">Recipe serves</label><input id="servings" type="number" min="1" placeholder="e.g., 4" oninput="updateScaledIngredientDisplay()" title="Base serving size — affects ingredient quantity scaling" style="background:var(--panel-soft);border-style:dashed;" /></div>
+        <div class="field-inline"><label for="servings" title="Base recipe serving size — changing this affects ingredient scaling">Recipe serves</label><input id="servings" type="number" min="1" placeholder="e.g., 4" oninput="updateScaledIngredientDisplay()" title="Base serving size — affects ingredient quantity scaling" /></div>
         <div class="field-inline" id="cookingForField" style="margin-bottom:0;"><label for="peopleEating" style="min-width:80px;">Cooking for</label><input id="peopleEating" type="number" min="1" placeholder="# people" oninput="updateScaledIngredientDisplay()" style="width:80px;flex-shrink:0;" /></div>
       </div>
       <div class="detail-card compact">
         <div class="field" style="margin-bottom:0;"><label for="dishNotes">Notes (optional)</label><textarea id="dishNotes" placeholder="e.g., Make ahead, serve with crusty bread…" style="min-height:56px;resize:vertical;"></textarea></div>
       </div>
       <div id="ingredientSection" class="detail-card">
-        <div class="detail-card-header"><strong>Ingredients</strong><span>Final list — drag to reorder</span></div>
+        <div class="detail-card-header"><strong>Ingredients</strong><span>Drag to reorder</span></div>
         <div class="ingredient-row-labels"><span></span><span>Original</span><span>Adjusted</span><span>Unit</span><span>Ingredient</span><span></span></div><div class="ing-labels-mobile"><span></span><span>Original</span><span>Adjusted</span><span>Unit</span><span></span></div><div id="ingredientRows" class="ingredient-list-editor"></div>
         <button class="secondary" type="button" style="margin-top:10px;" onclick="addIngredientRow()">+ Add</button>
       </div>
@@ -8830,12 +8909,10 @@ document.addEventListener('DOMContentLoaded',function(){
         <input id="eventTime" type="hidden"><input id="eventAddress" type="hidden"><textarea id="eventOtherNotes" style="display:none;"></textarea>
       </div>
     </div>
-    <div class="event-toggle-section" style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
-      <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--panel-soft);border:1.5px solid var(--border);border-radius:var(--r-sm);cursor:pointer;transition:background .15s;">
-        <input type="checkbox" id="isEventCheck" onchange="toggleEventMode()" style="width:18px;height:18px;accent-color:var(--theme-accent);cursor:pointer;" />
-        <span style="font-size:13.5px;font-weight:700;color:var(--text-secondary);flex:1;">🍽️ Going out instead?</span>
-      </label>
-
+    <input type="checkbox" id="isEventCheck" onchange="toggleEventMode();syncGoingOutBtn();" style="display:none;" />
+    <div class="dish-action-row" id="dishActionRow">
+      <button id="goingOutBtn" type="button" class="recipe-cook-btn goingout-btn" onclick="document.getElementById('isEventCheck').click();" title="Mark this as going out / a restaurant">🍽️ Going out</button>
+      <!-- Cook button injected here by editDish when the recipe has steps -->
     </div>
     <div class="modal-footer">
       <input id="deleteEntryId" type="hidden" value="">

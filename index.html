@@ -2743,6 +2743,10 @@ function fbWriteTrip(ev){
   if(!db||!ev||!ev.code){console.warn('[MealPlanner] fbWriteTrip: invalid args');return Promise.resolve();}
   if(!validateBeforeFirebaseWrite(ev,'fbWriteTrip')){return Promise.resolve();}
   var code=ev.code, writeCount=(ev.dishes||[]).length;
+  // v176: consume the pre-confirm flag NOW so this single write owns it and it can
+  // never leak to a later write (even if the guard read below fails and we fall
+  // through to the offline commit path).
+  var preConfirmedShrink=_bigShrinkPreConfirmed; _bigShrinkPreConfirmed=false;
   // ── STALE-OVERWRITE GUARD (read-before-write) ──────────────────────────────
   // Never let a device that is BEHIND the server shrink a trip. Read the server's
   // current dish count first: if it has MORE dishes than this write AND more than
@@ -2772,16 +2776,22 @@ function fbWriteTrip(ev){
     var reduction=remoteCount-writeCount;
     var bigShrink=writeCount<remoteCount && (reduction>2 || (remoteCount>=5 && writeCount<remoteCount*0.7));
     if(bigShrink){
-      var ok=false;
-      try{ok=window.confirm('⚠️ This will remove '+reduction+' dishes from this trip.\n\nThe server has '+remoteCount+' dishes; this device is trying to save only '+writeCount+'.\n\nOnly continue if you deliberately deleted them. Cancel to keep all '+remoteCount+' and refresh from the server.');}catch(e){ok=false;}
-      if(!ok){
-        mpLog('SAVE','fbWriteTrip BLOCKED big-shrink not confirmed',{code:code,writeCount:writeCount,remoteCount:remoteCount,reduction:reduction});
-        setSyncStatus('error');
-        showToast('Save blocked — large drop in dishes not confirmed. Refreshing from the server…','error');
-        try{syncFromFirebase();}catch(e){}
-        return;
+      if(preConfirmedShrink){
+        // The UI delete action already confirmed this drop with the user BEFORE
+        // mutating local state (Option A) — don't prompt a second time.
+        mpLog('SAVE','fbWriteTrip big-shrink PRE-CONFIRMED in UI, skipping second prompt',{code:code,writeCount:writeCount,remoteCount:remoteCount,reduction:reduction});
+      }else{
+        var ok=false;
+        try{ok=window.confirm('⚠️ This will remove '+reduction+' dishes from this trip.\n\nThe server has '+remoteCount+' dishes; this device is trying to save only '+writeCount+'.\n\nOnly continue if you deliberately deleted them. Cancel to keep all '+remoteCount+' and refresh from the server.');}catch(e){ok=false;}
+        if(!ok){
+          mpLog('SAVE','fbWriteTrip BLOCKED big-shrink not confirmed',{code:code,writeCount:writeCount,remoteCount:remoteCount,reduction:reduction});
+          setSyncStatus('error');
+          showToast('Save blocked — large drop in dishes not confirmed. Refreshing from the server…','error');
+          try{syncFromFirebase();}catch(e){}
+          return;
+        }
+        mpLog('SAVE','fbWriteTrip big-shrink CONFIRMED by user',{code:code,writeCount:writeCount,remoteCount:remoteCount,reduction:reduction});
       }
-      mpLog('SAVE','fbWriteTrip big-shrink CONFIRMED by user',{code:code,writeCount:writeCount,remoteCount:remoteCount,reduction:reduction});
     }
     return _fbWriteTripCommit(ev,code,writeCount);
   }).catch(function(e){
@@ -2810,6 +2820,12 @@ var _isLoadingTrip = false;
 // can never shrink a trip and clobber dishes it never received. Keyed by trip code.
 var _remoteDishCounts = {};
 function _rememberRemoteDishCount(code,ev){ if(code&&ev&&Array.isArray(ev.dishes)) _remoteDishCounts[code]=ev.dishes.length; }
+// v176: single-use flag. Set to true by a UI delete action that already showed the
+// user a big-shrink confirmation BEFORE mutating local state (Option A). fbWriteTrip
+// reads-and-clears it at the top of the write so it can never leak to a later write:
+// when set, the write's big-shrink prompt is skipped (the user already authorized the
+// drop). The server-truth stale-overwrite guard is NOT affected by this flag.
+var _bigShrinkPreConfirmed = false;
 
 /* ===== FIREBASE SYNC =====
    Real-time listener for multi-device sync.
@@ -4955,10 +4971,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v175';
+var APP_VERSION='v176';
 var APP_BUILD_TIME='2026-07-02';
 
-var APP_VERSION_TAG='Meal Planner v175';
+var APP_VERSION_TAG='Meal Planner v176';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5098,10 +5114,19 @@ function toggleGroceryFilter(){
 function removeMealFromDay(dayId,meal){
   if(!currentEvent)return;
   var day=currentEvent.days.find(function(d){return d.id===dayId;});if(!day)return;
-  var hasDishes=currentEvent.dishes.some(function(d){return d.dayId===dayId&&d.meal===meal;});
-  if(hasDishes){
-    confirmAction({message:'Remove '+meal+' and its dishes from this day?',confirmLabel:'Remove',danger:true}).then(function(ok){
+  var removing=currentEvent.dishes.filter(function(d){return d.dayId===dayId&&d.meal===meal;}).length;
+  if(removing>0){
+    // v176 Option A: decide up front whether this is a big shrink and warn BEFORE
+    // deleting anything, so Cancel truly cancels (dishes never vanish then reappear).
+    var total=currentEvent.dishes.length, after=total-removing;
+    var bigShrink=removing>2||(total>=5&&after<total*0.7);
+    var msg=bigShrink
+      ? '⚠️ This removes '+removing+' dishes from '+meal+' ('+total+' → '+after+' on this trip).\n\nThat is a big change — only continue if you really mean to delete them.'
+      : 'Remove '+meal+' and its dishes from this day?';
+    confirmAction({message:msg,confirmLabel:'Remove',danger:true}).then(function(ok){
       if(!ok)return;
+      // Pre-authorize the write guard so fbWriteTrip doesn't prompt a second time.
+      if(bigShrink)_bigShrinkPreConfirmed=true;
       currentEvent.dishes=currentEvent.dishes.filter(function(d){return!(d.dayId===dayId&&d.meal===meal);});
       day.meals=(day.meals||[]).filter(function(m){return m!==meal;});
       reconcileGroceryMeta();

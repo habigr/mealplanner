@@ -149,7 +149,7 @@ label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-t
 .landing-section-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.11em;color:var(--muted);margin:0 0 12px;}
 
 /* trip cards */
-.trip-card-wrap{position:relative;overflow:hidden;border-radius:var(--r);margin-bottom:10px;background:var(--danger);}
+.trip-card-wrap{position:relative;overflow:hidden;border-radius:var(--r);margin-bottom:10px;background:var(--panel);}
 .trip-del-btn{position:absolute;right:0;top:0;height:100%;width:76px;background:var(--danger);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:700;border:none;padding:0;box-shadow:none;cursor:pointer;z-index:0;}
 .trip-del-btn:hover{background:#b91c1c;transform:none;box-shadow:none;}
 .trip-card{position:relative;z-index:1;background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:transform .25s cubic-bezier(.25,.46,.45,.94),border-color .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;will-change:transform;}
@@ -852,7 +852,7 @@ input,textarea,select,[contenteditable],.recipe-ing-list,.recipe-steps-list,.rec
 main,.page,.recipe-detail-body,.gis-sheet,.admin-drawer,#dishModal .modal,.ai-chat-messages,.app-admin-panel{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
 /* tactile press feedback on touch devices */
 @media(hover:none){
-  button:active,.dish:active,.day-card:active,.nav-btn:active,.top-tab:active,.trip-card:active,.ai-chip:active,.grocery-item-name:active,.shopping-item:active,.gis-dish-row:active,.dish-thumb:active,.hdr-btn:active{transform:scale(.97);transition:transform .06s ease;}
+  button:active,.dish:active,.day-card:active,.nav-btn:active,.top-tab:active,.ai-chip:active,.grocery-item-name:active,.shopping-item:active,.gis-dish-row:active,.dish-thumb:active,.hdr-btn:active{transform:scale(.97);transition:transform .06s ease;}
 }
 /* v168: smaller plan edit controls + tighter day cards on mobile */
 @media(max-width:768px){
@@ -4815,10 +4815,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v170';
+var APP_VERSION='v171';
 var APP_BUILD_TIME='2026-07-02';
 
-var APP_VERSION_TAG='Meal Planner v170';
+var APP_VERSION_TAG='Meal Planner v171';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

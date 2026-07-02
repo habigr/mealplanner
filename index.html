@@ -1499,6 +1499,10 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
 .recipe-detail-section{padding:18px 20px;border-bottom:1px solid var(--border-light);}
 .recipe-section-heading{font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--text-secondary);margin:0 0 14px;}
 .recipe-ing-list{list-style:none;margin:0;padding:0;}
+/* v166: aligned ingredient groups — emoji in a 26px left gutter; section name + row quantities all share the same left edge */
+.ing-grp-head{display:grid;grid-template-columns:26px 1fr;align-items:center;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 4px;}
+.ing-grp-ico{font-size:14px;line-height:1;}
+.ing-grp-list{padding-left:26px;}
 .recipe-ing-list li{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-light);font-size:14px;line-height:1.4;align-items:baseline;}
 .recipe-ing-list li:last-child{border-bottom:none;}
 .recipe-ing-qty{font-weight:700;color:var(--theme-accent-dark);font-size:13px;}
@@ -4761,10 +4765,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v165';
+var APP_VERSION='v166';
 var APP_BUILD_TIME='2026-07-02';
 
-var APP_VERSION_TAG='Meal Planner v165';
+var APP_VERSION_TAG='Meal Planner v166';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -7068,7 +7072,7 @@ function renderGroupedIngredientsHtml(ings,ctx){
       var groups={},order=[];
       ings.forEach(function(ing){var dept=(typeof ing==='string')?(guessDept(ing)||'Other'):(groceryDeptFor(ing)||'Other');if(!groups[dept]){groups[dept]=[];order.push(dept);}groups[dept].push(ing);}); // v105 (#27B): AI dept
       if(order.length<=1){listHtml='<ul class="recipe-ing-list">'+ings.map(liFor).join('')+'</ul>';}
-      else{order.forEach(function(dept){listHtml+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 4px;">'+getDeptIcon(dept)+' '+escHtml(dept)+'</div><ul class="recipe-ing-list">'+groups[dept].map(liFor).join('')+'</ul>';});}
+      else{order.forEach(function(dept){listHtml+='<div class="ing-grp"><div class="ing-grp-head"><span class="ing-grp-ico">'+getDeptIcon(dept)+'</span><span class="ing-grp-name">'+escHtml(dept)+'</span></div><ul class="recipe-ing-list ing-grp-list">'+groups[dept].map(liFor).join('')+'</ul></div>';});}// v166: emoji in a fixed left gutter; section name + qtys aligned to its right
     }
   }
   var hint=''; // v161: read-only view — no inline editing hint

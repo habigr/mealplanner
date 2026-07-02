@@ -165,6 +165,22 @@ label{display:block;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-t
 .trip-meta{font-size:12px;color:var(--muted);font-weight:500;}
 .trip-code-badge{font-size:9.5px;font-family:monospace;color:var(--muted);background:var(--panel-soft);padding:2px 7px;border-radius:4px;border:1px solid var(--border-light);display:inline-block;margin-top:4px;letter-spacing:.04em;}
 .trip-chevron{color:var(--border);font-size:20px;flex-shrink:0;}
+/* v173: modernized home trip cards — rounded icon tile, cleaner type, pane + hover-lift */
+.trip-icon{width:46px;height:46px;border-radius:12px;background:var(--theme-accent-soft);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;line-height:1;}
+.trip-card{border:1px solid var(--border-light)!important;box-shadow:var(--shadow-sm);}
+.trip-name{font-size:16.5px;font-weight:800;letter-spacing:-.01em;}
+.trip-meta{font-size:12.5px;}
+.trip-code-badge{opacity:.7;}
+@media(hover:hover){.trip-card:hover{border-color:var(--theme-border)!important;box-shadow:var(--shadow);transform:translateY(-2px);}}
+/* v173: compact horizontal hero — smaller branding, more room for trips */
+.landing-hero{padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 16px!important;}
+.landing-hero-inner{display:flex;align-items:center;gap:13px;position:relative;z-index:1;}
+.landing-icon-wrap{width:52px!important;height:52px!important;margin-bottom:0!important;border-radius:14px!important;}
+.landing-icon-wrap canvas{width:100%;height:100%;display:block;}
+.landing-hero-text{text-align:left;}
+.landing-app-name{font-size:23px!important;margin:0 0 2px!important;}
+.landing-tagline{font-size:11px!important;}
+.landing-body{padding-top:22px!important;}
 .landing-empty{text-align:center;padding:36px 16px;}
 .landing-empty-icon{font-size:48px;display:block;margin-bottom:16px;opacity:.5;}
 .landing-empty h3{font-size:20px;font-weight:800;color:var(--text-secondary);margin:0 0 8px;}
@@ -863,8 +879,15 @@ main,.page,.recipe-detail-body,.gis-sheet,.admin-drawer,#dishModal .modal,.ai-ch
   .nav-btn.active{color:var(--theme-accent);}
   .nav-btn.active .nav-icon{stroke:var(--theme-accent)!important;}
   .nav-icon{width:26px!important;height:26px!important;stroke-width:1.9;}
+  .nav-back-btn .nav-label{color:var(--muted)!important;font-size:9.5px!important;}
+  .nav-badge{right:calc(50% - 18px);}
   .bottom-nav{border-top:1px solid var(--border-light)!important;box-shadow:0 -1px 12px rgba(15,23,42,.05)!important;}
-  /* tighter meal-plan top */
+  /* tighter meal-plan top — smaller heading, small "Edit Plan" button (not a full-width bar) */
+  #planner .toolbar{padding-top:2px;margin-bottom:6px;align-items:center;}
+  #planner .toolbar h2{font-size:16px;}
+  #editModeToggle{width:auto!important;padding:6px 12px!important;font-size:12px!important;}
+  .planner-edit-btns{width:auto!important;}
+  .planner-edit-btns button{flex:0 0 auto!important;padding:6px 10px!important;font-size:12px!important;}
   .plan-trip-header{padding:0 2px 8px!important;}
   #planTripHeader+.day-grid,.day-grid{margin-top:2px;}
   .day-card{margin-bottom:10px;}
@@ -1790,10 +1813,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 <div id="landingScreen">
   <div class="landing-hero">
     <div class="landing-hero-ring"></div>
-    <div class="landing-icon-wrap"><canvas id="landingIconCanvas" width="176" height="176"></canvas></div>
-    <h1 class="landing-app-name">Meal Planner</h1>
-    <p class="landing-tagline">Plan meals · Build lists · Shop together</p>
-    <div id="landingUserBadge" style="display:none;margin-top:16px;position:relative;z-index:1;"></div>
+    <div class="landing-hero-inner">
+      <div class="landing-icon-wrap"><canvas id="landingIconCanvas" width="176" height="176"></canvas></div>
+      <div class="landing-hero-text">
+        <h1 class="landing-app-name">Meal Planner</h1>
+        <p class="landing-tagline">Plan · Shop · Cook together</p>
+      </div>
+    </div>
+    <div id="landingUserBadge" style="display:none;margin-top:12px;position:relative;z-index:1;"></div>
   </div>
   <div class="landing-body">
     <div id="guestModeBanner" class="guest-mode-banner" style="display:none;">
@@ -3316,7 +3343,7 @@ function renderLanding(){
     return'<div class="trip-card-wrap" data-code="'+escAttr(ev.code||'')+'">'+
       '<button class="trip-del-btn" onclick="event.stopPropagation();deleteTripFromDevice(\''+escAttr(ev.code||'')+'\')" aria-label="Delete">'+TRASH_SVG+'Delete</button>'+
       '<div class="trip-card" onclick="loadTrip(\''+escAttr(ev.code||'')+'\')" role="button">'+
-        '<div class="trip-accent '+cls+'"></div>'+
+        '<div class="trip-icon">'+(getHolidayEmoji(ev.startDate)||'🍽')+'</div>'+
         '<div class="trip-info"><div class="trip-name">'+escHtml(ev.name||ev.location||'Untitled')+'</div><div class="trip-meta">'+escHtml(dateStr)+' · '+dishes+' dish'+(dishes!==1?'es':'')+'</div><div class="trip-code-badge">'+escHtml(ev.code||'')+'</div></div>'+
         '<button class="trip-del-hover" onclick="event.stopPropagation();deleteTripFromDevice(\''+escAttr(ev.code||'')+'\')">✕</button>'+
         '<span class="trip-chevron">›</span>'+
@@ -4830,10 +4857,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v172';
+var APP_VERSION='v173';
 var APP_BUILD_TIME='2026-07-02';
 
-var APP_VERSION_TAG='Meal Planner v172';
+var APP_VERSION_TAG='Meal Planner v173';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

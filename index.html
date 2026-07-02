@@ -833,6 +833,23 @@ section#recipes{display:none!important;}
 /* section cards read as the view's open sections, not heavy boxes */
 #dishModal .detail-card{border:none;border-top:1px solid var(--border-light);border-radius:0;background:transparent;padding:16px 2px;margin-bottom:0;}
 #dishModal .detail-card-header{margin-bottom:10px;}
+/* v161: drop the big "Edit/Add" title + subtitle; the dish NAME is the title */
+#dishModal h3#dishModalTitle,#dishModal>.modal>p{display:none;}
+#dishModal .field-inline>label[for="dishName"]{display:none;}
+#dishModal #dishName{font-size:22px;font-weight:800;letter-spacing:-.025em;color:var(--text);padding:2px 0;border-bottom-color:transparent;line-height:1.15;}
+#dishModal #dishName:focus{border-bottom-color:var(--theme-accent);}
+#dishModal #dishName::placeholder{color:var(--muted);font-weight:700;}
+/* v161: one consistent, view-matched type scale on desktop (mobile keeps 16px inputs to avoid iOS zoom) */
+@media(min-width:769px){
+  #dishModal input:not(#dishName):not([type=checkbox]):not([type=radio]),#dishModal select,#dishModal textarea{font-size:13.5px;}
+  #dishModal .field>label,#dishModal .field-inline>label{font-size:10.5px;}
+}
+/* v161: sticky Original/Adjusted/Unit column headers while scrolling ingredients */
+#dishModal .ingredient-row-labels,#dishModal .ing-labels-mobile{position:sticky;top:0;z-index:4;background:var(--panel-warm);padding:8px 13px 6px;border-bottom:1px solid var(--border-light);}
+/* v161: a touch more contrast on the top entry boxes (esp. mobile) so they read as fields */
+@media(max-width:768px){
+  #dishModal #dishUrl,#dishModal #servings,#dishModal #peopleEating,#dishModal #dishNotes{background:var(--panel-soft);border:1px solid var(--border-light);border-radius:9px;padding:9px 11px;}
+}
 /* v160 declutter: smaller import button, compact Day/Meal, smaller "Going out" toggle */
 #dishModal .library-import-btn{padding:10px 16px;font-size:13px;border-width:1.5px;border-radius:10px;background:var(--panel-soft);}
 #dishModal #assignmentFields{gap:10px;margin-bottom:10px;}
@@ -4707,10 +4724,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v160';
+var APP_VERSION='v161';
 var APP_BUILD_TIME='2026-07-02';
 
-var APP_VERSION_TAG='Meal Planner v160';
+var APP_VERSION_TAG='Meal Planner v161';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -6986,8 +7003,8 @@ function renderGroupedIngredientsHtml(ings,ctx){
     else{var _n=(ing.qtyOverride&&String(ing.qtyOverride).trim())?String(ing.qtyOverride).trim():scaleQty(ing.quantity,_scale);qty=[_n||'',ing.unit||''].filter(Boolean).join(' ');item=ing.item||'';}
     var gn=(typeof ing==='object')?groceryDisplayName(ing):''; // grocery-list name
     var pill=(gn&&gn.toLowerCase()!==String(item).trim().toLowerCase())?'<span class="grocery-name-pill" title="On the grocery list as — tap to edit">'+escHtml(gn)+'</span>':'';
-    var editable=!!(ctx&&ctx.id&&typeof ing==='object'); // v100: tap to edit the grocery-list name
-    var attrs=editable?' style="cursor:pointer;" onclick="editGroceryName(\''+ctx.type+'\',\''+escAttr(ctx.id)+'\','+ings.indexOf(ing)+')" title="Tap to set the grocery-list name"':'';
+    var editable=false; // v161: the view is READ-ONLY — all editing happens in edit mode
+    var attrs='';
     var ovMark=(typeof ing==='object'&&ing.qtyOverride&&String(ing.qtyOverride).trim())?'<span class="ing-manual-badge" title="Manually set — not auto-scaled">✎</span>':'';
     return'<li'+attrs+'><span class="recipe-ing-qty">'+escHtml(qty)+ovMark+'</span><span class="recipe-ing-item">'+escHtml(item)+pill+'</span></li>';
   }
@@ -7017,7 +7034,7 @@ function renderGroupedIngredientsHtml(ings,ctx){
       else{order.forEach(function(dept){listHtml+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 4px;">'+getDeptIcon(dept)+' '+escHtml(dept)+'</div><ul class="recipe-ing-list">'+groups[dept].map(liFor).join('')+'</ul>';});}
     }
   }
-  var hint=(ctx&&ctx.id)?'<div style="font-size:11px;color:var(--muted);margin:-2px 0 8px;">Tap an ingredient to set its 🛒 grocery-list name.</div>':'';
+  var hint=''; // v161: read-only view — no inline editing hint
   return'<div class="recipe-detail-section"><div class="recipe-section-heading">Ingredients</div>'+hint+bar+listHtml+'</div>';
 }
 // v100: edit an ingredient's grocery-list name. type 'recipe' edits the library recipe; 'dish' edits the plan dish.

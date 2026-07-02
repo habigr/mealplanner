@@ -854,6 +854,21 @@ main,.page,.recipe-detail-body,.gis-sheet,.admin-drawer,#dishModal .modal,.ai-ch
 @media(hover:none){
   button:active,.dish:active,.day-card:active,.nav-btn:active,.top-tab:active,.ai-chip:active,.grocery-item-name:active,.shopping-item:active,.gis-dish-row:active,.dish-thumb:active,.hdr-btn:active{transform:scale(.97);transition:transform .06s ease;}
 }
+/* ===== v172: iOS-style bottom tab bar + tighter meal-plan top (mobile) ===== */
+@media(max-width:768px){
+  :root{--nav-h:54px;}
+  /* clean iOS tab bar — no pill; accent color for the active tab, refined icons/labels */
+  .nav-btn::before{display:none!important;}
+  .nav-btn{gap:3px;font-size:9.5px;font-weight:600;padding:5px 4px;}
+  .nav-btn.active{color:var(--theme-accent);}
+  .nav-btn.active .nav-icon{stroke:var(--theme-accent)!important;}
+  .nav-icon{width:26px!important;height:26px!important;stroke-width:1.9;}
+  .bottom-nav{border-top:1px solid var(--border-light)!important;box-shadow:0 -1px 12px rgba(15,23,42,.05)!important;}
+  /* tighter meal-plan top */
+  .plan-trip-header{padding:0 2px 8px!important;}
+  #planTripHeader+.day-grid,.day-grid{margin-top:2px;}
+  .day-card{margin-bottom:10px;}
+}
 /* v168: smaller plan edit controls + tighter day cards on mobile */
 @media(max-width:768px){
   .day-tools button{font-size:10px!important;padding:3px 6px!important;}
@@ -4815,10 +4830,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v171';
+var APP_VERSION='v172';
 var APP_BUILD_TIME='2026-07-02';
 
-var APP_VERSION_TAG='Meal Planner v171';
+var APP_VERSION_TAG='Meal Planner v172';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

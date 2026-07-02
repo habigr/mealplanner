@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Grocery List — modern iOS mockup</title>
+<title>Grocery List — modern iOS mockup v2</title>
 <style>
   :root{
     --bg:#f2f2f7;--card:#fff;--label:#1c1c1e;--label2:#8e8e93;--label3:#c7c7cc;
@@ -15,58 +15,91 @@
   body{font-family:var(--ff);background:var(--bg);color:var(--label);-webkit-font-smoothing:antialiased;padding-bottom:90px;}
   .note{background:#fff8e1;color:#7a5b00;font-size:12.5px;padding:10px 16px;text-align:center;}
 
-  /* large title header */
-  header{position:sticky;top:0;z-index:20;background:rgba(242,242,247,.82);-webkit-backdrop-filter:blur(20px) saturate(1.8);backdrop-filter:blur(20px) saturate(1.8);padding:14px 20px 10px;border-bottom:.5px solid var(--sep);}
-  h1{font-size:30px;font-weight:800;letter-spacing:-.03em;}
+  header{position:sticky;top:0;z-index:20;background:rgba(242,242,247,.85);-webkit-backdrop-filter:blur(20px) saturate(1.8);backdrop-filter:blur(20px) saturate(1.8);padding:14px 20px 10px;border-bottom:.5px solid var(--sep);}
+  h1{font-size:26px;font-weight:600;letter-spacing:-.02em;}
   .subttl{font-size:13.5px;color:var(--label2);font-weight:500;margin-top:2px;}
-  /* progress */
   .prog{margin-top:11px;height:7px;border-radius:4px;background:rgba(120,120,128,.16);overflow:hidden;}
   .prog>i{display:block;height:100%;width:38%;background:var(--green);border-radius:4px;}
-  /* segmented control */
-  .seg{display:flex;background:rgba(120,120,128,.12);border-radius:10px;padding:2px;margin-top:12px;}
+  /* search field */
+  .search{display:flex;align-items:center;gap:7px;margin-top:12px;background:rgba(120,120,128,.14);border-radius:11px;padding:9px 12px;color:var(--label2);}
+  .search svg{width:17px;height:17px;flex-shrink:0;}
+  .search span{font-size:15px;letter-spacing:-.01em;}
+  /* segmented control incl. Assign */
+  .seg{display:flex;background:rgba(120,120,128,.12);border-radius:10px;padding:2px;margin-top:10px;}
   .seg button{flex:1;font-family:var(--ff);font-size:13.5px;font-weight:600;letter-spacing:-.01em;padding:7px;border:none;background:transparent;color:var(--label);border-radius:8px;}
   .seg button.on{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);}
-  /* store filter chips */
+
   .chips{display:flex;gap:8px;overflow-x:auto;padding:12px 16px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
   .chips::-webkit-scrollbar{display:none;}
   .chip{flex-shrink:0;font-size:13px;font-weight:600;letter-spacing:-.01em;padding:7px 14px;border-radius:999px;background:var(--card);color:var(--label);border:.5px solid var(--sep);}
   .chip.on{background:var(--accent);color:#fff;border-color:var(--accent);}
 
-  /* store section */
   .section{padding:18px 16px 0;}
   .sec-head{display:flex;align-items:center;gap:8px;padding:0 6px 8px;}
   .sec-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-  .sec-name{font-size:13px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--label2);}
+  .sec-name{font-size:13px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label2);}
   .sec-count{margin-left:auto;font-size:13px;font-weight:600;color:var(--label3);}
 
   .card{background:var(--card);border-radius:var(--r-card);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px -18px rgba(0,0,0,.25);}
-  .row{display:flex;align-items:center;gap:13px;padding:11px 14px 11px 15px;position:relative;}
-  .row:active{background:#f7f7fa;}
+  .row{display:flex;align-items:center;gap:13px;padding:11px 12px 11px 15px;position:relative;}
+  .row:active{background:#f6f6f9;}
   .row + .row::before{content:'';position:absolute;top:0;left:52px;right:0;height:.5px;background:var(--sep);}
-  /* checkbox */
   .check{width:26px;height:26px;border-radius:50%;border:2px solid var(--label3);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
   .check.done{background:var(--green);border-color:var(--green);color:#fff;font-size:15px;font-weight:800;}
   .g-main{flex:1;min-width:0;}
-  .g-name{font-size:16px;font-weight:600;letter-spacing:-.01em;line-height:1.25;}
+  .g-name{font-size:16px;font-weight:600;letter-spacing:-.01em;}
   .g-sub{font-size:13px;color:var(--label2);font-weight:500;margin-top:2px;}
-  .g-qty{font-size:15px;font-weight:600;color:var(--label);flex-shrink:0;letter-spacing:-.01em;}
+  .g-qty{font-size:15px;font-weight:600;flex-shrink:0;letter-spacing:-.01em;}
   .g-qty small{font-size:12px;color:var(--label2);font-weight:600;}
-  .combined{display:inline-block;font-size:11px;font-weight:700;color:var(--accent2);background:var(--accent-soft);padding:1px 7px;border-radius:6px;margin-top:3px;letter-spacing:.01em;}
+  .combined{display:inline-block;font-size:11px;font-weight:700;color:var(--accent2);background:var(--accent-soft);padding:1px 7px;border-radius:6px;margin-top:3px;}
+  .chev{color:var(--label3);font-size:18px;font-weight:600;flex-shrink:0;}
   .row.done .g-name{color:var(--label3);text-decoration:line-through;}
   .row.done .g-qty{color:var(--label3);}
+  /* assign-mode store picker */
+  .store-pick{flex-shrink:0;display:flex;align-items:center;gap:5px;font-size:13.5px;font-weight:600;color:var(--accent2);background:var(--accent-soft);padding:6px 11px;border-radius:999px;}
   .add{display:flex;align-items:center;gap:10px;padding:12px 15px;color:var(--accent2);font-size:15px;font-weight:600;border-top:.5px solid var(--sep);}
   .add .plus{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:17px;}
+
+  /* ---- item detail sheet ---- */
+  .sheet-wrap{padding:30px 16px 0;}
+  .sheet-cap{font-size:13px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label2);padding:0 6px 10px;}
+  .sheet{background:var(--card);border-radius:22px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.06),0 20px 50px -24px rgba(0,0,0,.4);}
+  .sheet-hero{display:flex;align-items:center;gap:14px;padding:18px;}
+  .sheet-hero img{width:72px;height:72px;border-radius:16px;object-fit:cover;flex-shrink:0;background:var(--accent-soft);}
+  .sheet-title{font-size:22px;font-weight:700;letter-spacing:-.02em;}
+  .sheet-store{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent2);margin-top:5px;}
+  .sheet-store .dot{width:8px;height:8px;border-radius:50%;background:var(--green);}
+  .grp-label{font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label2);padding:14px 18px 6px;border-top:.5px solid var(--sep);}
+  .qtyrow{display:flex;align-items:center;gap:14px;padding:4px 18px 14px;}
+  .stepper{display:flex;align-items:center;gap:0;background:rgba(120,120,128,.12);border-radius:11px;overflow:hidden;}
+  .stepper button{width:44px;height:40px;border:none;background:transparent;font-size:22px;font-weight:500;color:var(--accent2);font-family:var(--ff);}
+  .stepper .val{min-width:56px;text-align:center;font-size:17px;font-weight:700;}
+  .qtyhint{font-size:13px;color:var(--label2);font-weight:500;}
+  .use{display:flex;align-items:center;gap:11px;padding:9px 18px;position:relative;}
+  .use + .use::before{content:'';position:absolute;top:0;left:18px;right:18px;height:.5px;background:var(--sep);}
+  .use-name{flex:1;font-size:15px;font-weight:500;letter-spacing:-.01em;}
+  .use-amt{font-size:14px;font-weight:600;color:var(--label2);}
+  .use-meal{font-size:12px;color:var(--label3);font-weight:500;}
+  .sheet-actions{display:flex;gap:10px;padding:16px 18px 20px;border-top:.5px solid var(--sep);}
+  .sheet-actions button{flex:1;font-family:var(--ff);font-size:15px;font-weight:600;padding:13px;border-radius:13px;border:none;letter-spacing:-.01em;}
+  .btn-have{background:var(--accent);color:#fff;}
+  .btn-del{background:rgba(255,59,48,.1);color:#ff3b30;}
+
   .foot{padding:26px;text-align:center;color:var(--label3);font-size:12px;}
 </style>
 </head>
 <body>
-  <div class="note">Mockup with sample data — proposed modern Grocery list. Fixes: visible section headers + counts, clean rows, correct consolidation (e.g. Blueberries = 4 pt, Limes ×5). Tell me changes; then I port it in.</div>
+  <div class="note">Grocery mockup v2 — adds Search, an Assign tab (per-item store picker), and a tap-to-open item detail sheet (how it's used + the consolidation breakdown). Sample data.</div>
 
   <header>
     <h1>Groceries</h1>
     <div class="subttl">18 items · 3 stores · 7 bought</div>
     <div class="prog"><i></i></div>
-    <div class="seg"><button class="on">List</button><button>Shop</button></div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <span>Search items</span>
+    </div>
+    <div class="seg"><button class="on">List</button><button>Shop</button><button>Assign</button></div>
   </header>
 
   <div class="chips">
@@ -85,26 +118,19 @@
         <div class="check"></div>
         <div class="g-main"><div class="g-name">Blueberries</div><div class="g-sub">Produce</div><span class="combined">combined: 1 pt + 3 pt</span></div>
         <div class="g-qty">4 <small>pt</small></div>
+        <span class="chev">›</span>
       </div>
       <div class="row">
         <div class="check"></div>
-        <div class="g-main"><div class="g-name">Limes</div><div class="g-sub">Produce · for tacos + drinks</div></div>
+        <div class="g-main"><div class="g-name">Limes</div><div class="g-sub">Produce · tacos + drinks</div></div>
         <div class="g-qty">×5</div>
-      </div>
-      <div class="row">
-        <div class="check"></div>
-        <div class="g-main"><div class="g-name">Cilantro</div><div class="g-sub">Produce</div></div>
-        <div class="g-qty">2 <small>bunch</small></div>
+        <span class="chev">›</span>
       </div>
       <div class="row done">
         <div class="check done">✓</div>
         <div class="g-main"><div class="g-name">Watermelon</div><div class="g-sub">Produce</div></div>
         <div class="g-qty">1</div>
-      </div>
-      <div class="row done">
-        <div class="check done">✓</div>
-        <div class="g-main"><div class="g-name">Corn</div><div class="g-sub">Produce</div></div>
-        <div class="g-qty">×8</div>
+        <span class="chev">›</span>
       </div>
       <div class="add"><span class="plus">+</span>Add item</div>
     </div>
@@ -116,38 +142,61 @@
     <div class="card">
       <div class="row">
         <div class="check"></div>
-        <div class="g-main"><div class="g-name">Brioche Buns</div><div class="g-sub">Bakery</div></div>
-        <div class="g-qty">2 <small>pk</small></div>
-      </div>
-      <div class="row">
-        <div class="check"></div>
         <div class="g-main"><div class="g-name">Ground Chuck</div><div class="g-sub">Meat · smash burgers</div></div>
         <div class="g-qty">3 <small>lb</small></div>
+        <span class="chev">›</span>
       </div>
       <div class="row done">
         <div class="check done">✓</div>
-        <div class="g-main"><div class="g-name">Tortillas</div><div class="g-sub">Bakery</div></div>
+        <div class="g-main"><div class="g-name">Brioche Buns</div><div class="g-sub">Bakery</div></div>
         <div class="g-qty">2 <small>pk</small></div>
+        <span class="chev">›</span>
       </div>
       <div class="add"><span class="plus">+</span>Add item</div>
     </div>
   </div>
 
-  <!-- UNASSIGNED -->
+  <!-- ASSIGN TAB preview -->
   <div class="section">
-    <div class="sec-head"><span class="sec-dot" style="background:#c7c7cc;"></span><span class="sec-name">Unassigned</span><span class="sec-count">0 of 2</span></div>
+    <div class="sec-head"><span class="sec-name" style="color:var(--accent2);">▸ Assign tab — tap a store per item</span></div>
     <div class="card">
       <div class="row">
-        <div class="check"></div>
-        <div class="g-main"><div class="g-name">Lobster Tails</div><div class="g-sub">Tap to assign a store</div></div>
-        <div class="g-qty">6</div>
+        <div class="g-main"><div class="g-name">Lobster Tails</div><div class="g-sub">Seafood</div></div>
+        <span class="store-pick">Choose store ▾</span>
       </div>
       <div class="row">
-        <div class="check"></div>
-        <div class="g-main"><div class="g-name">Old Bay</div><div class="g-sub">Tap to assign a store</div></div>
-        <div class="g-qty">1</div>
+        <div class="g-main"><div class="g-name">Old Bay</div><div class="g-sub">Spices</div></div>
+        <span class="store-pick">Costco ▾</span>
       </div>
-      <div class="add"><span class="plus">+</span>Add item</div>
+    </div>
+  </div>
+
+  <!-- ITEM DETAIL SHEET -->
+  <div class="sheet-wrap">
+    <div class="sheet-cap">Tap any item → detail sheet</div>
+    <div class="sheet">
+      <div class="sheet-hero">
+        <img src="https://loremflickr.com/160/160/blueberries?lock=31" alt="">
+        <div>
+          <div class="sheet-title">Blueberries</div>
+          <div class="sheet-store"><span class="dot"></span>Whole Foods · Produce</div>
+        </div>
+      </div>
+
+      <div class="grp-label">To buy</div>
+      <div class="qtyrow">
+        <div class="stepper"><button>−</button><span class="val">4 pt</span><button>+</button></div>
+        <div class="qtyhint">auto-combined from 2 recipes</div>
+      </div>
+
+      <div class="grp-label">How it's used</div>
+      <div class="use"><span class="use-name">Blueberry Pancakes</span><span class="use-meal">Sat · Breakfast</span><span class="use-amt">1 pt</span></div>
+      <div class="use"><span class="use-name">Fruit Salad</span><span class="use-meal">Sun · Breakfast</span><span class="use-amt">3 pt</span></div>
+
+      <div class="sheet-actions">
+        <button class="btn-have">We have it</button>
+        <button class="btn-del">Remove</button>
+      </div>
     </div>
   </div>
 

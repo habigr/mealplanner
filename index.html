@@ -4629,10 +4629,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v157';
+var APP_VERSION='v158';
 var APP_BUILD_TIME='2026-07-01';
 
-var APP_VERSION_TAG='Meal Planner v157';
+var APP_VERSION_TAG='Meal Planner v158';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5097,7 +5097,8 @@ function getAiSystemPrompt(){
     +'remove_dish: {type,name,day?,meal?}\n'
     +'move_dish: {type,name,fromDay?,fromMeal?,toDay,toMeal?}\n'
     +'scale_dish: {type,name,day?,meal?,servings?,peopleEating?}\n'
-    +'edit_ingredient: {type,dish,ingredient,day?,quantity?,unit?,newName?,remove?}\n'
+    +'add_ingredient: {type,dish,day?,meal?,ingredients?["2 lbs clams","4 lobster tails"], OR item,quantity?,unit?, plus optional groceryName?,component?} — ADD new ingredient(s) to an existing dish\n'
+    +'edit_ingredient: {type,dish,ingredient,day?,quantity?,unit?,newName?,groceryName?,groceryDept?,component?,remove?} — edit an EXISTING ingredient. newName=recipe ingredient name; groceryName=grocery-list/purchase name; component=recipe section (e.g. "Sauce"); groceryDept=store aisle. If the ingredient isn\'t found it is ADDED. To ADD brand-new items, prefer add_ingredient.\n'
     +'clear_meal: {type,day,meal?} — removes all dishes from a meal (or whole day if no meal)\n'
     +'add_day: {type,label,date?,meals?}\n'
     +'add_meal_to_day: {type,day,meal}\n'
@@ -5130,10 +5131,16 @@ function getAiSystemPrompt(){
     +'- When adding a dish from a URL: use import_recipe_url (includes full ingredients and steps). Use add_dish ONLY for simple dishes without a URL.\n'
     +'- Remember: you can do multiple actions in one <actions> array\n\n'
     +'== HOW THIS APP WORKS (so you can explain it) ==\n'
-    +'GROCERY LIST: ingredients from every planned dish are aggregated into the grocery list. Lines are grouped by their PURCHASE NAME (the "grocery name" the user sets on an ingredient — e.g. lime juice, lime zest, and a whole lime can all be named "Lime" so they become ONE line). To change grouping, set an ingredient\'s grocery name via edit_ingredient (newName) — items sharing a grocery name merge.\n'
+    +'GROCERY LIST: ingredients from every planned dish are aggregated into the grocery list. Lines are grouped by their PURCHASE NAME (the "grocery name" the user sets on an ingredient — e.g. lime juice, lime zest, and a whole lime can all be named "Lime" so they become ONE line). To change grouping, set an ingredient\'s grocery name via edit_ingredient with the **groceryName** field (NOT newName — newName changes the recipe ingredient name) — items sharing a grocery name merge.\n'
     +'CONSOLIDATION: when a merged line mixes units (e.g. 2 cups juice + 1 oz zest + 1 whole), the app computes ONE buy-count. In your context each such line shows "[combined: 2 cups juice→~4, 1 oz zest→~1; note]". If asked how a number was reached (e.g. "why 5 limes?"), explain using that breakdown — the per-form conversions that sum to the total.\n'
     +'ADJUSTMENT: the user can nudge a line\'s buy-count up/down; that shows as "[your adjustment +1]" and rides on top of the computed total. Respect it — the final buy amount = computed total + their adjustment.\n'
-    +'COMPONENTS: a recipe can have named sections (e.g. "Sauce", "Marinade"); an ingredient\'s component groups it under that heading. Same ingredient can appear in two sections.\n'
+    +'COMPONENTS: a recipe can have named sections (e.g. "Sauce", "Marinade"); an ingredient\'s **component** field groups it under that heading. Same ingredient can appear in two sections. Set/clear it via edit_ingredient component (empty string clears).\n'
+    +'DATA MODEL (so you know every field you can touch):\n'
+    +'  • Dish: name, day, meal, url, notes, servings (recipe base), peopleEating (cooking-for; drives scaling), isVegetarian, tags, ingredients[], steps[], cookTime, owner/assignedTo.\n'
+    +'  • Ingredient: item (recipe name, e.g. "lime juice"), quantity, unit, groceryName (purchase/grocery-list name, e.g. "Lime" — controls grouping), groceryDept (store aisle), component (recipe section), qtyOverride (manual amount). Edit any of these with edit_ingredient; add new ones with add_ingredient.\n'
+    +'  • Grocery line (aggregated, not edited directly): store, department, status (Need/Bought), buyDelta (the user\'s +/- adjustment), consolidation breakdown. Change store via assign_store; change how items group by editing their groceryName.\n'
+    +'  • Trip: name, dates, days[] (each with meals[]), mealTypes, stores[], storeRules, tripMemory (preferences/restrictions/notes). \n'
+    +'If a user asks to change something, map it to the field above and use the matching action — do not say you can\'t; you can edit essentially everything in the app.\n'
     +'STORES: each line has a store; the app remembers a grocery name→store choice so it sticks. Use assign_store to change.\n\n'
     +'== SMART SCALING (do better than raw math) ==\n'
     +'When scaling servings, do not blindly multiply. Round to sensible purchasable amounts (2.5 onions → 3), keep "to taste"/"pinch"/"for serving" unchanged, scale spices/salt sub-linearly (they rarely need full multiplication), and keep whole-item counts whole. Use edit_ingredient to fix any that don\'t scale linearly after a scale_dish.\n\n'
@@ -5258,6 +5265,7 @@ function executeAiAction(action){
     case'move_dish':return executeMoveDish(action);
     case'scale_dish':return executeScaleDish(action);
     case'edit_ingredient':return executeEditIngredient(action);
+    case'add_ingredient':return executeAddIngredient(action);
     case'clear_meal':return executeClearMeal(action);
     case'add_day':return executeAddDay(action);
     case'add_meal_to_day':return executeAddMealToDay(action);
@@ -5348,17 +5356,46 @@ function executeEditIngredient(a){
   if(!currentEvent)return{ok:false,msg:'No trip loaded'};
   var dish=findDishByHint(a.dish,a.day,a.meal);
   if(!dish)return{ok:false,msg:'Could not find dish: '+(a.dish||'')};
+  dish.ingredients=Array.isArray(dish.ingredients)?dish.ingredients:[];
   var hint=(a.ingredient||'').toLowerCase();
-  var ing=dish.ingredients.find(function(i){return i.item.toLowerCase().indexOf(hint)>=0;});
-  if(!ing&&a.remove===false&&a.newName)ing={};
-  if(!ing)return{ok:false,msg:'Could not find ingredient "'+a.ingredient+'" in "'+dish.name+'"'};
-  if(a.remove){dish.ingredients=dish.ingredients.filter(function(i){return i!==ing;});commitAndSync();renderAll();return{ok:true,msg:'Removed "'+ing.item+'" from "'+dish.name+'"'};}
-  var oldName=ing.item;
-  if(a.quantity!==undefined){ing.quantity=String(a.quantity);ing.displayedQuantity=String(a.quantity);}
-  if(a.unit!==undefined)ing.unit=a.unit;
-  if(a.newName)ing.item=toTitleCaseIngredient(a.newName);
-  commitAndSync();renderAll();
-  return{ok:true,msg:'Updated '+oldName+' in "'+dish.name+'"'};
+  var ing=hint?dish.ingredients.find(function(i){return String(i.item||'').toLowerCase().indexOf(hint)>=0;}):null;
+  if(!ing){
+    if(a.remove)return{ok:false,warn:true,msg:'"'+(a.ingredient||'')+'" is not in "'+dish.name+'" — nothing to remove'};
+    // v158: not found → ADD it (so "change/add X" just works instead of failing)
+    return executeAddIngredient({dish:a.dish,day:a.day,meal:a.meal,ingredients:[[a.quantity,a.unit,(a.newName||a.ingredient)].filter(Boolean).join(' ')],component:a.component,groceryName:a.groceryName,groceryDept:a.groceryDept});
+  }
+  if(a.remove){dish.ingredients=dish.ingredients.filter(function(i){return i!==ing;});commitAndSync();renderAll();if(typeof buildGroceryList==='function')buildGroceryList();return{ok:true,msg:'Removed "'+ing.item+'" from "'+dish.name+'"'};}
+  var oldName=ing.item,changed=[];
+  if(a.quantity!==undefined){ing.quantity=String(a.quantity);ing.displayedQuantity=String(a.quantity);ing.qtyOverride='';changed.push('amount');}
+  if(a.unit!==undefined){ing.unit=a.unit;changed.push('unit');}
+  if(a.newName){ing.item=toTitleCaseIngredient(a.newName);changed.push('name');}
+  if(a.groceryName!==undefined){if(typeof noteGroceryRename==='function')noteGroceryRename(ing.groceryName||ing.item,a.groceryName);ing.groceryName=String(a.groceryName||'').trim();changed.push('grocery name');} // v158
+  if(a.groceryDept!==undefined){ing.groceryDept=String(a.groceryDept||'').trim();changed.push('department');} // v158
+  if(a.component!==undefined){ing.component=String(a.component||'').trim();changed.push('section');} // v158
+  commitAndSync();renderAll();if(typeof buildGroceryList==='function')buildGroceryList();
+  return{ok:true,msg:'Updated '+oldName+' in "'+dish.name+'"'+(changed.length?' ('+changed.join(', ')+')':'')};
+}
+// v158: add one or more NEW ingredients to a dish. Accepts a.ingredients:["2 lbs clams","4 lobster tails"] or a single a.item/a.ingredient (+ quantity/unit).
+function executeAddIngredient(a){
+  if(!currentEvent)return{ok:false,msg:'No trip loaded'};
+  var dish=findDishByHint(a.dish,a.day,a.meal);
+  if(!dish)return{ok:false,msg:'Could not find dish: '+(a.dish||'')};
+  dish.ingredients=Array.isArray(dish.ingredients)?dish.ingredients:[];
+  var items=[];
+  if(Array.isArray(a.ingredients))items=a.ingredients.slice();
+  else if(a.item||a.name||a.ingredient)items=[[a.quantity,a.unit,(a.item||a.name||a.ingredient)].filter(Boolean).join(' ')];
+  items=items.map(function(x){return String(x||'').trim();}).filter(Boolean);
+  if(!items.length)return{ok:false,warn:true,msg:'No ingredients given to add to "'+dish.name+'"'};
+  var added=[];
+  items.forEach(function(line){
+    var p=(typeof parseIngLine==='function')?parseIngLine(line):{item:line};
+    var ing={quantity:p.quantity||'',displayedQuantity:p.quantity||'',unit:p.unit||'',item:toTitleCaseIngredient(p.item||line),originalQuantity:p.quantity||'',groceryName:a.groceryName||'',groceryDept:a.groceryDept||'',qtyOverride:'',component:a.component||''};
+    if(!ing.item)return;
+    dish.ingredients.push(ing);added.push([ing.quantity,ing.unit,ing.item].filter(Boolean).join(' '));
+  });
+  if(!added.length)return{ok:false,warn:true,msg:'Nothing to add'};
+  commitAndSync();renderAll();if(typeof buildGroceryList==='function')buildGroceryList();
+  return{ok:true,msg:'Added to "'+dish.name+'": '+added.join(', ')};
 }
 
 function executeClearMeal(a){

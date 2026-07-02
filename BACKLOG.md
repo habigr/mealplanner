@@ -68,6 +68,7 @@ Add optional `sources: [{dishId,item,component,quantity,unit}]` to each aggregat
 - **5. Override = signed delta, not a frozen number** (key behavior): store the difference (suggestion 5 → user 6 ⇒ `+1`); displayed total = `AI suggestion + delta` so it rides along when the suggestion later changes. Reuse `qtyOverride` ✎ semantics. No interrupting modal (user's in a store) — passive ✎ badge; tap to change/clear.
 - **6/7. Breakdown** = inline-under-the-line (never popup), read-only source rows + one editable adjustment row; mobile-first stepper (−/+) tap targets; ✎ badge visible on the collapsed line too.
 **Guardrails:** `sources`/`buyQty`/`buyUnit`/delta are additive. AI runs at consolidation time / on demand — never a silent background overwrite of a user delta. Versioned, backup first, not mid-trip.
+- **Observed repro (Robbie, 2026-07-02):** blueberries "Total needed" still shows **"1 pt + 3 pts"** instead of consolidating to **4 pt**. Both lines are the SAME unit (pints) → this is even simpler than cross-unit: same-`groceryName`+same-unit lines are not being merged/summed on the collapsed line. Use as the first G3/3b test case (same-unit sum before the AI cross-unit path).
 
 ### G2 — Recipe components (sauce vs main, with overlap) (own version, biggest lift, do LAST)
 Purely additive — empty `component` = current behavior, zero migration. **Component names are the recipe's own section names, verbatim (never hardcode "Main"/"Sauce").**

@@ -4736,10 +4736,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v162';
+var APP_VERSION='v163';
 var APP_BUILD_TIME='2026-07-02';
 
-var APP_VERSION_TAG='Meal Planner v162';
+var APP_VERSION_TAG='Meal Planner v163';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -7100,7 +7100,8 @@ function showDishDetail(id){
   if(d.notes)html+='<div class="recipe-personal-notes">📝 '+escHtml(d.notes)+'</div>';
   var ings=d.ingredients||[];
   if(ings.length){html+=renderGroupedIngredientsHtml(ings,{type:'dish',id:d.id});}
-  var steps=d.steps||[];
+  // v163: steps live on the linked library recipe for plan dishes → fall back to it so the view always shows instructions
+  var steps=(d.steps&&d.steps.length)?d.steps:(function(){var allR=(_menuLibrary||[]).concat(currentEvent.recipeBank||[]);var libR=allR.find(function(r){return r.id===d.bankRecipeId;})||allR.find(function(r){return (r.name||'').toLowerCase()===(d.name||'').toLowerCase();});return (libR&&libR.steps)||[];})();
   if(steps.length){html+='<div class="recipe-detail-section"><div class="recipe-section-heading">Instructions</div><ol class="recipe-steps-list">';steps.forEach(function(s,i){html+='<li><span class="recipe-step-num">'+(i+1)+'</span><span>'+escHtml(cleanStepText(s))+'</span></li>';});html+='</ol></div>';}
   body.innerHTML=html;body.scrollTop=0;
   var hasSteps=steps.length>0;

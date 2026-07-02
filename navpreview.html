@@ -3,98 +3,113 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Tab Bar Icon Preview</title>
+<title>Tab Bar Icon Preview v2</title>
 <style>
-  :root{--accent:#1e3d72;--muted:#8a8f98;--panel:#ffffff;--text:#0f172a;--bg:#eef1f5;--brd:rgba(60,60,67,.14);}
+  :root{--accent:#1e3d72;--accent2:#3a6fd8;--soft:rgba(58,111,216,.14);--muted:#9aa0aa;--panel:#fff;--text:#0f172a;--bg:#eceff4;--brd:rgba(60,60,67,.12);}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;background:var(--bg);color:var(--text);padding:20px 16px 60px;}
-  h1{font-size:20px;margin:0 0 4px;}
-  .sub{color:var(--muted);font-size:13px;margin:0 0 22px;line-height:1.5;}
-  .set{background:var(--panel);border-radius:18px;padding:16px 14px 6px;margin-bottom:22px;box-shadow:0 2px 14px rgba(0,0,0,.06);}
-  .set h2{font-size:15px;margin:0 0 2px;}
-  .set .desc{color:var(--muted);font-size:12.5px;margin:0 0 14px;line-height:1.45;}
-  .bar-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:10px 4px 6px;}
-  /* realistic iOS tab bar */
-  .bar{display:grid;grid-template-columns:repeat(4,1fr);height:56px;border-top:.5px solid var(--brd);background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(20px) saturate(1.7);backdrop-filter:blur(20px) saturate(1.7);border-radius:0 0 12px 12px;}
-  .bar.dark{background:#12161f;color:#e6e9ee;border-top:.5px solid rgba(255,255,255,.10);border-radius:12px;}
-  .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);}
-  .bar.dark .tab{color:#8b93a1;}
-  .tab.active{color:var(--accent);}
-  .bar.dark .tab.active{color:#7fa8e6;}
-  .tab svg{width:24px;height:24px;display:block;}
-  .tab .lbl{font-size:10px;font-weight:500;letter-spacing:-.01em;line-height:1.1;}
-  .wrap-dark{background:#0b0e14;border-radius:12px;margin-top:12px;padding:0;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;background:var(--bg);color:var(--text);padding:20px 16px 70px;}
+  h1{font-size:20px;margin:0 0 4px;letter-spacing:-.02em;}
+  .sub{color:#6b7280;font-size:13px;margin:0 0 22px;line-height:1.5;}
+  .set{background:var(--panel);border-radius:20px;padding:16px 14px 8px;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.07);}
+  .set h2{font-size:15.5px;margin:0 0 2px;letter-spacing:-.01em;}
+  .set .desc{color:#6b7280;font-size:12.5px;margin:0 0 14px;line-height:1.45;}
+  .stage{background:#f4f6fa;border-radius:14px;padding:12px 10px;}
+  .stage.dk{background:#0b0e14;margin-top:10px;}
+  /* base bar */
+  .bar{display:grid;grid-template-columns:repeat(4,1fr);height:60px;align-items:center;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(20px) saturate(1.7);backdrop-filter:blur(20px) saturate(1.7);border-top:.5px solid var(--brd);}
+  .dk .bar{background:rgba(20,25,34,.92);border-top:.5px solid rgba(255,255,255,.08);color:#e6e9ee;}
+  /* floating variant */
+  .bar.float{margin:6px 10px;height:62px;border:none;border-radius:22px;box-shadow:0 10px 30px -8px rgba(20,40,90,.35),0 2px 8px rgba(0,0,0,.08);}
+  .dk .bar.float{box-shadow:0 10px 30px -8px rgba(0,0,0,.6);}
+  .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted);position:relative;transition:color .2s;}
+  .dk .tab{color:#7c8494;}
+  .tab.active{color:var(--accent2);}
+  .dk .tab.active{color:#8fb3ff;}
+  .tab .ico{display:flex;align-items:center;justify-content:center;width:40px;height:32px;border-radius:14px;transition:all .22s cubic-bezier(.3,.7,.3,1.2);}
+  .tab svg{width:26px;height:26px;display:block;}
+  .tab .lbl{font-size:10px;font-weight:600;letter-spacing:-.01em;line-height:1;transition:opacity .2s;}
+  /* --- tile style: active icon in a soft squircle --- */
+  .tile .tab.active .ico{background:var(--soft);transform:translateY(-1px);}
+  /* --- pill style: active icon in a solid accent squircle, white glyph --- */
+  .pill .tab.active .ico{background:linear-gradient(160deg,var(--accent2),var(--accent));color:#fff;transform:translateY(-2px);box-shadow:0 6px 14px -4px var(--accent2);}
+  .pill .tab.active{color:var(--accent2);}
+  .pill .tab.active svg{color:#fff;}
+  /* --- dot style: small dot under active --- */
+  .dot .tab.active::after{content:'';position:absolute;bottom:-2px;width:5px;height:5px;border-radius:50%;background:currentColor;}
   code{background:#eef1f5;padding:1px 6px;border-radius:6px;font-size:12px;}
+  .dk .lbl{}
 </style>
 </head>
 <body>
-  <h1>Bottom tab bar — pick a style</h1>
-  <p class="sub">Each block is one candidate, shown in light + dark, with <b>Meal&nbsp;Plan</b> as the active tab. Tell me a set letter (e.g. “Set B”), and call out any single icon you’d swap. The accent shown is Midnight; it follows your trip’s color scheme.</p>
+  <h1>Bottom tab bar — modern styles</h1>
+  <p class="sub">Filled &amp; chunky, with a modern active-state treatment. Active tab = <b>Meal&nbsp;Plan</b>. Light + dark shown. Tell me a set letter; call out any single icon to swap. Accent = Midnight (follows your trip color scheme).</p>
 
-  <!-- SET A: outline (stroke) -->
   <div class="set">
-    <h2>Set A — Outline (thin line)</h2>
-    <p class="desc">Clean SF-style line icons, stroke 1.8. This is close to what v178 shipped — included so you can judge it fairly against the others.</p>
-    <div class="bar" id="barA"></div>
-    <div class="wrap-dark"><div class="bar dark" id="barAd"></div></div>
+    <h2>Set D — Solid + soft squircle</h2>
+    <p class="desc">Bold filled glyphs; the active tab gets a soft tinted squircle behind it and lifts slightly. Clean, current, calm.</p>
+    <div class="stage"><div class="bar tile" data-mode="fill"></div></div>
+    <div class="stage dk"><div class="bar tile" data-mode="fill"></div></div>
   </div>
 
-  <!-- SET B: filled (solid) -->
   <div class="set">
-    <h2>Set B — Filled (solid)</h2>
-    <p class="desc">Solid glyphs — the classic iOS springboard / tab look. Reads bold and unambiguous at small size.</p>
-    <div class="bar" id="barB"></div>
-    <div class="wrap-dark"><div class="bar dark" id="barBd"></div></div>
+    <h2>Set E — Accent pill (elevated)</h2>
+    <p class="desc">The active icon sits in a solid gradient squircle with a white glyph and a soft glow — pops, very “new app”. This is the boldest option.</p>
+    <div class="stage"><div class="bar pill" data-mode="fill"></div></div>
+    <div class="stage dk"><div class="bar pill" data-mode="fill"></div></div>
   </div>
 
-  <!-- SET C: outline inactive + filled active (true iOS behavior) -->
   <div class="set">
-    <h2>Set C — Outline + fill on the active tab</h2>
-    <p class="desc">The real iOS tab-bar signature: inactive tabs are outlines, the selected tab fills in solid + accent. Best of both.</p>
-    <div class="bar" id="barC"></div>
-    <div class="wrap-dark"><div class="bar dark" id="barCd"></div></div>
+    <h2>Set F — Floating bar + dot</h2>
+    <p class="desc">The whole bar detaches into a rounded, elevated pill with a shadow (floats above the bottom edge). Filled icons, tiny dot under the active tab. Trendy 2024/25 look.</p>
+    <div class="stage"><div class="bar float dot" data-mode="fill"></div></div>
+    <div class="stage dk"><div class="bar float dot" data-mode="fill"></div></div>
   </div>
 
-  <p class="sub" style="margin-top:26px;">Prefer different <i>icons</i> (not just style)? I can also swap: All&nbsp;Trips → <code>house</code> / <code>grid</code> / <code>chevron-back</code>; Groceries → <code>cart</code> / <code>basket</code> / <code>checklist</code>; Trip&nbsp;Settings → <code>sliders</code> / <code>gear</code>. Just say which.</p>
+  <div class="set">
+    <h2>Set G — Duotone</h2>
+    <p class="desc">Two-tone icons: a soft filled base with a crisp accent outline on top. Feels refined and modern without going fully solid.</p>
+    <div class="stage"><div class="bar tile" data-mode="duo"></div></div>
+    <div class="stage dk"><div class="bar tile" data-mode="duo"></div></div>
+  </div>
+
+  <p class="sub" style="margin-top:26px;">Want different <i>icons</i> too? Swappable: All&nbsp;Trips → <code>house</code> / <code>grid</code> / <code>compass</code>; Groceries → <code>cart</code> / <code>basket</code> / <code>bag</code>; Trip&nbsp;Settings → <code>gear</code> / <code>sliders</code>. Or name an app whose tab bar you love and I’ll match it.</p>
 
 <script>
-// ---- icon path libraries (24x24) ----
-// OUTLINE (stroke) variants
+// FILLED (solid) icon paths, 24x24
+var FILL = {
+  home:'<path d="M11.3 3.25a1.05 1.05 0 0 1 1.4 0l8.75 7.9a1 1 0 0 1-1.34 1.48l-.11-.1V19a2.25 2.25 0 0 1-2.25 2.25H15.5a1 1 0 0 1-1-1V15a1 1 0 0 0-1-1h-3a1 1 0 0 0-1 1v5.25a1 1 0 0 1-1 1H6.25A2.25 2.25 0 0 1 4 19v-6.47l-.11.1a1 1 0 1 1-1.34-1.48z"/>',
+  cal:'<path d="M8 2.4a1 1 0 0 1 1 1V4h6v-.6a1 1 0 1 1 2 0V4h1.25A2.75 2.75 0 0 1 21 6.75V8H3V6.75A2.75 2.75 0 0 1 5.75 4H7v-.6a1 1 0 0 1 1-1Z"/><path d="M3 9.5h18v9.25A2.75 2.75 0 0 1 18.25 21.5H5.75A2.75 2.75 0 0 1 3 18.75Z"/>',
+  cart:'<path d="M2.3 3a1 1 0 0 0 0 2h1.86l2.02 10.15A2.75 2.75 0 0 0 8.88 17.4h7.72a2.75 2.75 0 0 0 2.7-2.2l1.35-6.75A1 1 0 0 0 19.67 7.2H6.35l-.37-1.86A2.25 2.25 0 0 0 3.77 3.5L3.7 3.4A1 1 0 0 0 3 3Z"/><circle cx="9" cy="20" r="1.7"/><circle cx="16.4" cy="20" r="1.7"/>',
+  set:'<path d="M13.94 2.6a1.1 1.1 0 0 1 .86 1l.12 1.5c.5.2.96.47 1.38.8l1.4-.6a1.1 1.1 0 0 1 1.3.47l1.5 2.6a1.1 1.1 0 0 1-.26 1.4l-1.2.94a6.6 6.6 0 0 1 0 1.6l1.2.94a1.1 1.1 0 0 1 .26 1.4l-1.5 2.6a1.1 1.1 0 0 1-1.3.47l-1.4-.6c-.42.33-.88.6-1.38.8l-.12 1.5a1.1 1.1 0 0 1-1.1 1h-3a1.1 1.1 0 0 1-1.1-1l-.12-1.5a6.6 6.6 0 0 1-1.38-.8l-1.4.6a1.1 1.1 0 0 1-1.3-.47l-1.5-2.6a1.1 1.1 0 0 1 .26-1.4l1.2-.94a6.6 6.6 0 0 1 0-1.6l-1.2-.94a1.1 1.1 0 0 1-.26-1.4l1.5-2.6a1.1 1.1 0 0 1 1.3-.47l1.4.6c.42-.33.88-.6 1.38-.8l.12-1.5a1.1 1.1 0 0 1 1.1-1ZM12 8.9a3.1 3.1 0 1 0 0 6.2 3.1 3.1 0 0 0 0-6.2Z"/>'
+};
+// OUTLINE (for duotone overlay + inactive-if-desired)
 var OUT = {
   home:'<path d="M3.5 11 12 4.2l8.5 6.8"/><path d="M5.5 9.8V20h13V9.8"/><path d="M10 20v-4.5h4V20"/>',
-  cal:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17"/><path d="M8 3.2v3.4"/><path d="M16 3.2v3.4"/>',
+  cal:'<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 9.5h17"/><path d="M8 3.2v3.4"/><path d="M16 3.2v3.4"/>',
   cart:'<circle cx="9.5" cy="19.5" r="1.4"/><circle cx="16.5" cy="19.5" r="1.4"/><path d="M2.5 4h2.2l2 10.2a1.5 1.5 0 0 0 1.47 1.2h7.2a1.5 1.5 0 0 0 1.47-1.18L19 7.5H5.6"/>',
-  set:'<path d="M20 7.5h-8"/><path d="M8 7.5H4"/><circle cx="10" cy="7.5" r="2.2"/><path d="M20 16.5h-4"/><path d="M12 16.5H4"/><circle cx="14" cy="16.5" r="2.2"/>'
-};
-// FILLED (solid) variants
-var FILL = {
-  home:'<path d="M11.3 3.3a1 1 0 0 1 1.4 0l8.6 7.8a1 1 0 0 1-1.34 1.48L20 12.3V19a2 2 0 0 1-2 2h-3v-5a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v5H6a2 2 0 0 1-2-2v-6.7l.04.26A1 1 0 0 1 2.7 11.1z"/>',
-  cal:'<path d="M8 2.2a1 1 0 0 1 1 1V4h6v-.8a1 1 0 1 1 2 0V4h1.5A2.5 2.5 0 0 1 21 6.5V8H3V6.5A2.5 2.5 0 0 1 5.5 4H7v-.8a1 1 0 0 1 1-1zM3 10h18v8.5A2.5 2.5 0 0 1 18.5 21h-13A2.5 2.5 0 0 1 3 18.5z"/>',
-  cart:'<path d="M2.4 3a1 1 0 0 0 0 2h1.9l2 10.1A2.5 2.5 0 0 0 8.76 17h7.9a2.5 2.5 0 0 0 2.45-2l1.36-6.8A1 1 0 0 0 19.5 7H6.2l-.32-1.6A2 2 0 0 0 3.92 3.8L3.9 3.7A1 1 0 0 0 3.3 3zM9 18.6a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zm7.4 0a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z"/>',
-  set:'<path d="M13.9 2.4a1 1 0 0 1 .77.9l.13 1.63a6.8 6.8 0 0 1 1.4.82l1.5-.64a1 1 0 0 1 1.18.42l1.6 2.76a1 1 0 0 1-.24 1.29l-1.29 1a6.9 6.9 0 0 1 0 1.62l1.3 1a1 1 0 0 1 .24 1.29l-1.6 2.76a1 1 0 0 1-1.19.42l-1.5-.64a6.8 6.8 0 0 1-1.4.81l-.13 1.63a1 1 0 0 1-1 .92h-3.2a1 1 0 0 1-1-.92l-.13-1.63a6.8 6.8 0 0 1-1.4-.81l-1.5.64a1 1 0 0 1-1.18-.42l-1.6-2.76a1 1 0 0 1 .24-1.29l1.29-1a6.9 6.9 0 0 1 0-1.62l-1.29-1a1 1 0 0 1-.24-1.29l1.6-2.76a1 1 0 0 1 1.18-.42l1.5.64a6.8 6.8 0 0 1 1.4-.82l.13-1.63a1 1 0 0 1 1-.9zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>'
+  set:'<circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2 5.6 5.6"/>'
 };
 var ICONS=['home','cal','cart','set'];
 var LABELS={home:'All Trips',cal:'Meal Plan',cart:'Groceries',set:'Trip Settings'};
 
-function svg(inner,filled){
-  return '<svg viewBox="0 0 24 24" '+(filled?'fill="currentColor" stroke="none"':'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"')+'>'+inner+'</svg>';
+function fillSvg(k){return '<svg viewBox="0 0 24 24" fill="currentColor">'+FILL[k]+'</svg>';}
+function duoSvg(k){
+  // soft filled base + crisp outline on top = duotone
+  return '<svg viewBox="0 0 24 24">'
+    +'<g fill="currentColor" opacity="0.20">'+FILL[k]+'</g>'
+    +'<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+OUT[k]+'</g>'
+    +'</svg>';
 }
-function buildBar(el,mode){ // mode: 'out' | 'fill' | 'mixed'
+document.querySelectorAll('.bar').forEach(function(bar){
+  var mode=bar.getAttribute('data-mode');
   var html='';
   ICONS.forEach(function(k){
     var active=(k==='cal');
-    var filled = mode==='fill' || (mode==='mixed' && active);
-    var lib = filled?FILL:OUT;
-    html+='<div class="tab'+(active?' active':'')+'">'+svg(lib[k],filled)+'<span class="lbl">'+LABELS[k]+'</span></div>';
+    var ico = mode==='duo' ? duoSvg(k) : fillSvg(k);
+    html+='<div class="tab'+(active?' active':'')+'"><span class="ico">'+ico+'</span><span class="lbl">'+LABELS[k]+'</span></div>';
   });
-  el.innerHTML=html;
-}
-buildBar(document.getElementById('barA'),'out');
-buildBar(document.getElementById('barAd'),'out');
-buildBar(document.getElementById('barB'),'fill');
-buildBar(document.getElementById('barBd'),'fill');
-buildBar(document.getElementById('barC'),'mixed');
-buildBar(document.getElementById('barCd'),'mixed');
+  bar.innerHTML=html;
+});
 </script>
 </body>
 </html>

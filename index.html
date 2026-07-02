@@ -4629,10 +4629,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v154';
+var APP_VERSION='v156';
 var APP_BUILD_TIME='2026-07-01';
 
-var APP_VERSION_TAG='Meal Planner v154';
+var APP_VERSION_TAG='Meal Planner v156';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -7040,6 +7040,42 @@ function executeImportRecipeUrl(a){
   return{ok:true,msg:'⏳ Fetching recipe from '+a.url+' — this takes a few seconds…'};
 }
 
+// v156: server-side recipe fetcher (Firebase Cloud Function). Fetches with a browser UA + extracts exact JSON-LD.
+// After `firebase deploy`, confirm this matches the URL printed for fetchRecipe (v2 also serves this cloudfunctions.net alias).
+var RECIPE_FETCH_FN='https://us-central1-meal-planning-app-e4651.cloudfunctions.net/fetchRecipe';
+// v155: try several CORS-friendly routes to get a page's RAW HTML (for exact JSON-LD extraction). Best-effort; returns '' if all blocked.
+async function _fetchRawHtmlForImport(url){
+  var routes=[
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
+    'https://corsproxy.io/?url='+encodeURIComponent(url),
+    'https://r.jina.ai/'+url // Jina also returns usable text; last resort here
+  ];
+  for(var i=0;i<routes.length;i++){
+    try{var r=await fetch(routes[i],{signal:AbortSignal.timeout(15000)});if(r.ok){var t=await r.text();if(t&&t.length>500)return t;}}catch(e){}
+  }
+  return '';
+}
+// v155: extract a schema.org Recipe from raw HTML — DETERMINISTIC, exact quantities, NO AI (zero fabrication risk). Returns null if none.
+function _extractRecipeJsonLd(html){
+  try{
+    var re=/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,m,rec=null;
+    while((m=re.exec(html))&&!rec){
+      var raw=m[1].replace(/<!--[\s\S]*?-->/g,'').trim();var data;try{data=JSON.parse(raw);}catch(e){continue;}
+      var found=[];
+      (function collect(o){if(!o||typeof o!=='object')return;if(Array.isArray(o)){o.forEach(collect);return;}if(o['@graph'])collect(o['@graph']);var t=o['@type'];if(t&&(t==='Recipe'||(Array.isArray(t)&&t.indexOf('Recipe')>=0)))found.push(o);})(data);
+      if(found.length)rec=found[0];
+    }
+    if(!rec)return null;
+    var ings=(rec.recipeIngredient||rec.ingredients||[]).map(function(x){return String(x).replace(/\s+/g,' ').trim();}).filter(Boolean);
+    var steps=[];
+    (function walkSteps(ri){if(!ri)return;if(typeof ri==='string'){ri.split(/\r?\n/).forEach(function(s){s=s.trim();if(s)steps.push(s);});return;}if(Array.isArray(ri)){ri.forEach(walkSteps);return;}if(typeof ri==='object'){if(ri['@type']==='HowToSection'&&ri.itemListElement){walkSteps(ri.itemListElement);}else if(ri.text){steps.push(String(ri.text).replace(/\s+/g,' ').trim());}}})(rec.recipeInstructions);
+    steps=steps.filter(Boolean);
+    if(!ings.length||!steps.length)return null; // incomplete → let the AI/text path try instead
+    var yield_=rec.recipeYield;if(Array.isArray(yield_))yield_=yield_[0];
+    var img=rec.image;if(Array.isArray(img))img=img[0];if(img&&typeof img==='object')img=img.url;
+    return {name:String(rec.name||'').replace(/\s+/g,' ').trim(),servings:String(yield_||'').replace(/[^0-9]/g,''),cookTime:'',isVegetarian:false,ingredients:ings,steps:steps,image:(typeof img==='string'?img:'')};
+  }catch(e){return null;}
+}
 async function backgroundImportAndReview(url,intendedDay,intendedMeal){
   var normalizedUrl=url.split('?')[0].replace(/\/+$/,'');
   var existing=_menuLibrary.find(function(r){return r.url&&r.url.split('?')[0].replace(/\/+$/,'')===normalizedUrl;});
@@ -7053,15 +7089,35 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
     showToast('This page requires a subscription — copy the recipe text and paste it here instead.','error');
     return;
   }
-  // v79 (DATA INTEGRITY): fetch the ACTUAL page content via Jina Reader so Claude extracts the real
+  // v156: EXACT path — server-side fetcher (Cloud Function: browser User-Agent + schema.org JSON-LD).
+  // Deterministic, exact quantities, ZERO AI/fabrication. Falls back to a client proxy, then Jina+AI.
+  var jld=null;
+  try{
+    var fnRes=await fetch(RECIPE_FETCH_FN+'?url='+encodeURIComponent(url),{signal:AbortSignal.timeout(24000)});
+    if(fnRes.ok){var fnData=await fnRes.json();if(fnData&&fnData.recipe&&(fnData.recipe.ingredients||[]).length&&(fnData.recipe.steps||[]).length)jld=fnData.recipe;}
+  }catch(e){/* function not deployed / unreachable → fall through */}
+  // Secondary: client-side proxy → JSON-LD (best-effort, if the function didn't resolve it)
+  var rawHtml='';
+  if(!jld){try{rawHtml=await _fetchRawHtmlForImport(url);}catch(e){}if(rawHtml)jld=_extractRecipeJsonLd(rawHtml);}
+  if(jld&&jld.name&&(jld.ingredients||[]).length&&(jld.steps||[]).length){
+    var okJ=await confirmAction({title:'Confirm the recipe',message:'Found "'+jld.name+'" on '+source+', read straight from the page (exact ingredients & steps). Import it?',confirmLabel:'Yes, import'});
+    if(!okJ){showToast('Import canceled.','');return;}
+    var recExact={name:jld.name,servings:jld.servings||'',cookTime:jld.cookTime||'',isVegetarian:false,ingredients:jld.ingredients,steps:jld.steps,source:source,url:url,id:makeId(),savedAt:getTodayStr()};
+    if(jld.image)recExact.imageUrl=jld.image;
+    showToast('✓ Imported exactly from '+source+' — review before saving.','success');
+    showRecipeReviewPanel(recExact,intendedDay,intendedMeal);return;
+  }
+  // v79 (DATA INTEGRITY): fetch the ACTUAL page TEXT via Jina Reader so Claude extracts the real
   // recipe from the page — NOT a recipe reconstructed/fabricated from training data.
   var pageText='';
   try{
     var rdRes=await fetch('https://r.jina.ai/'+url,{signal:AbortSignal.timeout(20000)});
     if(rdRes.ok)pageText=await rdRes.text();
   }catch(e){/* handled below */}
+  if((!pageText||pageText.trim().length<200)&&rawHtml){pageText=rawHtml.replace(/<script[\s\S]*?<\/script>/gi,' ').replace(/<style[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&[a-z#0-9]+;/gi,' ').replace(/\s+/g,' ').trim();}// v155: strip raw HTML to text as a fallback for the AI path
   if(!pageText||pageText.trim().length<200){
-    showToast('❌ Could not read that page (blocked, private, or unreachable). Import stopped — nothing was saved. Try a different connection, or use "Paste Full Recipe".','error');
+    var blocker=/seriouseats|allrecipes|simplyrecipes|thespruceeats|food\.com|myrecipes|eatingwell|foodnetwork/i.test(source);
+    showToast(blocker?('“'+source+'” blocks recipe importers, so the link can’t be read. Nothing was invented. Use “Paste Full Recipe” or the 📷 Photo tab instead.'):('❌ Could not read that page (blocked, private, or unreachable). Nothing was saved — no recipe invented. Try “Paste Full Recipe” or the 📷 Photo tab.'),'error');
     return;
   }
   // v80 (C8/C9): some paywalled pages return non-empty login/teaser text (>200 chars) but no real recipe.

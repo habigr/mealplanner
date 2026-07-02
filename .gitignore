@@ -1,2 +1,4 @@
 _backups/
 _check.js
+functions/node_modules/
+.firebase/

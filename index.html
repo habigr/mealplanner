@@ -4629,10 +4629,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v156';
+var APP_VERSION='v157';
 var APP_BUILD_TIME='2026-07-01';
 
-var APP_VERSION_TAG='Meal Planner v156';
+var APP_VERSION_TAG='Meal Planner v157';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -7066,14 +7066,15 @@ function _extractRecipeJsonLd(html){
       if(found.length)rec=found[0];
     }
     if(!rec)return null;
-    var ings=(rec.recipeIngredient||rec.ingredients||[]).map(function(x){return String(x).replace(/\s+/g,' ').trim();}).filter(Boolean);
+    var _de=function(s){return String(s||'').replace(/&frac12;/g,'½').replace(/&frac14;/g,'¼').replace(/&frac34;/g,'¾').replace(/&frac13;/g,'⅓').replace(/&frac23;/g,'⅔').replace(/&frac18;/g,'⅛').replace(/&frac38;/g,'⅜').replace(/&frac58;/g,'⅝').replace(/&frac78;/g,'⅞').replace(/&deg;/g,'°').replace(/&mdash;/g,'—').replace(/&ndash;/g,'–').replace(/&rsquo;|&lsquo;|&apos;/g,"'").replace(/&rdquo;|&ldquo;|&quot;/g,'"').replace(/&hellip;/g,'…').replace(/&nbsp;/g,' ').replace(/&#x([0-9a-fA-F]+);/g,function(_,h){return String.fromCharCode(parseInt(h,16));}).replace(/&#(\d+);/g,function(_,n){return String.fromCharCode(+n);}).replace(/&amp;/g,'&').replace(/\s+/g,' ').trim();};
+    var ings=(rec.recipeIngredient||rec.ingredients||[]).map(_de).filter(Boolean);
     var steps=[];
-    (function walkSteps(ri){if(!ri)return;if(typeof ri==='string'){ri.split(/\r?\n/).forEach(function(s){s=s.trim();if(s)steps.push(s);});return;}if(Array.isArray(ri)){ri.forEach(walkSteps);return;}if(typeof ri==='object'){if(ri['@type']==='HowToSection'&&ri.itemListElement){walkSteps(ri.itemListElement);}else if(ri.text){steps.push(String(ri.text).replace(/\s+/g,' ').trim());}}})(rec.recipeInstructions);
+    (function walkSteps(ri){if(!ri)return;if(typeof ri==='string'){ri.split(/\r?\n/).forEach(function(s){s=_de(s);if(s)steps.push(s);});return;}if(Array.isArray(ri)){ri.forEach(walkSteps);return;}if(typeof ri==='object'){if(ri['@type']==='HowToSection'&&ri.itemListElement){walkSteps(ri.itemListElement);}else if(ri.text){steps.push(_de(ri.text));}}})(rec.recipeInstructions);
     steps=steps.filter(Boolean);
     if(!ings.length||!steps.length)return null; // incomplete → let the AI/text path try instead
     var yield_=rec.recipeYield;if(Array.isArray(yield_))yield_=yield_[0];
     var img=rec.image;if(Array.isArray(img))img=img[0];if(img&&typeof img==='object')img=img.url;
-    return {name:String(rec.name||'').replace(/\s+/g,' ').trim(),servings:String(yield_||'').replace(/[^0-9]/g,''),cookTime:'',isVegetarian:false,ingredients:ings,steps:steps,image:(typeof img==='string'?img:'')};
+    return {name:_de(rec.name),servings:String(yield_||'').replace(/[^0-9]/g,''),cookTime:'',isVegetarian:false,ingredients:ings,steps:steps,image:(typeof img==='string'?img:'')};
   }catch(e){return null;}
 }
 async function backgroundImportAndReview(url,intendedDay,intendedMeal){

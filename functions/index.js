@@ -18,14 +18,25 @@ const BROWSER_UA =
 
 function decodeEntities(s) {
   return String(s || "")
-    .replace(/&amp;/g, "&")
-    .replace(/&#0?39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
+    // named vulgar fractions (very common in recipes)
+    .replace(/&frac12;/g, "½").replace(/&frac14;/g, "¼").replace(/&frac34;/g, "¾")
+    .replace(/&frac13;/g, "⅓").replace(/&frac23;/g, "⅔")
+    .replace(/&frac15;/g, "⅕").replace(/&frac25;/g, "⅖").replace(/&frac35;/g, "⅗").replace(/&frac45;/g, "⅘")
+    .replace(/&frac18;/g, "⅛").replace(/&frac38;/g, "⅜").replace(/&frac58;/g, "⅝").replace(/&frac78;/g, "⅞")
+    // common punctuation / symbols
+    .replace(/&deg;/g, "°")
+    .replace(/&mdash;/g, "—").replace(/&ndash;/g, "–")
+    .replace(/&rsquo;/g, "'").replace(/&lsquo;/g, "'").replace(/&apos;/g, "'")
+    .replace(/&rdquo;/g, '"').replace(/&ldquo;/g, '"').replace(/&quot;/g, '"')
+    .replace(/&hellip;/g, "…")
     .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    // numeric (decimal + hex)
+    .replace(/&#0?39;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+    // ampersand last so it doesn't clobber the entities above
+    .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ")
     .trim();
 }

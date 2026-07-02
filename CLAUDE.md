@@ -106,6 +106,8 @@ Proactively pause and flag for stabilization if:
 
 **Never assume. Never guess. Never make a judgment call without asking first.**
 
+**AUTO-PUSH (Robbie, 2026-07-02):** Once `node --check` passes, push visual/UI/render-only changes without stopping to ask. STILL pause and confirm before pushing anything that touches **sync, save, Firebase writes, or `groceryMeta`/data-shape** — those stay must-ask.
+
 ---
 
 ## BUILD RULES — EVERY TIME
@@ -185,7 +187,9 @@ Browser console tests — run before every push:
 
 ## NEXT SESSION — start here
 
-STATE: **v140 is LIVE** (grocery program, pushed 2026-06-28). **v138** = color-scheme header (replaced photo banners). **v139** = grocery G1 (store auto-assign + per-name memory, closes #10) — `guessStore` now honors `storeRules`. **v140** = grocery refinement UX (#36): persistent List/Assign/Shop sub-tabs (no "Done" button), and a single simplified **Item sheet** opened by tapping an item name anywhere (List/Shop/Assign) — Name · **How many to buy** (override on the auto total, sets up G3) · Store · Dept · Got-it toggle · **"From: dish →"** jump to the recipe (recipe editing stays in the plan). ⚠️ **v139 + v140 were pushed WITHOUT the browser 25/25 regression** (Robbie was short on time) — run `window.runRegressionTests()` on live when possible. Rollback tags: **`pre-v139-grocery-g1`**, **`pre-v140-grocery-ux`**. The `banner-wip` branch is **OBSOLETE** (delete eventually).
+STATE: **v174 is LIVE** (pushed 2026-07-02). v141–v173 shipped this session (grocery consolidation, AI-chat overhaul, Cloud-Function recipe import, edit=view cohesion, iOS-native mobile polish, home modernization) — see CHANGELOG.md. **v174 = the data-safety fix** for a mobile/desktop divergence: a wiped+re-added Safari home-screen PWA left a *newer-timestamped partial copy*, so the sync listener's timestamp guard kept refusing the correct larger server copy → mobile showed fewer meals (4th-of-July trip). Fixes: (1) `fbWriteTrip` **read-before-write guard** — blocks a save from any device behind the server (tracks per-trip `_remoteDishCounts`); (2) `forcePullFromServer()` read-only recovery + auto-detect prompt when server has more dishes than shown. **Desktop/Firebase confirmed intact; no data lost.** Rollback tag `pre-v174-write-guard`.
+⚠️ **IN PROGRESS:** Robbie recovering his phone — update the Safari home-screen app to v174 (delete+re-add icon), open the 4th-of-July trip, tap the "Update from server" prompt. Confirm mobile then matches desktop.
+⚠️ **REGRESSION DEBT:** v139+ pushed without the browser 25/25 (`window.runRegressionTests()`); run it on live when possible. **v174 also needs a 2-device stale-overwrite test on a THROWAWAY trip (never FIP)** — verify a behind device gets blocked + the pull prompt, and a normal deletion still saves.
 NEXT grocery step per the program (BACKLOG "GROCERY & RECIPE COMPONENT PROGRAM"): **G-backbone** (`sources[]` on each line) → **G3** (combine limes → one line + buy-count, built on v140's "how many to buy") → **G2** (recipe components). Possible v141 fast-follow: make the meal-plan ingredient tap open the same Item sheet (deferred from v140).
 
 **v138 done:** removed ALL photo machinery; added 8 Color Schemes (Midnight/Ocean/Forest/Sunset/Plum/Slate/Cherry/Pride) in Trip settings, saved on `currentEvent.theme`, synced to all trip users; scheme tints the whole app accent + header gradient (`--hg`); header shows name + dates; `mapTheme()` back-compat (old trips not rewritten). Still worth a quick **2-device scheme-sync spot-check on a THROWAWAY trip** (not FIP) on the live site when convenient.

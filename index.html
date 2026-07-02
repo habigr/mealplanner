@@ -843,6 +843,17 @@ section#recipes{display:none!important;}
 .dish-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
 .dish-thumb.dish-thumb-none{font-size:17px;color:var(--theme-accent);}
 .dish-cook-chip{flex-shrink:0;display:inline-flex;align-items:center;}
+/* ===== v170: iOS-native feel — no tap flash, no accidental selection, contained scroll, tactile press ===== */
+*{-webkit-tap-highlight-color:transparent;}
+/* no long-press callout / text selection on UI chrome (inputs + readable content stay selectable) */
+button,.nav-btn,.top-tab,.dish,.day-card,.day-title,.meal-label,.dish-title,.dish-meta,.trip-card,.ai-chip,.gis-dish-row,.grocery-item-name,.recipe-section-heading,.ing-grp-head,.ing-grp-name,label,.shop-store-chip,.grocery-mode-btn,.recipe-detail-name{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+input,textarea,select,[contenteditable],.recipe-ing-list,.recipe-steps-list,.recipe-personal-notes{-webkit-user-select:text;user-select:text;}
+/* keep inner scrolls from dragging the whole page + momentum scrolling */
+main,.page,.recipe-detail-body,.gis-sheet,.admin-drawer,#dishModal .modal,.ai-chat-messages,.app-admin-panel{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+/* tactile press feedback on touch devices */
+@media(hover:none){
+  button:active,.dish:active,.day-card:active,.nav-btn:active,.top-tab:active,.trip-card:active,.ai-chip:active,.grocery-item-name:active,.shopping-item:active,.gis-dish-row:active,.dish-thumb:active,.hdr-btn:active{transform:scale(.97);transition:transform .06s ease;}
+}
 /* v168: smaller plan edit controls + tighter day cards on mobile */
 @media(max-width:768px){
   .day-tools button{font-size:10px!important;padding:3px 6px!important;}
@@ -4804,10 +4815,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v169';
+var APP_VERSION='v170';
 var APP_BUILD_TIME='2026-07-02';
 
-var APP_VERSION_TAG='Meal Planner v169';
+var APP_VERSION_TAG='Meal Planner v170';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

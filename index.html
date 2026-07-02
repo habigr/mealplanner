@@ -1044,7 +1044,8 @@ tr.bought .grocery-check{opacity:1!important;}
 .dish-new{animation:dishSlideIn .22s ease!important;}
 /* Mobile AI chat safe area */
 @media(max-width:768px){
-  .ai-chat-panel{bottom:calc(var(--nav-h) + var(--safe-b) + 12px)!important;right:8px!important;left:8px!important;width:auto!important;}
+  /* v153c: full-height chat sheet on phones so the keyboard can't crush it */
+  .ai-chat-panel{top:calc(env(safe-area-inset-top,0px) + 8px)!important;bottom:0!important;left:0!important;right:0!important;width:auto!important;height:auto!important;max-height:none!important;border-radius:20px 20px 0 0!important;}
   .ai-chat-fab{right:12px!important;}
 }
 /* Empty state improvements */
@@ -1084,7 +1085,8 @@ tr.swipe-checking{background:rgba(34,197,94,.12)!important;transition:background
 #dishModal input[readonly]{background:var(--panel-soft);border:1.5px dashed var(--border);cursor:pointer;color:var(--muted);}
 #dishModal input[readonly]:hover{border-color:var(--theme-accent);}
 /* AI Chat FAB */
-.ai-chat-fab{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);right:16px;width:54px;height:54px;border-radius:50%;background:var(--theme-accent);color:#fff;border:none;font-size:24px;cursor:pointer;z-index:9150;box-shadow:0 4px 20px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;animation:fabGlow 3s ease-in-out infinite;}
+.ai-chat-fab{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);right:16px;width:52px;height:52px;border-radius:50%;background:var(--theme-accent);color:#fff;border:none;font-size:22px;cursor:pointer;z-index:9150;box-shadow:0 6px 18px rgba(15,23,42,.22);display:flex;align-items:center;justify-content:center;transition:transform .18s ease,box-shadow .18s ease;}
+.ai-chat-fab:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(15,23,42,.28);}
 /* v112 (C0a): persistent active-timers strip (bottom, left of the AI fab) */
 .timer-strip{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);left:16px;right:84px;z-index:9140;display:flex;align-items:center;gap:8px;}
 .timer-strip-chips{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px;flex:1;}
@@ -1518,6 +1520,35 @@ body.planner-edit-mode .dish-title{margin-bottom:4px;}
 .ai-msg{box-shadow:0 1px 3px rgba(20,16,12,.06);font-size:13.5px;}
 .ai-chat-welcome{background:var(--panel)!important;border:1px solid var(--border-light);box-shadow:0 1px 3px rgba(20,16,12,.05);}
 .ai-chat-input-row{background:var(--panel);}
+/* v153: AI chat visual polish — flat/professional, cleaner input row + bubbles */
+.ai-chat-panel{border-radius:18px;box-shadow:0 12px 48px rgba(15,23,42,.18);border-color:var(--border-light);}
+.ai-chat-header{border-radius:18px 18px 0 0!important;}
+.ai-chat-sub{font-size:10.5px;color:var(--muted);margin-top:2px;}
+.ai-msg{border-radius:14px;box-shadow:none;font-size:13.5px;line-height:1.5;}
+.ai-msg.user{border-bottom-right-radius:5px;}
+.ai-msg.assistant{border-bottom-left-radius:5px;border:1px solid var(--border-light);}
+/* v153b: modern composer — full-width input in a single rounded pill; attach (+) left, send right */
+.ai-chat-input-row{align-items:center;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--panel);border-top:1px solid var(--border-light);}
+.ai-chat-input-row textarea{flex:1;min-width:0;width:100%;border-radius:20px;font-size:14px;padding:10px 15px;border:1.5px solid var(--border);background:var(--panel-soft);}
+.ai-chat-input-row textarea:focus{background:var(--panel);border-color:var(--theme-accent);box-shadow:0 0 0 3px var(--theme-accent-muted);}
+.ai-attach-btn{width:36px;height:36px;min-width:36px;border-radius:50%;background:var(--panel-soft);color:var(--muted);border:1px solid var(--border-light);font-size:20px;font-weight:400;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:none;transition:all .15s;}
+.ai-attach-btn:hover{border-color:var(--theme-border);color:var(--theme-accent-dark);background:var(--theme-accent-soft);transform:none;}
+#buildRecipeBtn{background:var(--panel-soft);color:var(--muted);border:1px solid var(--border-light);border-radius:999px;height:36px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;padding:0 12px;box-shadow:none;flex-shrink:0;}
+#buildRecipeBtn.active{background:var(--theme-accent);color:#fff;border-color:var(--theme-accent);}
+#aiChatSendBtn{width:38px;height:38px;min-width:38px;font-size:17px;box-shadow:0 2px 8px rgba(15,23,42,.18);}
+/* quick-start chips in the welcome */
+.ai-quick-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px;}
+.ai-chip{background:var(--panel);color:var(--theme-accent-dark);border:1px solid var(--border);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:none;transition:all .15s;}
+.ai-chip:hover{border-color:var(--theme-border);background:var(--theme-accent-soft);transform:none;}
+/* v153c: header identity — chat-bubble avatar + online dot; icon header buttons */
+.ai-head-id{display:flex;align-items:center;gap:10px;min-width:0;}
+.ai-head-avatar{width:32px;height:32px;border-radius:50%;background:var(--theme-accent);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ai-online-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--success);margin-right:5px;vertical-align:middle;}
+.ai-head-btn{width:30px;height:30px;border-radius:8px;background:transparent;border:none;color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;box-shadow:none;transition:all .15s;}
+.ai-head-btn:hover{background:var(--panel-soft);color:var(--text);transform:none;}
+/* v153c: assistant messages get a chat-bubble avatar */
+.ai-msg.assistant,.ai-msg.ai-msg-ai{position:relative;margin-left:36px;}
+.ai-msg.assistant::before,.ai-msg.ai-msg-ai::before{content:'';position:absolute;left:-36px;top:0;width:27px;height:27px;border-radius:50%;background:var(--theme-accent) url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z'/%3E%3C/svg%3E") center/15px no-repeat;}
 /* Lift the AI fab above the dish edit modal's sticky Save footer */
 #dishModal.modal-backdrop.active ~ #aiChatFab{bottom:calc(var(--nav-h) + var(--safe-b) + 92px);}
 /* v72: long recipe names wrap in the detail view */
@@ -4596,10 +4627,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v152';
+var APP_VERSION='v153';
 var APP_BUILD_TIME='2026-07-01';
 
-var APP_VERSION_TAG='Meal Planner v152';
+var APP_VERSION_TAG='Meal Planner v153';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -4984,13 +5015,22 @@ function toggleAiChat(){
   if(aiChatOpen){setTimeout(function(){var inp=safeEl('aiChatInput');if(inp)inp.focus();if(!aiChatHistory.length)clearAiChat();},300);}
 }
 
+function _aiQuickChips(){
+  var c=[];
+  c.push('<button class="ai-chip ai-chip-prompt" onclick="aiAsk(\'Give me dinner ideas for this trip\')">🍽️ Dinner ideas</button>');
+  c.push('<button class="ai-chip ai-chip-prompt" onclick="aiAsk(\'What am I still missing to buy for the plan?\')">🛒 What am I missing?</button>');
+  c.push('<button class="ai-chip" onclick="toggleBuildRecipeMode()">✨ Build a recipe</button>');
+  c.push('<button class="ai-chip" onclick="document.getElementById(\'aiChatPhotoInput\').click()">📷 Import from photo</button>');
+  return '<div class="ai-quick-chips">'+c.join('')+'</div>';
+}
+function aiAsk(t){var inp=safeEl('aiChatInput');if(inp)inp.value=t;if(typeof sendAiChat==='function')sendAiChat();}
 function clearAiChat(){
   aiChatHistory=[];_aiUndoSnapshot=null;
   var msgs=safeEl('aiChatMessages');
   var u=getUser();
   var name=u?(u.name||u.firstName||''):'';
   var greeting=name?'Hi '+name+'! ':'';
-  if(msgs)msgs.innerHTML='<div class="ai-chat-welcome">'+greeting+'I know your full trip plan. Ask me anything — add dishes, find recipes, assign stores, remember preferences, or plan out entire days.</div>';
+  if(msgs)msgs.innerHTML='<div class="ai-chat-welcome">'+greeting+'I know your full trip plan. Ask me anything — add dishes, find recipes, assign stores, or plan out entire days.</div>'+_aiQuickChips();
 }
 
 function getTodayStr(){return new Date().toISOString().split('T')[0];}
@@ -7628,7 +7668,7 @@ function openMenuLibraryFromLanding(){
   clearAiChat();
   var u=getUser();var name=u?(u.name||u.firstName||''):'';
   var msgs=safeEl('aiChatMessages');
-  if(msgs)msgs.innerHTML='<div class="ai-chat-welcome">'+(name?'Hi '+name+'! ':'')+'Browse your Recipe Library. Ask me to find recipes, import from a URL, or add one to a trip plan.</div>';
+  if(msgs)msgs.innerHTML='<div class="ai-chat-welcome">'+(name?'Hi '+name+'! ':'')+'Browse your Recipe Library. Ask me to find recipes, import from a URL, or add one to a trip plan.</div>'+_aiQuickChips();
 }
 
 function closeMenuLibraryFromLanding(){
@@ -8516,22 +8556,31 @@ document.addEventListener('DOMContentLoaded',function(){
 <!-- v112 (C0a): persistent active-timers strip, visible app-wide while a cooking timer runs -->
 <div id="timerStrip" class="timer-strip" style="display:none;"></div>
 <!-- AI Chat Assistant -->
-<button id="aiChatFab" class="ai-chat-fab" onclick="toggleAiChat()" title="Meal Assistant" style="display:flex;font-size:22px;">✦</button>
+<button id="aiChatFab" class="ai-chat-fab" onclick="toggleAiChat()" title="Meal Assistant"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></button>
 <div id="aiChatPanel" class="ai-chat-panel">
   <div class="ai-chat-header">
-    <div><div class="ai-chat-title">✦ Meal Assistant</div><div class="ai-chat-sub">Powered by Claude · knows your trip</div></div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <button class="ai-chat-clear" onclick="clearAiChat()">Clear</button>
-      <button class="ghost" onclick="toggleAiChat()" style="padding:4px 8px;">×</button>
+    <div class="ai-head-id">
+      <span class="ai-head-avatar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
+      <div><div class="ai-chat-title">Meal Assistant</div><div class="ai-chat-sub"><span class="ai-online-dot"></span>Online · knows your trip</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <button class="ai-head-btn" onclick="clearAiChat()" title="Clear conversation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+      <button class="ai-head-btn" onclick="toggleAiChat()" title="Close">×</button>
     </div>
   </div>
   <div id="aiChatMessages" class="ai-chat-messages">
-    <div class="ai-chat-welcome">I know your full trip plan. Ask me for dish ideas, real recipes with links, or help filling specific days — and I can add suggestions directly to your plan.</div>
+    <div class="ai-chat-welcome">I know your full trip plan. Ask me anything — add dishes, find recipes, assign stores, or plan out entire days.</div>
+    <div class="ai-quick-chips">
+      <button class="ai-chip" onclick="toggleBuildRecipeMode()">✨ Build a recipe</button>
+      <button class="ai-chip" onclick="document.getElementById('aiChatPhotoInput').click()">📷 Import from photo</button>
+    </div>
   </div>
   <div class="ai-chat-input-row">
-    <textarea id="aiChatInput" placeholder="Ask anything… (Shift+Enter for new line)" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiChat();}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"></textarea>
     <input id="aiChatPhotoInput" type="file" accept="image/*" multiple style="display:none;" onchange="aiChatImportFromPhotos(this.files);this.value='';">
-    <button class="build-recipe-btn" id="aiPhotoBtn" onclick="document.getElementById('aiChatPhotoInput').click()" title="Import a recipe from photo(s)">📷</button><button class="build-recipe-btn" id="buildRecipeBtn" onclick="toggleBuildRecipeMode()" title="Build a recipe through chat">✶<span class="brb-label"> Build Recipe</span></button><button id="aiChatSendBtn" onclick="sendAiChat()">↑</button>
+    <button id="aiAttachBtn" class="ai-attach-btn" onclick="document.getElementById('aiChatPhotoInput').click()" title="Import a recipe from a photo">＋</button>
+    <textarea id="aiChatInput" placeholder="Ask anything…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiChat();}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"></textarea>
+    <button id="buildRecipeBtn" class="build-recipe-btn" onclick="toggleBuildRecipeMode()" title="Build a recipe through chat" style="display:none;">✶<span class="brb-label"> Build</span></button>
+    <button id="aiChatSendBtn" onclick="sendAiChat()">↑</button>
   </div>
 </div>
 <!-- DISH MODAL -->

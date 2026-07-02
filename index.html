@@ -2742,12 +2742,40 @@ function restoreFromBackup(code){
 function fbWriteTrip(ev){
   if(!db||!ev||!ev.code){console.warn('[MealPlanner] fbWriteTrip: invalid args');return Promise.resolve();}
   if(!validateBeforeFirebaseWrite(ev,'fbWriteTrip')){return Promise.resolve();}
-  mpLog('SAVE','fbWriteTrip',{code:ev.code,dishes:(ev.dishes||[]).length});
+  var code=ev.code, writeCount=(ev.dishes||[]).length;
+  // ── STALE-OVERWRITE GUARD (read-before-write) ──────────────────────────────
+  // Never let a device that is BEHIND the server shrink a trip. Read the server's
+  // current dish count first: if it has MORE dishes than this write AND more than
+  // this device has ever seen from the server, this device is stale — block the
+  // write (which would clobber dishes it never received) and re-sync instead.
+  // An up-to-date device that intentionally deletes has "seen" the full count, so
+  // seen>=remoteCount and it passes. If the read fails (offline), fall through to
+  // a normal write so the app still works offline.
+  return db.ref('trips/'+code+'/dishes').once('value').then(function(snap){
+    var rd=snap.val(), remoteCount=0;
+    if(Array.isArray(rd))remoteCount=rd.filter(Boolean).length;
+    else if(rd&&typeof rd==='object')remoteCount=Object.keys(rd).filter(function(k){return rd[k];}).length;
+    var seen=(typeof _remoteDishCounts[code]==='number')?_remoteDishCounts[code]:0;
+    if(writeCount<remoteCount && seen<remoteCount){
+      mpLog('SAVE','fbWriteTrip BLOCKED stale-overwrite guard',{code:code,writeCount:writeCount,remoteCount:remoteCount,seen:seen});
+      setSyncStatus('error');
+      showToast('Save blocked: this device is behind ('+writeCount+' items here vs '+remoteCount+' on the server). Pulling the latest…','error');
+      try{syncFromFirebase();}catch(e){}
+      return;
+    }
+    return _fbWriteTripCommit(ev,code,writeCount);
+  }).catch(function(e){
+    mpLog('SAVE','fbWriteTrip guard read failed, proceeding',{code:code,err:String(e&&e.message||e)});
+    return _fbWriteTripCommit(ev,code,writeCount);
+  });
+}
+function _fbWriteTripCommit(ev,code,writeCount){
+  mpLog('SAVE','fbWriteTrip',{code:code,dishes:writeCount});
   // Save local backup BEFORE every Firebase write
-  if((ev.dishes||[]).length>0)saveLocalBackup(ev);
+  if(writeCount>0)saveLocalBackup(ev);
   setSyncStatus('syncing');
-  return db.ref('trips/'+ev.code).set(ev)
-    .then(function(){setSyncStatus('synced');})
+  return db.ref('trips/'+code).set(ev)
+    .then(function(){_remoteDishCounts[code]=writeCount;setSyncStatus('synced');})
     .catch(function(e){setSyncStatus('error');console.warn('[MealPlanner] fbWriteTrip failed:',e);});
 }
 function scheduleFbSave(){clearTimeout(fbSaveTimer);fbSaveTimer=setTimeout(function(){if(currentEvent&&currentCode)fbWriteTrip(currentEvent);},5000);}
@@ -2757,6 +2785,11 @@ function scheduleFbSave(){clearTimeout(fbSaveTimer);fbSaveTimer=setTimeout(funct
 // Only skips Firebase scheduling — local save (saveState) still runs normally.
 var _isApplyingRemoteChange = false;
 var _isLoadingTrip = false;
+// Per-trip count of dishes this DEVICE has actually seen from the server (or loaded).
+// Used by fbWriteTrip's stale-overwrite guard so a device that is behind the server
+// can never shrink a trip and clobber dishes it never received. Keyed by trip code.
+var _remoteDishCounts = {};
+function _rememberRemoteDishCount(code,ev){ if(code&&ev&&Array.isArray(ev.dishes)) _remoteDishCounts[code]=ev.dishes.length; }
 
 /* ===== FIREBASE SYNC =====
    Real-time listener for multi-device sync.
@@ -2787,6 +2820,7 @@ function syncFromFirebase(){
       var resolvedCode=String(remote.code||currentCode).toLowerCase();
       remote.code=resolvedCode;
       if(!TripStore.setTrip(remote,resolvedCode,'syncFromFirebase')){setSyncStatus('error');return;}
+      _rememberRemoteDishCount(resolvedCode,remote);
       saveToLocal(currentEvent);
       _isApplyingRemoteChange=true;
       renderAll();
@@ -2796,6 +2830,33 @@ function syncFromFirebase(){
     })
     .catch(function(e){console.warn('[MealPlanner] syncFromFirebase failed:',e);setSyncStatus('error');});
 }
+// One-shot per session so the stale-device prompt doesn't nag on every listener tick.
+var _staleServerPrompted=false;
+/* forcePullFromServer — RECOVERY tool. Replaces THIS device's copy of the open trip
+   with the server's copy, IGNORING the timestamp guard. It only ever READS from the
+   server and never writes, so it can never lose Firebase data — it just refreshes a
+   device that's stuck on a stale/partial local copy. Also reachable from the console. */
+function forcePullFromServer(){
+  if(!db||!currentCode){showToast('Open the trip first, then pull.','error');return;}
+  setSyncStatus('syncing');
+  return db.ref('trips/'+currentCode).once('value').then(function(snap){
+    if(!snap.exists()){showToast('No server copy found for this trip.','error');setSyncStatus('error');return;}
+    var remote=normalizeEvent(JSON.parse(JSON.stringify(snap.val()||{})));
+    var resolvedCode=String(remote.code||currentCode).toLowerCase();
+    remote.code=resolvedCode;
+    if(!Array.isArray(remote.dishes)){showToast('Server copy looks invalid — not applied.','error');setSyncStatus('error');return;}
+    if(!TripStore.setTrip(remote,resolvedCode,'forcePullFromServer')){setSyncStatus('error');return;}
+    _rememberRemoteDishCount(resolvedCode,remote);
+    saveToLocal(currentEvent);
+    _isApplyingRemoteChange=true;
+    renderAll();
+    if(safeEl('grocery')&&safeEl('grocery').classList.contains('active'))buildGroceryList();
+    _isApplyingRemoteChange=false;
+    setSyncStatus('synced');
+    showToast('Updated from server — '+remote.dishes.length+' dishes.','success');
+  }).catch(function(e){setSyncStatus('error');showToast('Pull failed: '+(e&&e.message||e),'error');});
+}
+window.forcePullFromServer=forcePullFromServer;
 function subscribeToCurrentTrip(){
   unsubscribeCurrentTrip();
   if(!db||!currentCode)return;
@@ -2808,7 +2869,22 @@ function subscribeToCurrentTrip(){
     var localTs=currentEvent.updatedAt||'';
     // Only apply Firebase if it is strictly newer than local state.
     // Older or same-time remote data must not overwrite a just-saved local dish.
-    if(localTs&&(!remoteTs||remoteTs<=localTs)){mpLog('SYNC','subscribeToCurrentTrip BLOCKED by timestamp guard',{localTs:localTs,remoteTs:remoteTs});setSyncStatus('synced');return;}
+    if(localTs&&(!remoteTs||remoteTs<=localTs)){
+      mpLog('SYNC','subscribeToCurrentTrip BLOCKED by timestamp guard',{localTs:localTs,remoteTs:remoteTs});
+      setSyncStatus('synced');
+      // Self-heal a stale device: if the server has MORE dishes than we're showing
+      // but our timestamp looks newer (e.g. a wiped/re-added home-screen app left a
+      // newer-stamped partial copy), the guard would silently hide the server's
+      // dishes. Offer a one-tap pull instead. Read-only — cannot lose server data.
+      try{
+        var _rc=(Array.isArray(remote.dishes)?remote.dishes:[]).length, _lc=(currentEvent.dishes||[]).length;
+        if(_rc>_lc && !_staleServerPrompted){
+          _staleServerPrompted=true;
+          if(confirm('This device is showing '+_lc+' dishes, but the server has '+_rc+'. Update this device from the server now?\n\nNothing will be lost — this only refreshes this device.')) forcePullFromServer();
+        }
+      }catch(e){}
+      return;
+    }
     // Validate remote before applying — do not apply corrupted data
     if(!remote.code||!Array.isArray(remote.dishes)){
       mpLog('TRIPSTORE','subscribeToCurrentTrip SKIPPED: remote failed validation',{code:remote.code,dishesType:typeof remote.dishes});
@@ -2818,6 +2894,7 @@ function subscribeToCurrentTrip(){
     var resolvedCode=String(remote.code||currentCode).toLowerCase();
     remote.code=resolvedCode;
     if(!TripStore.setTrip(remote,resolvedCode,'subscribeToCurrentTrip')){setSyncStatus('error');return;}
+    _rememberRemoteDishCount(resolvedCode,remote);
     saveToLocal(currentEvent);
     _isApplyingRemoteChange=true;
     renderAll();
@@ -3094,6 +3171,7 @@ function openLoadedTrip(ev,code,source){
   var resolvedCode=String(code||normalizedEv.code||'').toLowerCase();
   normalizedEv.code=resolvedCode;
   if(!TripStore.setTrip(normalizedEv,resolvedCode,source)){hideLoadingOverlay();showToast('Trip load failed: missing code.','error');return;}
+  _rememberRemoteDishCount(resolvedCode,currentEvent);
   saveToLocal(currentEvent);
   recordDeviceTrip(currentCode);
   if(window.location.hash!=='#trip='+currentCode)window.location.hash='trip='+currentCode;
@@ -4857,10 +4935,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v173';
+var APP_VERSION='v174';
 var APP_BUILD_TIME='2026-07-02';
 
-var APP_VERSION_TAG='Meal Planner v173';
+var APP_VERSION_TAG='Meal Planner v174';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

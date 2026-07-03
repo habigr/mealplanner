@@ -1822,6 +1822,36 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 /* SF font only on grocery/shop/assign/sheet surfaces */
 #groceryTableInner,#assignStoresContainer,.shopping-list,#groceryItemSheet,.gis-sheet{font-family:var(--gk-ff);}
 
+/* ---- LIST view: iOS card sections (NEW markup from renderGroceryTable — no legacy overrides to fight) ---- */
+#groceryTableInner{background:var(--gk-bg);margin:0 -4px;}
+.gk-section{padding:16px 8px 0;}
+.gk-section:first-child{padding-top:6px;}
+.gk-sec-head{display:flex;align-items:center;gap:8px;padding:0 8px 7px;}
+.gk-sec-name{font-size:12.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--gk-label2);display:flex;align-items:center;gap:6px;}
+.gk-sec-name .dept-icon{font-size:14px;}
+.gk-sec-count{margin-left:auto;font-size:12.5px;font-weight:600;color:var(--gk-label3);}
+.gk-card{background:var(--gk-card);border-radius:var(--gk-r-card);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px -18px rgba(0,0,0,.22);}
+.gk-list-card .grocery-row{display:flex;align-items:center;gap:12px;padding:10px 13px 10px 14px;position:relative;background:transparent;}
+.gk-list-card .grocery-row:active{background:#f6f6f9;}
+.gk-list-card .grocery-row+.grocery-row::before{content:'';position:absolute;top:0;left:48px;right:0;height:.5px;background:var(--gk-sep);}
+.gk-list-card .g-main{flex:1;min-width:0;}
+.gk-list-card .g-name{font-size:15.5px;font-weight:600;letter-spacing:-.01em;color:var(--gk-label);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.gk-list-card .g-name .grocery-item-name{cursor:pointer;color:var(--gk-label);}
+.gk-list-card .grocery-row.bought .grocery-item-name{color:var(--gk-label3);text-decoration:line-through;}
+.gk-list-card .g-sub{font-size:12.5px;color:var(--gk-label2);font-weight:500;margin-top:4px;margin-bottom:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.gk-list-card .grocery-dish-pills{margin-top:5px;}
+.gk-list-card .grocery-dish-pill{font-size:11px;font-weight:600;color:var(--gk-label2);background:rgba(120,120,128,.12);border-radius:6px;padding:2px 7px;}
+.gk-list-card .g-qty{flex-shrink:0;text-align:right;min-width:50px;display:flex;flex-direction:column;align-items:flex-end;}
+.gk-list-card .grocery-qty{font-size:15px;font-weight:600;color:var(--gk-label);}
+.gk-list-card .grocery-combine-hint{display:block;font-size:11px;color:var(--theme-accent-dark,var(--theme-accent));margin-top:2px;cursor:pointer;}
+.gk-list-card .grocery-row.bought .grocery-qty{color:var(--gk-label3);}
+.gk-list-card .chev{color:var(--gk-label3);font-size:17px;font-weight:600;flex-shrink:0;cursor:pointer;}
+/* reuse the app's existing checkbox styling; just un-hide it on mobile (line 730 hid it for the old table) */
+.gk-list-card .grocery-check{display:inline-flex!important;align-items:center;justify-content:center;width:24px;height:24px;min-width:24px;border-radius:50%;}
+/* status dropdown: hidden on mobile (as before), tidy on desktop */
+.gk-list-card .grocery-status-select{margin-top:6px;border-radius:8px;font-size:12px;}
+.gk-list-card .grocery-store-select{border-radius:8px;}
+
 /* ---- ASSIGN grid: skin the existing <table> (no markup change) ---- */
 #assignStoresContainer{background:var(--gk-bg);}
 .assign-stores-table thead th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;color:var(--gk-label2);}
@@ -4764,30 +4794,52 @@ function saveDishIngredientEdit(dishId,ingIdx){
 }
 function renderGroceryTable(out,rows){
   updateGroceryProgress(rows);updateSortButtons();
-  var last='',trows=rows.map(function(r){
-    var sec=grocerySortMode==='alpha'?null:(grocerySortMode==='department'?r.department:r.store);
-    var secRow=sec&&sec!==last?'<tr class="grocery-section-row"><td colspan="5"><span class="dept-icon">'+getDeptIcon(sec)+'</span>'+escHtml(sec||'Unassigned')+'</td></tr>':'';if(sec)last=sec;
+  function _grcRow(r){
     var stores=r.storeAssignments&&r.storeAssignments.length?r.storeAssignments:[r.store||'Unassigned'];
     var storeTags=stores.map(function(s){return'<span class="grocery-tag">'+escHtml(s)+'</span>';}).join('');
     var multiStore=stores.length>1;
-    // v139 (G1): inline store reassign — quick fix a one-off without entering Assign-Stores mode
     var _optStores=getActiveStores();if(_optStores.indexOf('Unassigned')<0)_optStores=['Unassigned'].concat(_optStores);
     var _primary=stores[0]||'Unassigned';
-    var storeSelect='<select class="grocery-store-select" data-key="'+escAttr(r.key)+'" onclick="event.stopPropagation();" onchange="setRowStore(this.dataset.key,this.value)" style="font-size:11.5px;padding:3px 6px;width:auto;max-width:160px;margin-top:2px;">'+_optStores.map(function(s){return'<option'+(_primary===s?' selected':'')+'>'+escHtml(s)+'</option>';}).join('')+'</select>';
+    var storeSelect='<select class="grocery-store-select" data-key="'+escAttr(r.key)+'" onclick="event.stopPropagation();" onchange="setRowStore(this.dataset.key,this.value)" style="font-size:11.5px;padding:3px 6px;width:auto;max-width:160px;">'+_optStores.map(function(s){return'<option'+(_primary===s?' selected':'')+'>'+escHtml(s)+'</option>';}).join('')+'</select>';
     var maybeDup=!!r.possibleDuplicate;
     var status=r.status||'Need';
-    // Dish pills shown under ingredient name on mobile
-    // v109 (#26): build the dish pills from usedFor so each pill knows its dish + the ingredient indices feeding this row → tap to edit.
     var _byDish={},_dishOrder=[];
     (r.usedFor||[]).forEach(function(u){if(!u||!u.dishId||u.dish==='Manual item')return;if(!_byDish[u.dishId]){_byDish[u.dishId]={name:u.dish,idxs:[]};_dishOrder.push(u.dishId);}if(u.ingIdx!=null&&_byDish[u.dishId].idxs.indexOf(u.ingIdx)<0)_byDish[u.dishId].idxs.push(u.ingIdx);});
     var dishPills=_dishOrder.length
-      ?_dishOrder.map(function(did){var info=_byDish[did];return'<span class="grocery-dish-pill">'+escHtml(info.name)+'</span>';}).join('')/* v148: display-only — edit via the item name → item sheet (one edit path) */
+      ?_dishOrder.map(function(did){var info=_byDish[did];return'<span class="grocery-dish-pill">'+escHtml(info.name)+'</span>';}).join('')/* v148: display-only — edit via item name → item sheet */
       :(r.dishes||[]).filter(function(d){return d&&d!=='Manual item';}).map(function(d){return'<span class="grocery-dish-pill">'+escHtml(d)+'</span>';}).join('');
     var dishPillsHtml=dishPills?'<div class="grocery-dish-pills">'+dishPills+'</div>':'';
-    return secRow+'<tr class="'+(status==='Bought'||status==='Have'?'bought':'')+'"><td><span class="grocery-item-name" onclick="openGroceryItemSheet(\''+escAttr(r.key)+'\')" style="cursor:pointer;" title="Tap to edit this item">'+escHtml(dispPlural(r.item,r.quantityText))+'</span>'+(maybeDup?'<span class="dup-badge" title="May be duplicate ingredient with another row that uses a different unit or wording">May be dup</span>':'')+(multiStore?'<span class="dup-badge" title="Assigned to more than one store">Multi-store</span>':'')+(r.isManual?'<span class="manual-badge">Manual</span><button class="icon-button" style="font-size:12px;padding:2px 7px;margin-left:4px;vertical-align:middle;" onclick="editManualGroceryItem(\''+r.manualId+'\')" title="Edit">✎</button><button class="icon-button" style="font-size:12px;padding:2px 7px;color:#ef4444;vertical-align:middle;" onclick="deleteManualGroceryItem(\''+r.manualId+'\')" title="Remove">×</button>':'')+dishPillsHtml+'</td><td><div class="grocery-item-sub" style="margin-bottom:4px;">'+(multiStore?storeTags+' ':'')+storeSelect+'</div><span class="grocery-qty">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'as needed')+'</span>'+((r.mixedUnits&&!r.aiConsolidated&&!r.buyOverride)?'<span class="grocery-combine-hint" onclick="openGroceryItemSheet(\''+escAttr(r.key)+'\')" title="Mixed units — set how many to buy">· tap to set amount</span>':'')+'</td><td class="mobile-hide"><div class="grocery-dishes">'+escHtml(r.dishes.join(', '))+'</div></td><td class="mobile-hide"><select class="grocery-status-select" data-key="'+escAttr(r.key)+'"><option '+(status==='Need'?'selected':'')+'>Need</option><option '+(status==='Bought'?'selected':'')+'>Bought</option><option '+(status==='Have'?'selected':'')+'>Have</option></select></td><td class="got-col"><input type="checkbox" class="grocery-check" data-key="'+escAttr(r.key)+'" '+(status==='Bought'||status==='Have'?'checked':'')+' /></td></tr>';
+    var badges=(maybeDup?'<span class="dup-badge" title="May be duplicate ingredient with another row that uses a different unit or wording">May be dup</span>':'')+(multiStore?'<span class="dup-badge" title="Assigned to more than one store">Multi-store</span>':'');
+    var manual=r.isManual?'<span class="manual-badge">Manual</span><button class="icon-button" style="font-size:12px;padding:2px 7px;margin-left:4px;vertical-align:middle;" onclick="editManualGroceryItem(\''+r.manualId+'\')" title="Edit">✎</button><button class="icon-button" style="font-size:12px;padding:2px 7px;color:#ef4444;vertical-align:middle;" onclick="deleteManualGroceryItem(\''+r.manualId+'\')" title="Remove">×</button>':'';
+    var qty=escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'as needed');
+    var hint=(r.mixedUnits&&!r.aiConsolidated&&!r.buyOverride)?'<span class="grocery-combine-hint" onclick="openGroceryItemSheet(\''+escAttr(r.key)+'\')" title="Mixed units — set how many to buy">· tap to set amount</span>':'';
+    return '<div class="grocery-row'+(status==='Bought'||status==='Have'?' bought done':'')+'">'
+      +'<input type="checkbox" class="grocery-check gk-check" data-key="'+escAttr(r.key)+'" '+(status==='Bought'||status==='Have'?'checked':'')+' />'
+      +'<div class="g-main">'
+        +'<div class="g-name"><span class="grocery-item-name" onclick="openGroceryItemSheet(\''+escAttr(r.key)+'\')" style="cursor:pointer;" title="Tap to edit this item">'+escHtml(dispPlural(r.item,r.quantityText))+'</span>'+badges+manual+'</div>'
+        +'<div class="g-sub grocery-item-sub">'+(multiStore?storeTags+' ':'')+storeSelect+'</div>'
+        +dishPillsHtml
+        +'<div class="grocery-dishes mobile-hide">'+escHtml(r.dishes.join(', '))+'</div>'
+        +'<select class="grocery-status-select mobile-hide" data-key="'+escAttr(r.key)+'"><option '+(status==='Need'?'selected':'')+'>Need</option><option '+(status==='Bought'?'selected':'')+'>Bought</option><option '+(status==='Have'?'selected':'')+'>Have</option></select>'
+      +'</div>'
+      +'<div class="g-qty"><span class="grocery-qty">'+qty+'</span>'+hint+'</div>'
+      +'<span class="chev" onclick="openGroceryItemSheet(\''+escAttr(r.key)+'\')">›</span>'
+    +'</div>';
+  }
+  // bucket rows into sections (preserving the incoming order), then emit iOS cards
+  var _secs=[],_sidx={};
+  rows.forEach(function(r){
+    var sec=grocerySortMode==='alpha'?null:(grocerySortMode==='department'?r.department:r.store);
+    var key=(sec==null)?'__flat__':(sec||'Unassigned');
+    if(!(key in _sidx)){_sidx[key]=_secs.length;_secs.push({sec:sec,rows:[]});}
+    _secs[_sidx[key]].rows.push(r);
+  });
+  out.innerHTML=_secs.map(function(g){
+    var total=g.rows.length,done=g.rows.filter(function(r){return r.status==='Bought'||r.status==='Have';}).length;
+    var head=(g.sec==null)?'':'<div class="gk-sec-head"><span class="gk-sec-name"><span class="dept-icon">'+getDeptIcon(g.sec)+'</span>'+escHtml(g.sec||'Unassigned')+'</span><span class="gk-sec-count">'+done+' of '+total+'</span></div>';
+    return '<div class="gk-section">'+head+'<div class="gk-card gk-list-card">'+g.rows.map(_grcRow).join('')+'</div></div>';
   }).join('');
-  out.innerHTML='<table class="grocery-table"><thead><tr><th>Ingredient</th><th>Qty</th><th>Dishes</th><th>Status</th><th class="got-col">✓</th></tr></thead><tbody>'+trows+'</tbody></table>';
-  out.querySelectorAll('.grocery-check').forEach(function(cb){cb.addEventListener('change',function(){haptic();var row=cb.closest('tr');if(row){if(cb.checked){row.classList.add('just-checked');setTimeout(function(){row.classList.remove('just-checked');},500);}};updateGroceryMeta(cb.dataset.key,'status',cb.checked?'Bought':'Need');});});
+  out.querySelectorAll('.grocery-check').forEach(function(cb){cb.addEventListener('change',function(){haptic();var row=cb.closest('.grocery-row');if(row){if(cb.checked){row.classList.add('just-checked');setTimeout(function(){row.classList.remove('just-checked');},500);}};updateGroceryMeta(cb.dataset.key,'status',cb.checked?'Bought':'Need');});});
   out.querySelectorAll('.grocery-status-select').forEach(function(sel){sel.addEventListener('change',function(){haptic();updateGroceryMeta(sel.dataset.key,'status',sel.value);});});
   initGrocerySwipe(out);
   // Auto dedup check
@@ -5398,7 +5450,7 @@ function toggleDishExpand(titleRow){
 
 /* ===== GROCERY SWIPE-TO-CHECK ===== */
 function initGrocerySwipe(container){
-  (container||document).querySelectorAll('.grocery-table tbody tr:not(.grocery-section-row)').forEach(function(row){
+  (container||document).querySelectorAll('.grocery-row, .grocery-table tbody tr:not(.grocery-section-row)').forEach(function(row){
     var sx=0,sy=0;
     row.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
     row.addEventListener('touchend',function(e){

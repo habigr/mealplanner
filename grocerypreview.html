@@ -78,6 +78,9 @@
   .ag-cell{display:flex;justify-content:center;}
   .ag-check{width:27px;height:27px;border-radius:8px;border:2px solid var(--label3);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:transparent;transition:all .12s;}
   .ag-check.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .ag-check.foc{outline:2.5px solid var(--accent2);outline-offset:2px;}
+  .kbd-hint{font-size:11.5px;color:var(--label3);padding:0 6px 10px;font-weight:500;}
+  .kbd-hint kbd{font-family:var(--ff);background:rgba(120,120,128,.16);border-radius:5px;padding:1px 6px;font-size:10.5px;font-weight:700;color:var(--label2);}
 
   /* sheet */
   .sheet-back{position:fixed;inset:0;background:rgba(8,12,24,.4);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s;}
@@ -191,16 +194,29 @@ function renderAssign(){
   var un=ITEMS.filter(function(i){return !i.stores.length;}).length;
   var gt='grid-template-columns:minmax(0,1fr) repeat('+ASTORES.length+',46px)';
   var head='<div class="ag-head" style="'+gt+'"><div class="ag-item"></div>'+ASTORES.map(function(s){return '<div class="ag-store">'+esc(s)+'</div>';}).join('')+'</div>';
-  var rows=ITEMS.map(function(it){
+  var rows=ITEMS.map(function(it,ri){
     return '<div class="ag-row'+(it.stores.length?'':' unassigned')+'" style="'+gt+'">'
       +'<div class="ag-item">'+esc(it.name)+(multi(it)?'<span class="b-multi">Dup</span>':'')+'<small>'+buyNum(it)+(it.unit?' '+esc(it.unit):'')+' · '+esc(it.dept)+'</small></div>'
-      +ASTORES.map(function(s,ci){var on=it.stores.indexOf(s)>=0;return '<div class="ag-cell"><span class="ag-check'+(on?' on':'')+'" onclick="toggleAssign('+it.id+','+ci+')">✓</span></div>';}).join('')
+      +ASTORES.map(function(s,ci){var on=it.stores.indexOf(s)>=0;return '<div class="ag-cell"><span class="ag-check'+(on?' on':'')+((ri===_af.r&&ci===_af.c)?' foc':'')+'" onclick="_af={r:'+ri+',c:'+ci+'};toggleAssign('+it.id+','+ci+')">✓</span></div>';}).join('')
       +'</div>';
   }).join('');
   return '<div class="section"><div class="assign-help">'+(un?'<b>'+un+' left to assign</b>':'All assigned ✓')+' — check a store for each item (multiple = shops at more than one)</div>'
+    +'<div class="kbd-hint">Keyboard: <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> move · <kbd>Space</kbd> toggle · <kbd>1</kbd>–<kbd>'+ASTORES.length+'</kbd> set store</div>'
     +'<div class="card">'+head+rows+'</div></div>';
 }
 function toggleAssign(id,ci){var it=ITEMS.find(function(x){return x.id===id;});if(!it)return;var s=ASTORES[ci];var i=it.stores.indexOf(s);if(i>=0)it.stores.splice(i,1);else it.stores.push(s);render();}
+// keyboard nav for the assign grid (matches the original app: arrows / Space-Enter / digits 1-N / Escape)
+var _af={r:0,c:0};
+document.addEventListener('keydown',function(e){
+  if(MODE!=='assign')return;var k=e.key;
+  if(k==='ArrowUp'){_af.r=Math.max(0,_af.r-1);e.preventDefault();render();}
+  else if(k==='ArrowDown'){_af.r=Math.min(ITEMS.length-1,_af.r+1);e.preventDefault();render();}
+  else if(k==='ArrowLeft'){_af.c=Math.max(0,_af.c-1);e.preventDefault();render();}
+  else if(k==='ArrowRight'){_af.c=Math.min(ASTORES.length-1,_af.c+1);e.preventDefault();render();}
+  else if(k===' '||k==='Enter'){e.preventDefault();toggleAssign(ITEMS[_af.r].id,_af.c);}
+  else if(/^[1-9]$/.test(k)){var n=parseInt(k,10);if(n<=ASTORES.length){ITEMS[_af.r].stores=[ASTORES[n-1]];e.preventDefault();render();}}
+  else if(k==='Escape'){e.preventDefault();}
+});
 
 var MODE='list';
 function setMode(m,btn){MODE=m;document.querySelectorAll('.seg button').forEach(function(b){b.classList.remove('on');});if(btn)btn.classList.add('on');document.getElementById('toolbar').style.display=(m==='list')?'flex':'none';render();}

@@ -8,7 +8,7 @@
 ## List view — per-item data shown
 - Item name (plural-aware) — tap opens the **item sheet**
 - Quantity + unit (aggregated across dishes)
-- **Dish pills** — which dishes use it; each pill taps through to edit that dish
+- **Dish pills** — which dishes use it. **List view: display-only** (info labels, no tap) since v148 — edit routes through item name → item sheet (one edit path). ⚠️ The **Assign-Stores grid** still has tap-to-edit pills (`editDish`); OPEN DECISION (Robbie 2026-07-03) whether to make those info-only too for consistency + retire the now-dead `pickDishIngredient`.
 - Store tag(s) — every assigned store
 - Inline store dropdown (reassign without leaving the row)
 - **Status**: Need / Bought / Have (dropdown) — not just a checkbox

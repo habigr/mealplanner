@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Grocery — thorough interactive mockup</title>
+<title>Grocery — interactive mockup v3</title>
 <style>
   :root{
     --bg:#f2f2f7;--card:#fff;--label:#1c1c1e;--label2:#8e8e93;--label3:#c7c7cc;
     --sep:rgba(60,60,67,.13);--accent:#1a3260;--accent2:#2f5aa8;--accent-soft:rgba(47,90,168,.12);
-    --green:#34c759;--amber:#ff9500;--blue:#0a84ff;--red:#ff3b30;--r-card:18px;
+    --green:#34c759;--r-card:18px;
     --ff:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;font-family:var(--ff);}
@@ -19,17 +19,16 @@
   h1{font-size:26px;font-weight:600;letter-spacing:-.02em;}
   .subttl{font-size:13px;color:var(--label2);font-weight:500;margin-top:1px;}
   .prog{margin-top:10px;height:7px;border-radius:4px;background:rgba(120,120,128,.16);overflow:hidden;}
-  .prog>i{display:block;height:100%;width:22%;background:var(--green);border-radius:4px;transition:width .3s;}
+  .prog>i{display:block;height:100%;background:var(--green);border-radius:4px;transition:width .3s;}
   .search{display:flex;align-items:center;gap:7px;margin-top:11px;background:rgba(120,120,128,.14);border-radius:11px;padding:9px 12px;color:var(--label2);}
   .search svg{width:16px;height:16px;flex-shrink:0;}.search span{font-size:15px;}
   .seg{display:flex;background:rgba(120,120,128,.12);border-radius:10px;padding:2px;margin-top:9px;}
   .seg button{flex:1;font-size:13.5px;font-weight:600;letter-spacing:-.01em;padding:7px;border:none;background:transparent;color:var(--label);border-radius:8px;}
   .seg button.on{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);}
 
-  /* toolbar under header (List) */
   .tools{display:flex;align-items:center;gap:8px;padding:11px 16px 2px;overflow-x:auto;scrollbar-width:none;}
   .tools::-webkit-scrollbar{display:none;}
-  .tbtn{flex-shrink:0;font-size:12.5px;font-weight:600;letter-spacing:-.01em;padding:6px 12px;border-radius:999px;background:var(--card);color:var(--label);border:.5px solid var(--sep);display:inline-flex;align-items:center;gap:5px;}
+  .tbtn{flex-shrink:0;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;background:var(--card);color:var(--label);border:.5px solid var(--sep);}
   .tbtn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
   .tbtn.icon{color:var(--accent2);}
 
@@ -46,67 +45,69 @@
   .check.done{background:var(--green);border-color:var(--green);color:#fff;font-size:14px;font-weight:800;}
   .g-main{flex:1;min-width:0;}
   .g-name{font-size:15.5px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-  .g-sub{font-size:12.5px;color:var(--label2);font-weight:500;margin-top:2px;}
-  /* dish pills — INFO ONLY (no tap affordance, muted) */
+  .g-sub{font-size:12.5px;color:var(--label2);font-weight:500;margin-top:3px;}
   .pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
   .pill{font-size:11px;font-weight:600;color:var(--label2);background:rgba(120,120,128,.12);border-radius:6px;padding:2px 7px;}
   .badge{font-size:9.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:1px 6px;border-radius:5px;}
-  .badge.dup{background:#fff3e0;color:#b25c00;}
-  .badge.multi{background:#e5f0ff;color:#0a5fd0;}
-  .badge.manual{background:rgba(120,120,128,.16);color:var(--label2);}
+  .badge.dup{background:#fff3e0;color:#b25c00;}.badge.multi{background:#e5f0ff;color:#0a5fd0;}.badge.manual{background:rgba(120,120,128,.16);color:var(--label2);}
   .combined{display:inline-block;font-size:10.5px;font-weight:700;color:var(--accent2);background:var(--accent-soft);padding:1px 7px;border-radius:6px;margin-top:4px;}
-  .g-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
-  .g-qty{font-size:15px;font-weight:600;letter-spacing:-.01em;}.g-qty small{font-size:12px;color:var(--label2);font-weight:600;}
-  .status{font-size:11px;font-weight:700;letter-spacing:.02em;padding:2px 9px;border-radius:999px;}
-  .status.need{background:rgba(120,120,128,.15);color:var(--label2);}
-  .status.bought{background:#e8f7ec;color:#1e8e3e;}
-  .status.have{background:#e5f0ff;color:#0a5fd0;}
-  .chev{color:var(--label3);font-size:17px;font-weight:600;flex-shrink:0;margin-left:2px;}
-  .row.done .g-name{color:var(--label3);}
-  .hint{font-size:12px;color:var(--accent2);font-weight:600;margin-top:3px;}
+  /* aligned quantity: fixed right column, number sub-column + unit after */
+  .g-qty{flex-shrink:0;display:flex;align-items:baseline;width:78px;}
+  .qn{min-width:30px;text-align:right;font-size:15px;font-weight:600;letter-spacing:-.01em;}
+  .qu{margin-left:5px;text-align:left;font-size:12.5px;font-weight:600;color:var(--label2);}
+  .chev{color:var(--label3);font-size:17px;font-weight:600;flex-shrink:0;}
+  .row.done .g-name{color:var(--label3);}.row.done .qn{color:var(--label3);}
+  .have-tag{font-size:9.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:1px 6px;border-radius:5px;background:#e5f0ff;color:#0a5fd0;}
+  /* consistent who-checked component (profile pic + name) — used on EVERY tab */
+  .who{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--label2);font-weight:600;}
+  .ava{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:9.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+  .ava img{width:100%;height:100%;object-fit:cover;}
+  .who.me{color:#1e8e3e;}.who.me .ava{background:var(--green);}
   .store-pick{font-size:13px;font-weight:600;color:var(--accent2);background:var(--accent-soft);padding:6px 12px;border-radius:999px;flex-shrink:0;}
   .store-pick.empty{color:var(--label2);background:rgba(120,120,128,.13);}
   .add{display:flex;align-items:center;gap:9px;padding:11px 14px;color:var(--accent2);font-size:14.5px;font-weight:600;border-top:.5px solid var(--sep);}
   .add .plus{width:21px;height:21px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:16px;}
-  /* shop who-bought */
-  .who{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--label2);font-weight:500;}
-  .ava{width:19px;height:19px;border-radius:50%;background:var(--accent);color:#fff;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
-  .who.me .ava{background:var(--green);}.who.me{color:#1e8e3e;}
   .assign-help{font-size:12.5px;color:var(--label2);padding:2px 6px 10px;font-weight:500;}
 
-  /* item sheet */
+  /* sheet */
   .sheet-back{position:fixed;inset:0;background:rgba(8,12,24,.4);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s;}
   .sheet-back.on{opacity:1;pointer-events:auto;}
-  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--bg);border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .3s cubic-bezier(.3,.8,.3,1);max-height:88vh;overflow-y:auto;padding-bottom:24px;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--bg);border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .3s cubic-bezier(.3,.8,.3,1);max-height:90vh;overflow-y:auto;padding-bottom:26px;}
   .sheet.on{transform:translateY(0);}
   .grabber{width:38px;height:5px;border-radius:3px;background:var(--label3);margin:8px auto 4px;}
-  .sh-head{display:flex;align-items:center;justify-content:space-between;padding:8px 18px 4px;}
+  .sh-head{display:flex;align-items:center;justify-content:space-between;padding:6px 18px 2px;}
   .sh-title{font-size:22px;font-weight:700;letter-spacing:-.02em;}
   .sh-done{font-size:16px;font-weight:600;color:var(--accent2);background:none;border:none;}
-  .sh-store{font-size:13px;font-weight:600;color:var(--accent2);padding:0 18px 12px;}
+  .sh-store{font-size:13px;font-weight:500;color:var(--label2);padding:0 18px 6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .buyline{margin:6px 14px 12px;background:var(--accent);color:#fff;border-radius:14px;padding:14px 16px;display:flex;align-items:baseline;justify-content:space-between;}
+  .buyline b{font-size:24px;font-weight:700;letter-spacing:-.02em;}
+  .buyline span{font-size:13px;opacity:.85;font-weight:500;}
   .grp{background:var(--card);border-radius:14px;margin:0 14px 12px;overflow:hidden;}
   .grp-l{font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label2);padding:12px 16px 4px;}
-  .qty-r{display:flex;align-items:center;gap:14px;padding:6px 16px 14px;}
-  .stepper{display:flex;background:rgba(120,120,128,.12);border-radius:11px;overflow:hidden;}
-  .stepper button{width:42px;height:38px;border:none;background:transparent;font-size:21px;color:var(--accent2);}
-  .stepper .v{min-width:58px;text-align:center;font-size:17px;font-weight:700;line-height:38px;}
-  .qty-h{font-size:12.5px;color:var(--label2);font-weight:500;}
-  .use{display:flex;align-items:center;gap:10px;padding:10px 16px;position:relative;}
+  .use{display:flex;align-items:center;gap:10px;padding:9px 16px;position:relative;}
   .use + .use::before{content:'';position:absolute;top:0;left:16px;right:16px;height:.5px;background:var(--sep);}
   .use-n{flex:1;font-size:15px;font-weight:500;letter-spacing:-.01em;}
   .use-m{font-size:12px;color:var(--label3);font-weight:500;}
-  .use-a{font-size:14px;font-weight:600;color:var(--label2);}
-  .sh-act{display:flex;gap:10px;padding:4px 18px 0;}
+  .use-a{font-size:14px;font-weight:600;color:var(--label2);min-width:52px;text-align:right;}
+  .unified{padding:10px 16px 12px;border-top:.5px solid var(--sep);}
+  .unified b{font-size:15px;font-weight:700;}
+  .unified .ex{font-size:12.5px;color:var(--label2);font-weight:500;margin-top:4px;line-height:1.45;}
+  .adj-r{display:flex;align-items:center;gap:14px;padding:6px 16px 14px;}
+  .stepper{display:flex;background:rgba(120,120,128,.12);border-radius:11px;overflow:hidden;}
+  .stepper button{width:44px;height:40px;border:none;background:transparent;font-size:22px;color:var(--accent2);}
+  .stepper .v{min-width:64px;text-align:center;font-size:17px;font-weight:700;line-height:40px;}
+  .adj-h{font-size:12.5px;color:var(--label2);font-weight:500;}
+  .sh-act{display:flex;gap:10px;padding:2px 18px 0;}
   .sh-act button{flex:1;font-size:15px;font-weight:600;padding:13px;border-radius:13px;border:none;}
-  .b-have{background:var(--accent);color:#fff;}.b-del{background:rgba(255,59,48,.1);color:var(--red);}
+  .b-have{background:var(--accent);color:#fff;}.b-del{background:rgba(255,59,48,.1);color:#ff3b30;}
 </style>
 </head>
 <body>
-  <div class="note">Thorough interactive mockup — tap the <b>List / Assign / Shop</b> tabs, and tap any item name to open its detail sheet. Everything from the preservation spec is here (statuses, badges, who-bought, info-only pills, consolidation tally). Sample data.</div>
+  <div class="note">Interactive mockup v3 — who-checked-off is now a consistent avatar+name on every tab; quantities align (number then unit); the item sheet is an <b>adjustment on top of the recipe total</b> (see <b>Butter</b> for the mixed-unit unification + explanation). Tap tabs; tap an item name.</div>
 
   <header>
     <h1>Groceries</h1>
-    <div class="subttl" id="subttl">9 items · 3 stores</div>
+    <div class="subttl" id="subttl"></div>
     <div class="prog"><i id="progbar"></i></div>
     <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><span>Search items</span></div>
     <div class="seg">
@@ -117,129 +118,111 @@
   </header>
 
   <div id="toolbar" class="tools">
-    <span class="tbtn on">Sort: Store</span>
-    <span class="tbtn">Dept</span>
-    <span class="tbtn">A–Z</span>
-    <span class="tbtn">Needed only</span>
-    <span class="tbtn icon">+ Add</span>
-    <span class="tbtn icon">Share</span>
+    <span class="tbtn on">Sort: Store</span><span class="tbtn">Dept</span><span class="tbtn">A–Z</span>
+    <span class="tbtn">Needed only</span><span class="tbtn icon">+ Add</span><span class="tbtn icon">Share</span>
   </div>
 
   <div id="view"></div>
 
-  <!-- ITEM SHEET -->
   <div class="sheet-back" id="sheetBack" onclick="closeSheet()"></div>
   <div class="sheet" id="sheet"></div>
 
 <script>
 var STORES=['Whole Foods',"Trader Joe's",'Costco','Unassigned'];
+// base = amount from recipes (unified). adj = your signed adjustment. buy = base+adj.
 var ITEMS=[
- {id:1,name:'Blueberries',qty:'4',unit:'pt',dept:'Produce',store:'Whole Foods',status:'Need',combined:'1 pt + 3 pt',uses:[['Blueberry Pancakes','Sat · Breakfast','1 pt'],['Fruit Salad','Sun · Breakfast','3 pt']]},
- {id:2,name:'Limes',qty:'×5',unit:'',dept:'Produce',store:'Whole Foods',status:'Need',uses:[['Al Pastor Tacos','Fri · Dinner','3'],['Margaritas','Fri · Drinks','2']]},
- {id:3,name:'Cilantro',qty:'2',unit:'bunch',dept:'Produce',store:'Whole Foods',status:'Need',badges:['dup'],uses:[['Al Pastor Tacos','Fri · Dinner','2 bunch']]},
- {id:4,name:'Watermelon',qty:'1',unit:'',dept:'Produce',store:'Whole Foods',status:'Bought',boughtBy:'Robbie',me:true,uses:[['Watermelon Salad','Fri · Dinner','1']]},
- {id:5,name:'Ground Chuck',qty:'3',unit:'lb',dept:'Meat',store:"Trader Joe's",status:'Need',badges:['multi'],uses:[['Smash Burgers','Sat · Lunch','3 lb']]},
- {id:6,name:'Brioche Buns',qty:'2',unit:'pk',dept:'Bakery',store:"Trader Joe's",status:'Bought',boughtBy:'Sarah',uses:[['Smash Burgers','Sat · Lunch','2 pk']]},
- {id:7,name:'Paper Towels',qty:'1',unit:'',dept:'Household',store:'Costco',status:'Need',manual:true,badges:['manual'],uses:[]},
- {id:8,name:'Lobster Tails',qty:'6',unit:'',dept:'Seafood',store:'Unassigned',status:'Need',uses:[['Lobster Rolls','Sat · Dinner','6']]},
- {id:9,name:'Old Bay',qty:'1',unit:'',dept:'Spices',store:'Unassigned',status:'Need',uses:[['Lobster Rolls','Sat · Dinner','1']]},
+ {id:1,name:'Blueberries',base:4,unit:'pt',adj:0,dept:'Produce',store:'Whole Foods',status:'Need',uses:[['Blueberry Pancakes','Sat · Breakfast','1 pt'],['Fruit Salad','Sun · Breakfast','3 pt']],unified:'1 pt + 3 pt = 4 pt (same unit)'},
+ {id:2,name:'Limes',base:5,unit:'',adj:0,dept:'Produce',store:'Whole Foods',status:'Need',uses:[['Al Pastor Tacos','Fri · Dinner','3'],['Margaritas','Fri · Drinks','2']],unified:'3 + 2 = 5'},
+ {id:3,name:'Cilantro',base:2,unit:'bunch',adj:0,dept:'Produce',store:'Whole Foods',status:'Need',badges:['dup'],uses:[['Al Pastor Tacos','Fri · Dinner','2 bunch']]},
+ {id:10,name:'Butter',base:4,unit:'lb',adj:0,dept:'Dairy',store:'Whole Foods',status:'Need',uses:[['Croissants','Sun · Breakfast','1 cup'],['Lobster Rolls','Sat · Dinner','2 oz'],['Cookies','Sat · Dessert','3 lb']],unified:'Unified to lb (weight): 1 cup ≈ 0.5 lb + 2 oz ≈ 0.13 lb + 3 lb = 3.63 lb → round up to 4 lb'},
+ {id:4,name:'Watermelon',base:1,unit:'',adj:0,dept:'Produce',store:'Whole Foods',status:'Bought',by:'Robbie',me:true,uses:[['Watermelon Salad','Fri · Dinner','1']]},
+ {id:5,name:'Ground Chuck',base:3,unit:'lb',adj:0,dept:'Meat',store:"Trader Joe's",status:'Need',badges:['multi'],uses:[['Smash Burgers','Sat · Lunch','3 lb']]},
+ {id:6,name:'Brioche Buns',base:2,unit:'pk',adj:0,dept:'Bakery',store:"Trader Joe's",status:'Bought',by:'Sarah',uses:[['Smash Burgers','Sat · Lunch','2 pk']]},
+ {id:7,name:'Paper Towels',base:1,unit:'',adj:0,dept:'Household',store:'Costco',status:'Need',manual:true,badges:['manual'],uses:[]},
+ {id:8,name:'Lobster Tails',base:6,unit:'',adj:0,dept:'Seafood',store:'Unassigned',status:'Need',uses:[['Lobster Rolls','Sat · Dinner','6']]},
+ {id:9,name:'Old Bay',base:1,unit:'',adj:0,dept:'Spices',store:'Unassigned',status:'Need',uses:[['Lobster Rolls','Sat · Dinner','1']]},
 ];
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-function badgeHtml(b){return (b||[]).map(function(x){var lbl={dup:'May be dup',multi:'Multi-store',manual:'Manual'}[x];return '<span class="badge '+x+'">'+lbl+'</span>';}).join('');}
-function pillsHtml(it){if(!it.uses||!it.uses.length)return '';return '<div class="pills">'+it.uses.map(function(u){return '<span class="pill">'+esc(u[0])+'</span>';}).join('')+'</div>';}
-function statusHtml(s){var c={Need:'need',Bought:'bought',Have:'have'}[s];return '<span class="status '+c+'">'+s+'</span>';}
-
 function bought(it){return it.status==='Bought'||it.status==='Have';}
+function buyNum(it){return Math.max(0,it.base+it.adj);}
+function qtyHtml(it){return '<div class="g-qty"><span class="qn">'+buyNum(it)+'</span><span class="qu">'+esc(it.unit||'')+'</span></div>';}
+function initials(n){return n.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();}
+function whoHtml(it){if(!it.by)return '';return '<span class="who'+(it.me?' me':'')+'"><span class="ava">'+initials(it.by)+'</span>'+esc(it.by)+'</span>';}
+function badgeHtml(b){return (b||[]).map(function(x){var l={dup:'May be dup',multi:'Multi-store',manual:'Manual'}[x];return '<span class="badge '+x+'">'+l+'</span>';}).join('');}
+function pillsHtml(it){if(!it.uses||!it.uses.length)return '';return '<div class="pills">'+it.uses.map(function(u){return '<span class="pill">'+esc(u[0])+'</span>';}).join('')+'</div>';}
+
 function updateProg(){var b=ITEMS.filter(bought).length;document.getElementById('progbar').style.width=Math.round(b/ITEMS.length*100)+'%';document.getElementById('subttl').textContent=ITEMS.length+' items · 3 stores · '+b+' bought';}
 
-/* ---- LIST ---- */
+function subLine(it){
+  // consistent: if bought, show who (avatar+name) on every tab; else dept (+ Have tag)
+  if(bought(it))return '<div class="g-sub">'+whoHtml(it)+(it.status==='Have'?' <span class="have-tag">Have</span>':'')+'</div>';
+  return '<div class="g-sub">'+esc(it.dept)+'</div>';
+}
+
+function itemRow(it,opts){opts=opts||{};
+  return '<div class="row'+(bought(it)?' done':'')+'">'
+    +'<div class="check'+(bought(it)?' done':'')+'" onclick="toggleBought('+it.id+')">'+(bought(it)?'✓':'')+'</div>'
+    +'<div class="g-main" onclick="openSheet('+it.id+')"><div class="g-name">'+esc(it.name)+badgeHtml(it.badges)+'</div>'
+      +subLine(it)
+      +(it.id===1?'<span class="combined">combined: 1 pt + 3 pt</span>':'')
+      +(opts.pills!==false?pillsHtml(it):'')
+    +'</div>'
+    +qtyHtml(it)
+    +'<span class="chev" onclick="openSheet('+it.id+')">›</span></div>';
+}
+
+function bucket(order){var m={};ITEMS.forEach(function(it){(m[it.store]=m[it.store]||[]).push(it);});return order.filter(function(s){return m[s];}).map(function(s){return [s,m[s]];});}
+
 function renderList(){
-  var out='',bystore={};
-  ITEMS.forEach(function(it){(bystore[it.store]=bystore[it.store]||[]).push(it);});
-  STORES.forEach(function(st){var list=bystore[st];if(!list)return;
-    var done=list.filter(bought).length;
-    out+='<div class="section"><div class="sec-head"><span class="sec-name">'+esc(st)+'</span><span class="sec-count">'+done+' of '+list.length+'</span></div><div class="card">';
-    list.forEach(function(it){
-      out+='<div class="row'+(bought(it)?' done':'')+'">'
-        +'<div class="check'+(bought(it)?' done':'')+'" onclick="toggleBought('+it.id+')">'+(bought(it)?'✓':'')+'</div>'
-        +'<div class="g-main" onclick="openSheet('+it.id+')">'
-          +'<div class="g-name">'+esc(it.name)+badgeHtml(it.badges)+'</div>'
-          +'<div class="g-sub">'+esc(it.dept)+(it.boughtBy?' · bought by '+esc(it.boughtBy):'')+'</div>'
-          +(it.combined?'<span class="combined">combined: '+esc(it.combined)+'</span>':'')
-          +pillsHtml(it)
-        +'</div>'
-        +'<div class="g-right"><div class="g-qty">'+esc(it.qty)+(it.unit?' <small>'+esc(it.unit)+'</small>':'')+'</div>'+statusHtml(it.status)+'</div>'
-        +'<span class="chev" onclick="openSheet('+it.id+')">›</span>'
-      +'</div>';
-    });
-    out+='<div class="add"><span class="plus">+</span>Add item</div></div></div>';
-  });
-  return out;
+  return bucket(STORES).map(function(pair){var st=pair[0],list=pair[1],done=list.filter(bought).length;
+    return '<div class="section"><div class="sec-head"><span class="sec-name">'+esc(st)+'</span><span class="sec-count">'+done+' of '+list.length+'</span></div>'
+      +'<div class="card">'+list.map(function(it){return itemRow(it);}).join('')+'<div class="add"><span class="plus">+</span>Add item</div></div></div>';
+  }).join('');
 }
-
-/* ---- ASSIGN ---- */
 function renderAssign(){
-  var unassigned=ITEMS.filter(function(i){return i.store==='Unassigned';}).length;
-  var out='<div class="section"><div class="assign-help">'+(unassigned?unassigned+' left to assign':'All assigned ✓')+' — tap a store per item</div><div class="card">';
-  ITEMS.forEach(function(it){
-    out+='<div class="row"><div class="g-main" onclick="openSheet('+it.id+')"><div class="g-name">'+esc(it.name)+badgeHtml(it.badges)+'</div><div class="g-sub">'+esc(it.dept)+'</div>'+pillsHtml(it)+'</div>'
-      +'<span class="store-pick'+(it.store==='Unassigned'?' empty':'')+'">'+(it.store==='Unassigned'?'Choose store ▾':esc(it.store)+' ▾')+'</span></div>';
-  });
-  out+='</div></div>';
-  return out;
+  var un=ITEMS.filter(function(i){return i.store==='Unassigned';}).length;
+  return '<div class="section"><div class="assign-help">'+(un?un+' left to assign':'All assigned ✓')+' — tap a store per item</div><div class="card">'
+    +ITEMS.map(function(it){return '<div class="row"><div class="g-main" onclick="openSheet('+it.id+')"><div class="g-name">'+esc(it.name)+badgeHtml(it.badges)+'</div><div class="g-sub">'+esc(it.dept)+'</div>'+pillsHtml(it)+'</div>'
+      +'<span class="store-pick'+(it.store==='Unassigned'?' empty':'')+'">'+(it.store==='Unassigned'?'Choose store ▾':esc(it.store)+' ▾')+'</span></div>';}).join('')
+    +'</div></div>';
 }
-
-/* ---- SHOP ---- */
 function renderShop(){
-  var out='',bystore={};
-  ITEMS.forEach(function(it){(bystore[it.store]=bystore[it.store]||[]).push(it);});
-  ['Unassigned','Whole Foods',"Trader Joe's",'Costco'].forEach(function(st){var list=bystore[st];if(!list)return;
-    var done=list.filter(bought).length;
-    out+='<div class="section"><div class="sec-head"><span class="sec-name">'+esc(st)+'</span><span class="sec-count">'+done+'/'+list.length+' done</span></div><div class="card">';
-    list.slice().sort(function(a,b){return bought(a)-bought(b);}).forEach(function(it){
-      out+='<div class="row'+(bought(it)?' done':'')+'">'
-        +'<div class="check'+(bought(it)?' done':'')+'" onclick="toggleBought('+it.id+')">'+(bought(it)?'✓':'')+'</div>'
-        +'<div class="g-main" onclick="openSheet('+it.id+')"><div class="g-name">'+esc(it.name)+badgeHtml(it.badges)+'</div>'
-          +(it.boughtBy?'<div class="g-sub"><span class="who'+(it.me?' me':'')+'"><span class="ava">'+it.boughtBy[0]+'</span>'+esc(it.boughtBy)+'</span></div>':'<div class="g-sub">'+esc(it.dept)+'</div>')
-        +'</div>'
-        +'<div class="g-qty">'+esc(it.qty)+(it.unit?' <small>'+esc(it.unit)+'</small>':'')+'</div></div>';
-    });
-    out+='</div></div>';
-  });
-  return out;
+  return bucket(['Unassigned','Whole Foods',"Trader Joe's",'Costco']).map(function(pair){var st=pair[0],list=pair[1].slice().sort(function(a,b){return bought(a)-bought(b);}),done=list.filter(bought).length;
+    return '<div class="section"><div class="sec-head"><span class="sec-name">'+esc(st)+'</span><span class="sec-count">'+done+'/'+list.length+' done</span></div>'
+      +'<div class="card">'+list.map(function(it){return itemRow(it,{pills:false});}).join('')+'</div></div>';
+  }).join('');
 }
 
 var MODE='list';
-function setMode(m,btn){MODE=m;
-  document.querySelectorAll('.seg button').forEach(function(b){b.classList.remove('on');});if(btn)btn.classList.add('on');
-  document.getElementById('toolbar').style.display=(m==='list')?'flex':'none';
-  render();
-}
-function render(){
-  document.getElementById('view').innerHTML = MODE==='list'?renderList():MODE==='assign'?renderAssign():renderShop();
-  updateProg();
-}
-function toggleBought(id){var it=ITEMS.find(function(x){return x.id===id;});if(!it)return;
-  if(bought(it)){it.status='Need';it.boughtBy=null;it.me=false;}else{it.status='Bought';it.boughtBy='Robbie';it.me=true;}
-  render();
-}
+function setMode(m,btn){MODE=m;document.querySelectorAll('.seg button').forEach(function(b){b.classList.remove('on');});if(btn)btn.classList.add('on');document.getElementById('toolbar').style.display=(m==='list')?'flex':'none';render();}
+function render(){document.getElementById('view').innerHTML=MODE==='list'?renderList():MODE==='assign'?renderAssign():renderShop();updateProg();}
+function toggleBought(id){var it=ITEMS.find(function(x){return x.id===id;});if(!it)return;if(bought(it)){it.status='Need';it.by=null;it.me=false;}else{it.status='Bought';it.by='Robbie';it.me=true;}render();}
 
-/* ---- SHEET ---- */
-function openSheet(id){var it=ITEMS.find(function(x){return x.id===id;});if(!it)return;
+/* ---- SHEET: adjustment on top of the recipe total ---- */
+var _si=null;
+function openSheet(id){_si=ITEMS.find(function(x){return x.id===id;});renderSheet();document.getElementById('sheet').classList.add('on');document.getElementById('sheetBack').classList.add('on');}
+function closeSheet(){document.getElementById('sheet').classList.remove('on');document.getElementById('sheetBack').classList.remove('on');}
+function sheetAdj(d){if(!_si)return;_si.adj+=d;renderSheet();render();}
+function renderSheet(){var it=_si;if(!it)return;
   var uses=(it.uses||[]).map(function(u){return '<div class="use"><span class="use-n">'+esc(u[0])+'</span><span class="use-m">'+esc(u[1])+'</span><span class="use-a">'+esc(u[2])+'</span></div>';}).join('');
-  var total=(it.qty||'')+(it.unit?' '+it.unit:'');
+  var unit=it.unit||'';
+  var adjTxt=(it.adj>0?'+':'')+it.adj+(unit?' '+unit:'');
   var html='<div class="grabber"></div>'
    +'<div class="sh-head"><div class="sh-title">'+esc(it.name)+'</div><button class="sh-done" onclick="closeSheet()">Done</button></div>'
-   +'<div class="sh-store">'+esc(it.store==='Unassigned'?'Tap to assign a store':it.store)+' · '+esc(it.dept)+(it.boughtBy?' · bought by '+esc(it.boughtBy):'')+'</div>'
-   +'<div class="grp"><div class="grp-l">To buy</div><div class="qty-r"><div class="stepper"><button>−</button><span class="v">'+esc(total)+'</span><button>+</button></div><div class="qty-h">'+(it.combined?'auto-combined ('+esc(it.combined)+')':(it.manual?'manual item':'from '+((it.uses||[]).length||0)+' dish'+(((it.uses||[]).length)===1?'':'es')))+'</div></div></div>'
-   +(uses?('<div class="grp"><div class="grp-l">How it\'s used</div>'+uses+'</div>'):'')
+   +'<div class="sh-store">'+esc(it.store==='Unassigned'?'Tap to assign a store':it.store)+' · '+esc(it.dept)+(it.by?' · ':'')+(it.by?whoHtml(it):'')+'</div>'
+   +'<div class="buyline"><b>Buy '+buyNum(it)+(unit?' '+esc(unit):'')+'</b><span>recipes '+it.base+(unit?' '+esc(unit):'')+(it.adj?' · your '+(it.adj>0?'+':'')+it.adj:'')+'</span></div>';
+  if(uses){
+    html+='<div class="grp"><div class="grp-l">From recipes</div>'+uses
+      +'<div class="unified"><b>Total from recipes: '+it.base+(unit?' '+esc(unit):'')+'</b>'+(it.unified?'<div class="ex">'+esc(it.unified)+'</div>':'')+'</div></div>';
+  } else {
+    html+='<div class="grp"><div class="grp-l">Manual item</div><div class="unified"><b>'+it.base+(unit?' '+esc(unit):'')+'</b><div class="ex">Added by hand — not from a recipe.</div></div></div>';
+  }
+  html+='<div class="grp"><div class="grp-l">Your adjustment'+(unit?' (in '+esc(unit)+')':'')+'</div>'
+     +'<div class="adj-r"><div class="stepper"><button onclick="sheetAdj(-1)">−</button><span class="v">'+adjTxt+'</span><button onclick="sheetAdj(1)">+</button></div>'
+     +'<div class="adj-h">on top of the '+it.base+(unit?' '+esc(unit):'')+' from recipes</div></div></div>'
    +'<div class="sh-act"><button class="b-have">We have it</button><button class="b-del">Remove</button></div>';
   document.getElementById('sheet').innerHTML=html;
-  document.getElementById('sheet').classList.add('on');
-  document.getElementById('sheetBack').classList.add('on');
 }
-function closeSheet(){document.getElementById('sheet').classList.remove('on');document.getElementById('sheetBack').classList.remove('on');}
-
 render();
 </script>
 </body>

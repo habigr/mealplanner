@@ -4,7 +4,7 @@
 
 ## HIGHEST PRIORITY — NON-NEGOTIABLE
 
-No data loss under any circumstances. There is real live trip data in Firebase. **FIP 2026 is THE protected live trip — it must NEVER be deleted or overwritten under any circumstances (Robbie, 2026-06-06).** Never test data/sync changes against FIP 2026; use a throwaway test trip and back FIP 2026 up first.
+No data loss under any circumstances. There is real live trip data in Firebase. **EVERY trip is equally sensitive and protected — none may EVER be deleted, overwritten, or corrupted under any circumstances (Robbie, 2026-07-03: "FIP is not the only trip I care about anymore — each trip needs to be equally considered sensitive").** FIP 2026 (called out 2026-06-06) is still live data but no longer the *only* protected trip. Never test data/sync/save/Firebase changes against ANY real trip; use a dedicated throwaway test trip and back up first. Because there's no "safe" real trip, redesign/reskin work stays visual-only (CSS/markup), never touching the data/save/sync layer.
 
 Before touching any sync, save, or Firebase logic:
 - Never write an empty dishes array to Firebase

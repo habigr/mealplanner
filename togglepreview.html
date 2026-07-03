@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toggle styles — pick one</title>
+<style>
+  :root{--bg:#f2f2f7;--card:#fff;--label:#1c1c1e;--label2:#8e8e93;--label3:#c7c7cc;--sep:rgba(60,60,67,.13);
+    --accent:#1a3260;--accent2:#2f5aa8;--accent-soft:rgba(47,90,168,.12);
+    --ff:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:var(--ff);}
+  body{background:var(--bg);color:var(--label);padding:24px 18px 60px;-webkit-font-smoothing:antialiased;}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;}
+  .sub{color:var(--label2);font-size:13px;margin-bottom:24px;}
+  .opt{background:var(--card);border-radius:16px;padding:18px 16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px -18px rgba(0,0,0,.22);}
+  .opt h2{font-size:14px;font-weight:700;margin-bottom:2px;}
+  .opt p{font-size:12.5px;color:var(--label2);margin-bottom:14px;}
+  .tabs{display:flex;}
+
+  /* A — iOS segmented (gray track, white pill, dark text) */
+  .A{background:rgba(120,120,128,.12);border-radius:11px;padding:3px;gap:2px;}
+  .A button{flex:1;border:none;background:transparent;font-family:var(--ff);font-size:14px;font-weight:600;color:var(--label);padding:9px;border-radius:9px;letter-spacing:-.01em;}
+  .A button.on{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.14);}
+
+  /* B — accent-filled pill (current) */
+  .B{background:rgba(120,120,128,.11);border-radius:13px;padding:4px;gap:3px;}
+  .B button{flex:1;border:none;background:transparent;font-family:var(--ff);font-size:14px;font-weight:600;color:var(--label2);padding:10px;border-radius:10px;letter-spacing:-.01em;}
+  .B button.on{background:var(--accent);color:#fff;font-weight:700;box-shadow:0 3px 10px -3px var(--accent);}
+
+  /* C — underline / ink tabs */
+  .C{border-bottom:1px solid var(--sep);gap:0;}
+  .C button{flex:1;border:none;background:transparent;font-family:var(--ff);font-size:15px;font-weight:600;color:var(--label2);padding:12px 8px;border-bottom:2.5px solid transparent;margin-bottom:-1px;letter-spacing:-.01em;}
+  .C button.on{color:var(--accent2);border-bottom-color:var(--accent2);font-weight:700;}
+
+  /* D — soft tinted pill (accent-soft, accent text) */
+  .D{gap:8px;}
+  .D button{flex:1;border:none;background:rgba(120,120,128,.1);font-family:var(--ff);font-size:14px;font-weight:600;color:var(--label2);padding:11px;border-radius:12px;letter-spacing:-.01em;}
+  .D button.on{background:var(--accent-soft);color:var(--accent2);font-weight:700;}
+
+  /* E — bold rounded capsule, gradient active */
+  .E{background:#eef0f4;border-radius:999px;padding:4px;gap:3px;}
+  .E button{flex:1;border:none;background:transparent;font-family:var(--ff);font-size:14px;font-weight:600;color:var(--label2);padding:11px;border-radius:999px;letter-spacing:-.01em;}
+  .E button.on{background:linear-gradient(160deg,var(--accent2),var(--accent));color:#fff;font-weight:700;box-shadow:0 4px 12px -4px var(--accent2);}
+
+  /* F — minimal: plain text, active is a small dot + bold accent */
+  .F{gap:6px;justify-content:space-between;padding:2px 4px;}
+  .F button{flex:1;border:none;background:transparent;font-family:var(--ff);font-size:15px;font-weight:600;color:var(--label3);padding:8px 4px;letter-spacing:-.01em;position:relative;}
+  .F button.on{color:var(--label);font-weight:800;}
+  .F button.on::after{content:'';position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--accent2);}
+</style>
+</head>
+<body>
+  <h1>Pick a toggle style</h1>
+  <p class="sub">Same 3 tabs, Assign Stores active. Tell me a letter (A–F). Accent = your Midnight scheme.</p>
+
+  <div class="opt"><h2>A — iOS segmented</h2><p>Gray track, white pill, dark text. The classic Apple look, refined.</p>
+    <div class="tabs A"><button>List</button><button class="on">Assign Stores</button><button>Shop</button></div></div>
+
+  <div class="opt"><h2>B — Accent pill (current)</h2><p>Filled accent pill, white text, soft glow.</p>
+    <div class="tabs B"><button>List</button><button class="on">Assign Stores</button><button>Shop</button></div></div>
+
+  <div class="opt"><h2>C — Underline tabs</h2><p>Text tabs with an accent underline on the active one. Clean, minimal.</p>
+    <div class="tabs C"><button>List</button><button class="on">Assign Stores</button><button>Shop</button></div></div>
+
+  <div class="opt"><h2>D — Soft tinted pills</h2><p>Each tab its own pill; active gets a soft accent tint + accent text.</p>
+    <div class="tabs D"><button>List</button><button class="on">Assign Stores</button><button>Shop</button></div></div>
+
+  <div class="opt"><h2>E — Capsule, gradient active</h2><p>Fully-rounded capsule; active is a gradient pill. Boldest.</p>
+    <div class="tabs E"><button>List</button><button class="on">Assign Stores</button><button>Shop</button></div></div>
+
+  <div class="opt"><h2>F — Minimal text + dot</h2><p>No track — plain text tabs, active is bold with a small dot. Most understated.</p>
+    <div class="tabs F"><button>List</button><button class="on">Assign Stores</button><button>Shop</button></div></div>
+</body>
+</html>

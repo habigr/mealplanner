@@ -1934,20 +1934,23 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #grocery .shop-store-chip-count{opacity:.7;font-weight:700;}
 #grocery .shop-progress-row{display:flex;align-items:center;gap:12px;padding:8px 2px 2px;}
 #grocery .shop-btn-group{display:flex;gap:8px;flex-shrink:0;margin-left:auto;}
-/* done / collapsed store sections get a white pane so they don't float on the gray bg */
-#grocery .shopping-section.done .shopping-section-header,#grocery .shopping-section.collapsed .shopping-section-header{background:var(--gk-card)!important;border-radius:14px!important;padding:12px 16px!important;box-shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px -18px rgba(0,0,0,.22);}
+/* v: a bit more blue across the grocery tabs */
+#grocery .gk-sec-name{color:var(--theme-accent-dark,var(--theme-accent))!important;}
+#grocery .gk-sec-head{background:var(--theme-accent-soft);border-radius:10px;padding:7px 12px!important;margin:0 2px;}
+#grocery .gk-sec-count{color:var(--theme-accent2,var(--theme-accent))!important;opacity:.7;}
 #grocery .shopping-progress{flex:1;font-size:12.5px!important;color:var(--gk-label2)!important;background:transparent!important;border:none!important;padding:0!important;}
 #grocery .shopping-progress-bar{background:rgba(120,120,128,.16)!important;border-radius:4px!important;height:7px;margin-top:5px!important;}
 #grocery .shopping-progress-fill{background:var(--gk-green)!important;border-radius:4px!important;}
 #grocery .shopping-toggle-btn,#grocery .shop-uncheck-btn{font-size:12.5px!important;font-weight:600!important;border-radius:999px!important;border:.5px solid var(--gk-sep)!important;background:var(--gk-card)!important;color:var(--gk-label2)!important;padding:6px 12px!important;}
 #grocery .shopping-toggle-btn.active{background:var(--theme-accent)!important;color:#fff!important;border-color:var(--theme-accent)!important;}
 /* sections as iOS cards */
-#grocery .shopping-section{margin:16px 0 0!important;border:none!important;background:transparent!important;box-shadow:none!important;}
-#grocery .shopping-section-header{padding:0 6px 7px!important;background:transparent!important;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
-#grocery .shopping-section-header h3{font-size:12.5px!important;font-weight:700!important;letter-spacing:.03em;text-transform:uppercase;color:var(--gk-label2)!important;margin:0;}
+#grocery .shopping-section{margin:14px 0 0!important;border:none!important;background:var(--gk-card)!important;border-radius:var(--gk-r-card)!important;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px -18px rgba(0,0,0,.22)!important;}
+#grocery .shopping-section-header{padding:12px 16px!important;background:var(--theme-accent-soft)!important;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border-bottom:.5px solid var(--gk-sep)!important;}
+#grocery .shopping-section.collapsed .shopping-section-header{border-bottom:none!important;}
+#grocery .shopping-section-header h3{font-size:12.5px!important;font-weight:700!important;letter-spacing:.03em;text-transform:uppercase;color:var(--theme-accent-dark,var(--theme-accent))!important;margin:0;}
 #grocery .shopping-section.done .shopping-section-header h3{color:var(--gk-green)!important;}
 #grocery .shopping-section-count{font-size:12.5px!important;font-weight:600!important;color:var(--gk-label3)!important;}
-#grocery .shopping-section-body{background:var(--gk-card)!important;border-radius:var(--gk-r-card)!important;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px -18px rgba(0,0,0,.22);border:none!important;}
+#grocery .shopping-section-body{background:transparent!important;border-radius:0!important;overflow:hidden;box-shadow:none!important;border:none!important;}
 /* rows */
 #grocery .shopping-item{display:flex!important;align-items:center;gap:13px!important;padding:11px 14px!important;border-bottom:none!important;position:relative;background:transparent!important;}
 #grocery .shopping-item+.shopping-item::before{content:'';position:absolute;top:0;left:52px;right:0;height:.5px;background:var(--gk-sep);}

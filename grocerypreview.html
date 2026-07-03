@@ -3,203 +3,244 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Grocery List — modern iOS mockup v2</title>
+<title>Grocery — thorough interactive mockup</title>
 <style>
   :root{
     --bg:#f2f2f7;--card:#fff;--label:#1c1c1e;--label2:#8e8e93;--label3:#c7c7cc;
-    --sep:rgba(60,60,67,.12);--accent:#1a3260;--accent2:#2f5aa8;--accent-soft:rgba(47,90,168,.12);
-    --green:#34c759;--r-card:18px;
+    --sep:rgba(60,60,67,.13);--accent:#1a3260;--accent2:#2f5aa8;--accent-soft:rgba(47,90,168,.12);
+    --green:#34c759;--amber:#ff9500;--blue:#0a84ff;--red:#ff3b30;--r-card:18px;
     --ff:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",sans-serif;
   }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  body{font-family:var(--ff);background:var(--bg);color:var(--label);-webkit-font-smoothing:antialiased;padding-bottom:90px;}
-  .note{background:#fff8e1;color:#7a5b00;font-size:12.5px;padding:10px 16px;text-align:center;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;font-family:var(--ff);}
+  body{background:var(--bg);color:var(--label);-webkit-font-smoothing:antialiased;padding-bottom:40px;}
+  .note{background:#fff8e1;color:#7a5b00;font-size:12px;padding:9px 16px;text-align:center;line-height:1.4;}
 
-  header{position:sticky;top:0;z-index:20;background:rgba(242,242,247,.85);-webkit-backdrop-filter:blur(20px) saturate(1.8);backdrop-filter:blur(20px) saturate(1.8);padding:14px 20px 10px;border-bottom:.5px solid var(--sep);}
+  header{position:sticky;top:0;z-index:20;background:rgba(242,242,247,.86);-webkit-backdrop-filter:blur(20px) saturate(1.8);backdrop-filter:blur(20px) saturate(1.8);padding:12px 18px 8px;border-bottom:.5px solid var(--sep);}
   h1{font-size:26px;font-weight:600;letter-spacing:-.02em;}
-  .subttl{font-size:13.5px;color:var(--label2);font-weight:500;margin-top:2px;}
-  .prog{margin-top:11px;height:7px;border-radius:4px;background:rgba(120,120,128,.16);overflow:hidden;}
-  .prog>i{display:block;height:100%;width:38%;background:var(--green);border-radius:4px;}
-  /* search field */
-  .search{display:flex;align-items:center;gap:7px;margin-top:12px;background:rgba(120,120,128,.14);border-radius:11px;padding:9px 12px;color:var(--label2);}
-  .search svg{width:17px;height:17px;flex-shrink:0;}
-  .search span{font-size:15px;letter-spacing:-.01em;}
-  /* segmented control incl. Assign */
-  .seg{display:flex;background:rgba(120,120,128,.12);border-radius:10px;padding:2px;margin-top:10px;}
-  .seg button{flex:1;font-family:var(--ff);font-size:13.5px;font-weight:600;letter-spacing:-.01em;padding:7px;border:none;background:transparent;color:var(--label);border-radius:8px;}
+  .subttl{font-size:13px;color:var(--label2);font-weight:500;margin-top:1px;}
+  .prog{margin-top:10px;height:7px;border-radius:4px;background:rgba(120,120,128,.16);overflow:hidden;}
+  .prog>i{display:block;height:100%;width:22%;background:var(--green);border-radius:4px;transition:width .3s;}
+  .search{display:flex;align-items:center;gap:7px;margin-top:11px;background:rgba(120,120,128,.14);border-radius:11px;padding:9px 12px;color:var(--label2);}
+  .search svg{width:16px;height:16px;flex-shrink:0;}.search span{font-size:15px;}
+  .seg{display:flex;background:rgba(120,120,128,.12);border-radius:10px;padding:2px;margin-top:9px;}
+  .seg button{flex:1;font-size:13.5px;font-weight:600;letter-spacing:-.01em;padding:7px;border:none;background:transparent;color:var(--label);border-radius:8px;}
   .seg button.on{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);}
 
-  .chips{display:flex;gap:8px;overflow-x:auto;padding:12px 16px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-  .chips::-webkit-scrollbar{display:none;}
-  .chip{flex-shrink:0;font-size:13px;font-weight:600;letter-spacing:-.01em;padding:7px 14px;border-radius:999px;background:var(--card);color:var(--label);border:.5px solid var(--sep);}
-  .chip.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  /* toolbar under header (List) */
+  .tools{display:flex;align-items:center;gap:8px;padding:11px 16px 2px;overflow-x:auto;scrollbar-width:none;}
+  .tools::-webkit-scrollbar{display:none;}
+  .tbtn{flex-shrink:0;font-size:12.5px;font-weight:600;letter-spacing:-.01em;padding:6px 12px;border-radius:999px;background:var(--card);color:var(--label);border:.5px solid var(--sep);display:inline-flex;align-items:center;gap:5px;}
+  .tbtn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .tbtn.icon{color:var(--accent2);}
 
-  .section{padding:18px 16px 0;}
-  .sec-head{display:flex;align-items:center;gap:8px;padding:0 6px 8px;}
-  .sec-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-  .sec-name{font-size:13px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label2);}
-  .sec-count{margin-left:auto;font-size:13px;font-weight:600;color:var(--label3);}
+  .section{padding:16px 16px 0;}
+  .sec-head{display:flex;align-items:center;gap:8px;padding:0 6px 7px;}
+  .sec-name{font-size:12.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label2);}
+  .sec-count{margin-left:auto;font-size:12.5px;font-weight:600;color:var(--label3);}
+  .card{background:var(--card);border-radius:var(--r-card);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px -18px rgba(0,0,0,.22);}
 
-  .card{background:var(--card);border-radius:var(--r-card);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px -18px rgba(0,0,0,.25);}
-  .row{display:flex;align-items:center;gap:13px;padding:11px 12px 11px 15px;position:relative;}
+  .row{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 14px;position:relative;}
   .row:active{background:#f6f6f9;}
-  .row + .row::before{content:'';position:absolute;top:0;left:52px;right:0;height:.5px;background:var(--sep);}
-  .check{width:26px;height:26px;border-radius:50%;border:2px solid var(--label3);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-  .check.done{background:var(--green);border-color:var(--green);color:#fff;font-size:15px;font-weight:800;}
+  .row + .row::before{content:'';position:absolute;top:0;left:50px;right:0;height:.5px;background:var(--sep);}
+  .check{width:25px;height:25px;border-radius:50%;border:2px solid var(--label3);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+  .check.done{background:var(--green);border-color:var(--green);color:#fff;font-size:14px;font-weight:800;}
   .g-main{flex:1;min-width:0;}
-  .g-name{font-size:16px;font-weight:600;letter-spacing:-.01em;}
-  .g-sub{font-size:13px;color:var(--label2);font-weight:500;margin-top:2px;}
-  .g-qty{font-size:15px;font-weight:600;flex-shrink:0;letter-spacing:-.01em;}
-  .g-qty small{font-size:12px;color:var(--label2);font-weight:600;}
-  .combined{display:inline-block;font-size:11px;font-weight:700;color:var(--accent2);background:var(--accent-soft);padding:1px 7px;border-radius:6px;margin-top:3px;}
-  .chev{color:var(--label3);font-size:18px;font-weight:600;flex-shrink:0;}
-  .row.done .g-name{color:var(--label3);text-decoration:line-through;}
-  .row.done .g-qty{color:var(--label3);}
-  /* assign-mode store picker */
-  .store-pick{flex-shrink:0;display:flex;align-items:center;gap:5px;font-size:13.5px;font-weight:600;color:var(--accent2);background:var(--accent-soft);padding:6px 11px;border-radius:999px;}
-  .add{display:flex;align-items:center;gap:10px;padding:12px 15px;color:var(--accent2);font-size:15px;font-weight:600;border-top:.5px solid var(--sep);}
-  .add .plus{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:17px;}
+  .g-name{font-size:15.5px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .g-sub{font-size:12.5px;color:var(--label2);font-weight:500;margin-top:2px;}
+  /* dish pills — INFO ONLY (no tap affordance, muted) */
+  .pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+  .pill{font-size:11px;font-weight:600;color:var(--label2);background:rgba(120,120,128,.12);border-radius:6px;padding:2px 7px;}
+  .badge{font-size:9.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:1px 6px;border-radius:5px;}
+  .badge.dup{background:#fff3e0;color:#b25c00;}
+  .badge.multi{background:#e5f0ff;color:#0a5fd0;}
+  .badge.manual{background:rgba(120,120,128,.16);color:var(--label2);}
+  .combined{display:inline-block;font-size:10.5px;font-weight:700;color:var(--accent2);background:var(--accent-soft);padding:1px 7px;border-radius:6px;margin-top:4px;}
+  .g-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+  .g-qty{font-size:15px;font-weight:600;letter-spacing:-.01em;}.g-qty small{font-size:12px;color:var(--label2);font-weight:600;}
+  .status{font-size:11px;font-weight:700;letter-spacing:.02em;padding:2px 9px;border-radius:999px;}
+  .status.need{background:rgba(120,120,128,.15);color:var(--label2);}
+  .status.bought{background:#e8f7ec;color:#1e8e3e;}
+  .status.have{background:#e5f0ff;color:#0a5fd0;}
+  .chev{color:var(--label3);font-size:17px;font-weight:600;flex-shrink:0;margin-left:2px;}
+  .row.done .g-name{color:var(--label3);}
+  .hint{font-size:12px;color:var(--accent2);font-weight:600;margin-top:3px;}
+  .store-pick{font-size:13px;font-weight:600;color:var(--accent2);background:var(--accent-soft);padding:6px 12px;border-radius:999px;flex-shrink:0;}
+  .store-pick.empty{color:var(--label2);background:rgba(120,120,128,.13);}
+  .add{display:flex;align-items:center;gap:9px;padding:11px 14px;color:var(--accent2);font-size:14.5px;font-weight:600;border-top:.5px solid var(--sep);}
+  .add .plus{width:21px;height:21px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:16px;}
+  /* shop who-bought */
+  .who{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--label2);font-weight:500;}
+  .ava{width:19px;height:19px;border-radius:50%;background:var(--accent);color:#fff;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
+  .who.me .ava{background:var(--green);}.who.me{color:#1e8e3e;}
+  .assign-help{font-size:12.5px;color:var(--label2);padding:2px 6px 10px;font-weight:500;}
 
-  /* ---- item detail sheet ---- */
-  .sheet-wrap{padding:30px 16px 0;}
-  .sheet-cap{font-size:13px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label2);padding:0 6px 10px;}
-  .sheet{background:var(--card);border-radius:22px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.06),0 20px 50px -24px rgba(0,0,0,.4);}
-  .sheet-hero{display:flex;align-items:center;gap:14px;padding:18px;}
-  .sheet-hero img{width:72px;height:72px;border-radius:16px;object-fit:cover;flex-shrink:0;background:var(--accent-soft);}
-  .sheet-title{font-size:22px;font-weight:700;letter-spacing:-.02em;}
-  .sheet-store{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent2);margin-top:5px;}
-  .sheet-store .dot{width:8px;height:8px;border-radius:50%;background:var(--green);}
-  .grp-label{font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label2);padding:14px 18px 6px;border-top:.5px solid var(--sep);}
-  .qtyrow{display:flex;align-items:center;gap:14px;padding:4px 18px 14px;}
-  .stepper{display:flex;align-items:center;gap:0;background:rgba(120,120,128,.12);border-radius:11px;overflow:hidden;}
-  .stepper button{width:44px;height:40px;border:none;background:transparent;font-size:22px;font-weight:500;color:var(--accent2);font-family:var(--ff);}
-  .stepper .val{min-width:56px;text-align:center;font-size:17px;font-weight:700;}
-  .qtyhint{font-size:13px;color:var(--label2);font-weight:500;}
-  .use{display:flex;align-items:center;gap:11px;padding:9px 18px;position:relative;}
-  .use + .use::before{content:'';position:absolute;top:0;left:18px;right:18px;height:.5px;background:var(--sep);}
-  .use-name{flex:1;font-size:15px;font-weight:500;letter-spacing:-.01em;}
-  .use-amt{font-size:14px;font-weight:600;color:var(--label2);}
-  .use-meal{font-size:12px;color:var(--label3);font-weight:500;}
-  .sheet-actions{display:flex;gap:10px;padding:16px 18px 20px;border-top:.5px solid var(--sep);}
-  .sheet-actions button{flex:1;font-family:var(--ff);font-size:15px;font-weight:600;padding:13px;border-radius:13px;border:none;letter-spacing:-.01em;}
-  .btn-have{background:var(--accent);color:#fff;}
-  .btn-del{background:rgba(255,59,48,.1);color:#ff3b30;}
-
-  .foot{padding:26px;text-align:center;color:var(--label3);font-size:12px;}
+  /* item sheet */
+  .sheet-back{position:fixed;inset:0;background:rgba(8,12,24,.4);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s;}
+  .sheet-back.on{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--bg);border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .3s cubic-bezier(.3,.8,.3,1);max-height:88vh;overflow-y:auto;padding-bottom:24px;}
+  .sheet.on{transform:translateY(0);}
+  .grabber{width:38px;height:5px;border-radius:3px;background:var(--label3);margin:8px auto 4px;}
+  .sh-head{display:flex;align-items:center;justify-content:space-between;padding:8px 18px 4px;}
+  .sh-title{font-size:22px;font-weight:700;letter-spacing:-.02em;}
+  .sh-done{font-size:16px;font-weight:600;color:var(--accent2);background:none;border:none;}
+  .sh-store{font-size:13px;font-weight:600;color:var(--accent2);padding:0 18px 12px;}
+  .grp{background:var(--card);border-radius:14px;margin:0 14px 12px;overflow:hidden;}
+  .grp-l{font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label2);padding:12px 16px 4px;}
+  .qty-r{display:flex;align-items:center;gap:14px;padding:6px 16px 14px;}
+  .stepper{display:flex;background:rgba(120,120,128,.12);border-radius:11px;overflow:hidden;}
+  .stepper button{width:42px;height:38px;border:none;background:transparent;font-size:21px;color:var(--accent2);}
+  .stepper .v{min-width:58px;text-align:center;font-size:17px;font-weight:700;line-height:38px;}
+  .qty-h{font-size:12.5px;color:var(--label2);font-weight:500;}
+  .use{display:flex;align-items:center;gap:10px;padding:10px 16px;position:relative;}
+  .use + .use::before{content:'';position:absolute;top:0;left:16px;right:16px;height:.5px;background:var(--sep);}
+  .use-n{flex:1;font-size:15px;font-weight:500;letter-spacing:-.01em;}
+  .use-m{font-size:12px;color:var(--label3);font-weight:500;}
+  .use-a{font-size:14px;font-weight:600;color:var(--label2);}
+  .sh-act{display:flex;gap:10px;padding:4px 18px 0;}
+  .sh-act button{flex:1;font-size:15px;font-weight:600;padding:13px;border-radius:13px;border:none;}
+  .b-have{background:var(--accent);color:#fff;}.b-del{background:rgba(255,59,48,.1);color:var(--red);}
 </style>
 </head>
 <body>
-  <div class="note">Grocery mockup v3 — same features you have now, just modern: Search, Assign tab (per-item store picker), tap-to-open detail sheet (how it's used + consolidation), and "bought by" still shows on checked items. Nothing removed — this is a skin over the existing screen.</div>
+  <div class="note">Thorough interactive mockup — tap the <b>List / Assign / Shop</b> tabs, and tap any item name to open its detail sheet. Everything from the preservation spec is here (statuses, badges, who-bought, info-only pills, consolidation tally). Sample data.</div>
 
   <header>
     <h1>Groceries</h1>
-    <div class="subttl">18 items · 3 stores · 7 bought</div>
-    <div class="prog"><i></i></div>
-    <div class="search">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
-      <span>Search items</span>
+    <div class="subttl" id="subttl">9 items · 3 stores</div>
+    <div class="prog"><i id="progbar"></i></div>
+    <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><span>Search items</span></div>
+    <div class="seg">
+      <button class="on" onclick="setMode('list',this)">List</button>
+      <button onclick="setMode('assign',this)">Assign</button>
+      <button onclick="setMode('shop',this)">Shop</button>
     </div>
-    <div class="seg"><button class="on">List</button><button>Shop</button><button>Assign</button></div>
   </header>
 
-  <div class="chips">
-    <span class="chip on">All</span>
-    <span class="chip">Whole Foods</span>
-    <span class="chip">Trader Joe's</span>
-    <span class="chip">Costco</span>
-    <span class="chip">Unassigned</span>
+  <div id="toolbar" class="tools">
+    <span class="tbtn on">Sort: Store</span>
+    <span class="tbtn">Dept</span>
+    <span class="tbtn">A–Z</span>
+    <span class="tbtn">Needed only</span>
+    <span class="tbtn icon">+ Add</span>
+    <span class="tbtn icon">Share</span>
   </div>
 
-  <!-- WHOLE FOODS -->
-  <div class="section">
-    <div class="sec-head"><span class="sec-name">Whole Foods</span><span class="sec-count">2 of 5</span></div>
-    <div class="card">
-      <div class="row">
-        <div class="check"></div>
-        <div class="g-main"><div class="g-name">Blueberries</div><div class="g-sub">Produce</div><span class="combined">combined: 1 pt + 3 pt</span></div>
-        <div class="g-qty">4 <small>pt</small></div>
-        <span class="chev">›</span>
-      </div>
-      <div class="row">
-        <div class="check"></div>
-        <div class="g-main"><div class="g-name">Limes</div><div class="g-sub">Produce · tacos + drinks</div></div>
-        <div class="g-qty">×5</div>
-        <span class="chev">›</span>
-      </div>
-      <div class="row done">
-        <div class="check done">✓</div>
-        <div class="g-main"><div class="g-name">Watermelon</div><div class="g-sub">Produce · bought by Robbie</div></div>
-        <div class="g-qty">1</div>
-        <span class="chev">›</span>
-      </div>
-      <div class="add"><span class="plus">+</span>Add item</div>
-    </div>
-  </div>
+  <div id="view"></div>
 
-  <!-- TRADER JOE'S -->
-  <div class="section">
-    <div class="sec-head"><span class="sec-name">Trader Joe's</span><span class="sec-count">1 of 3</span></div>
-    <div class="card">
-      <div class="row">
-        <div class="check"></div>
-        <div class="g-main"><div class="g-name">Ground Chuck</div><div class="g-sub">Meat · smash burgers</div></div>
-        <div class="g-qty">3 <small>lb</small></div>
-        <span class="chev">›</span>
-      </div>
-      <div class="row done">
-        <div class="check done">✓</div>
-        <div class="g-main"><div class="g-name">Brioche Buns</div><div class="g-sub">Bakery · bought by Sarah</div></div>
-        <div class="g-qty">2 <small>pk</small></div>
-        <span class="chev">›</span>
-      </div>
-      <div class="add"><span class="plus">+</span>Add item</div>
-    </div>
-  </div>
+  <!-- ITEM SHEET -->
+  <div class="sheet-back" id="sheetBack" onclick="closeSheet()"></div>
+  <div class="sheet" id="sheet"></div>
 
-  <!-- ASSIGN TAB preview -->
-  <div class="section">
-    <div class="sec-head"><span class="sec-name" style="color:var(--accent2);">▸ Assign tab — tap a store per item</span></div>
-    <div class="card">
-      <div class="row">
-        <div class="g-main"><div class="g-name">Lobster Tails</div><div class="g-sub">Seafood</div></div>
-        <span class="store-pick">Choose store ▾</span>
-      </div>
-      <div class="row">
-        <div class="g-main"><div class="g-name">Old Bay</div><div class="g-sub">Spices</div></div>
-        <span class="store-pick">Costco ▾</span>
-      </div>
-    </div>
-  </div>
+<script>
+var STORES=['Whole Foods',"Trader Joe's",'Costco','Unassigned'];
+var ITEMS=[
+ {id:1,name:'Blueberries',qty:'4',unit:'pt',dept:'Produce',store:'Whole Foods',status:'Need',combined:'1 pt + 3 pt',uses:[['Blueberry Pancakes','Sat · Breakfast','1 pt'],['Fruit Salad','Sun · Breakfast','3 pt']]},
+ {id:2,name:'Limes',qty:'×5',unit:'',dept:'Produce',store:'Whole Foods',status:'Need',uses:[['Al Pastor Tacos','Fri · Dinner','3'],['Margaritas','Fri · Drinks','2']]},
+ {id:3,name:'Cilantro',qty:'2',unit:'bunch',dept:'Produce',store:'Whole Foods',status:'Need',badges:['dup'],uses:[['Al Pastor Tacos','Fri · Dinner','2 bunch']]},
+ {id:4,name:'Watermelon',qty:'1',unit:'',dept:'Produce',store:'Whole Foods',status:'Bought',boughtBy:'Robbie',me:true,uses:[['Watermelon Salad','Fri · Dinner','1']]},
+ {id:5,name:'Ground Chuck',qty:'3',unit:'lb',dept:'Meat',store:"Trader Joe's",status:'Need',badges:['multi'],uses:[['Smash Burgers','Sat · Lunch','3 lb']]},
+ {id:6,name:'Brioche Buns',qty:'2',unit:'pk',dept:'Bakery',store:"Trader Joe's",status:'Bought',boughtBy:'Sarah',uses:[['Smash Burgers','Sat · Lunch','2 pk']]},
+ {id:7,name:'Paper Towels',qty:'1',unit:'',dept:'Household',store:'Costco',status:'Need',manual:true,badges:['manual'],uses:[]},
+ {id:8,name:'Lobster Tails',qty:'6',unit:'',dept:'Seafood',store:'Unassigned',status:'Need',uses:[['Lobster Rolls','Sat · Dinner','6']]},
+ {id:9,name:'Old Bay',qty:'1',unit:'',dept:'Spices',store:'Unassigned',status:'Need',uses:[['Lobster Rolls','Sat · Dinner','1']]},
+];
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function badgeHtml(b){return (b||[]).map(function(x){var lbl={dup:'May be dup',multi:'Multi-store',manual:'Manual'}[x];return '<span class="badge '+x+'">'+lbl+'</span>';}).join('');}
+function pillsHtml(it){if(!it.uses||!it.uses.length)return '';return '<div class="pills">'+it.uses.map(function(u){return '<span class="pill">'+esc(u[0])+'</span>';}).join('')+'</div>';}
+function statusHtml(s){var c={Need:'need',Bought:'bought',Have:'have'}[s];return '<span class="status '+c+'">'+s+'</span>';}
 
-  <!-- ITEM DETAIL SHEET -->
-  <div class="sheet-wrap">
-    <div class="sheet-cap">Tap any item → detail sheet</div>
-    <div class="sheet">
-      <div class="sheet-hero">
-        <img src="https://loremflickr.com/160/160/blueberries?lock=31" alt="">
-        <div>
-          <div class="sheet-title">Blueberries</div>
-          <div class="sheet-store">Whole Foods · Produce</div>
-        </div>
-      </div>
+function bought(it){return it.status==='Bought'||it.status==='Have';}
+function updateProg(){var b=ITEMS.filter(bought).length;document.getElementById('progbar').style.width=Math.round(b/ITEMS.length*100)+'%';document.getElementById('subttl').textContent=ITEMS.length+' items · 3 stores · '+b+' bought';}
 
-      <div class="grp-label">To buy</div>
-      <div class="qtyrow">
-        <div class="stepper"><button>−</button><span class="val">4 pt</span><button>+</button></div>
-        <div class="qtyhint">auto-combined from 2 recipes</div>
-      </div>
+/* ---- LIST ---- */
+function renderList(){
+  var out='',bystore={};
+  ITEMS.forEach(function(it){(bystore[it.store]=bystore[it.store]||[]).push(it);});
+  STORES.forEach(function(st){var list=bystore[st];if(!list)return;
+    var done=list.filter(bought).length;
+    out+='<div class="section"><div class="sec-head"><span class="sec-name">'+esc(st)+'</span><span class="sec-count">'+done+' of '+list.length+'</span></div><div class="card">';
+    list.forEach(function(it){
+      out+='<div class="row'+(bought(it)?' done':'')+'">'
+        +'<div class="check'+(bought(it)?' done':'')+'" onclick="toggleBought('+it.id+')">'+(bought(it)?'✓':'')+'</div>'
+        +'<div class="g-main" onclick="openSheet('+it.id+')">'
+          +'<div class="g-name">'+esc(it.name)+badgeHtml(it.badges)+'</div>'
+          +'<div class="g-sub">'+esc(it.dept)+(it.boughtBy?' · bought by '+esc(it.boughtBy):'')+'</div>'
+          +(it.combined?'<span class="combined">combined: '+esc(it.combined)+'</span>':'')
+          +pillsHtml(it)
+        +'</div>'
+        +'<div class="g-right"><div class="g-qty">'+esc(it.qty)+(it.unit?' <small>'+esc(it.unit)+'</small>':'')+'</div>'+statusHtml(it.status)+'</div>'
+        +'<span class="chev" onclick="openSheet('+it.id+')">›</span>'
+      +'</div>';
+    });
+    out+='<div class="add"><span class="plus">+</span>Add item</div></div></div>';
+  });
+  return out;
+}
 
-      <div class="grp-label">How it's used</div>
-      <div class="use"><span class="use-name">Blueberry Pancakes</span><span class="use-meal">Sat · Breakfast</span><span class="use-amt">1 pt</span></div>
-      <div class="use"><span class="use-name">Fruit Salad</span><span class="use-meal">Sun · Breakfast</span><span class="use-amt">3 pt</span></div>
+/* ---- ASSIGN ---- */
+function renderAssign(){
+  var unassigned=ITEMS.filter(function(i){return i.store==='Unassigned';}).length;
+  var out='<div class="section"><div class="assign-help">'+(unassigned?unassigned+' left to assign':'All assigned ✓')+' — tap a store per item</div><div class="card">';
+  ITEMS.forEach(function(it){
+    out+='<div class="row"><div class="g-main" onclick="openSheet('+it.id+')"><div class="g-name">'+esc(it.name)+badgeHtml(it.badges)+'</div><div class="g-sub">'+esc(it.dept)+'</div>'+pillsHtml(it)+'</div>'
+      +'<span class="store-pick'+(it.store==='Unassigned'?' empty':'')+'">'+(it.store==='Unassigned'?'Choose store ▾':esc(it.store)+' ▾')+'</span></div>';
+  });
+  out+='</div></div>';
+  return out;
+}
 
-      <div class="sheet-actions">
-        <button class="btn-have">We have it</button>
-        <button class="btn-del">Remove</button>
-      </div>
-    </div>
-  </div>
+/* ---- SHOP ---- */
+function renderShop(){
+  var out='',bystore={};
+  ITEMS.forEach(function(it){(bystore[it.store]=bystore[it.store]||[]).push(it);});
+  ['Unassigned','Whole Foods',"Trader Joe's",'Costco'].forEach(function(st){var list=bystore[st];if(!list)return;
+    var done=list.filter(bought).length;
+    out+='<div class="section"><div class="sec-head"><span class="sec-name">'+esc(st)+'</span><span class="sec-count">'+done+'/'+list.length+' done</span></div><div class="card">';
+    list.slice().sort(function(a,b){return bought(a)-bought(b);}).forEach(function(it){
+      out+='<div class="row'+(bought(it)?' done':'')+'">'
+        +'<div class="check'+(bought(it)?' done':'')+'" onclick="toggleBought('+it.id+')">'+(bought(it)?'✓':'')+'</div>'
+        +'<div class="g-main" onclick="openSheet('+it.id+')"><div class="g-name">'+esc(it.name)+badgeHtml(it.badges)+'</div>'
+          +(it.boughtBy?'<div class="g-sub"><span class="who'+(it.me?' me':'')+'"><span class="ava">'+it.boughtBy[0]+'</span>'+esc(it.boughtBy)+'</span></div>':'<div class="g-sub">'+esc(it.dept)+'</div>')
+        +'</div>'
+        +'<div class="g-qty">'+esc(it.qty)+(it.unit?' <small>'+esc(it.unit)+'</small>':'')+'</div></div>';
+    });
+    out+='</div></div>';
+  });
+  return out;
+}
 
-  <div class="foot">Fire Island · sample preview</div>
+var MODE='list';
+function setMode(m,btn){MODE=m;
+  document.querySelectorAll('.seg button').forEach(function(b){b.classList.remove('on');});if(btn)btn.classList.add('on');
+  document.getElementById('toolbar').style.display=(m==='list')?'flex':'none';
+  render();
+}
+function render(){
+  document.getElementById('view').innerHTML = MODE==='list'?renderList():MODE==='assign'?renderAssign():renderShop();
+  updateProg();
+}
+function toggleBought(id){var it=ITEMS.find(function(x){return x.id===id;});if(!it)return;
+  if(bought(it)){it.status='Need';it.boughtBy=null;it.me=false;}else{it.status='Bought';it.boughtBy='Robbie';it.me=true;}
+  render();
+}
+
+/* ---- SHEET ---- */
+function openSheet(id){var it=ITEMS.find(function(x){return x.id===id;});if(!it)return;
+  var uses=(it.uses||[]).map(function(u){return '<div class="use"><span class="use-n">'+esc(u[0])+'</span><span class="use-m">'+esc(u[1])+'</span><span class="use-a">'+esc(u[2])+'</span></div>';}).join('');
+  var total=(it.qty||'')+(it.unit?' '+it.unit:'');
+  var html='<div class="grabber"></div>'
+   +'<div class="sh-head"><div class="sh-title">'+esc(it.name)+'</div><button class="sh-done" onclick="closeSheet()">Done</button></div>'
+   +'<div class="sh-store">'+esc(it.store==='Unassigned'?'Tap to assign a store':it.store)+' · '+esc(it.dept)+(it.boughtBy?' · bought by '+esc(it.boughtBy):'')+'</div>'
+   +'<div class="grp"><div class="grp-l">To buy</div><div class="qty-r"><div class="stepper"><button>−</button><span class="v">'+esc(total)+'</span><button>+</button></div><div class="qty-h">'+(it.combined?'auto-combined ('+esc(it.combined)+')':(it.manual?'manual item':'from '+((it.uses||[]).length||0)+' dish'+(((it.uses||[]).length)===1?'':'es')))+'</div></div></div>'
+   +(uses?('<div class="grp"><div class="grp-l">How it\'s used</div>'+uses+'</div>'):'')
+   +'<div class="sh-act"><button class="b-have">We have it</button><button class="b-del">Remove</button></div>';
+  document.getElementById('sheet').innerHTML=html;
+  document.getElementById('sheet').classList.add('on');
+  document.getElementById('sheetBack').classList.add('on');
+}
+function closeSheet(){document.getElementById('sheet').classList.remove('on');document.getElementById('sheetBack').classList.remove('on');}
+
+render();
+</script>
 </body>
 </html>

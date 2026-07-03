@@ -196,7 +196,7 @@ function renderAssign(){
   var head='<div class="ag-head" style="'+gt+'"><div class="ag-item"></div>'+ASTORES.map(function(s){return '<div class="ag-store">'+esc(s)+'</div>';}).join('')+'</div>';
   var rows=ITEMS.map(function(it,ri){
     return '<div class="ag-row'+(it.stores.length?'':' unassigned')+'" style="'+gt+'">'
-      +'<div class="ag-item">'+esc(it.name)+(multi(it)?'<span class="b-multi">Dup</span>':'')+'<small>'+buyNum(it)+(it.unit?' '+esc(it.unit):'')+' · '+esc(it.dept)+'</small></div>'
+      +'<div class="ag-item" onclick="openSheet('+it.id+')" style="cursor:pointer;">'+esc(it.name)+(multi(it)?'<span class="b-multi">Dup</span>':'')+'<small>'+buyNum(it)+(it.unit?' '+esc(it.unit):'')+' · '+esc(it.dept)+'</small></div>'
       +ASTORES.map(function(s,ci){var on=it.stores.indexOf(s)>=0;return '<div class="ag-cell"><span class="ag-check'+(on?' on':'')+((ri===_af.r&&ci===_af.c)?' foc':'')+'" onclick="_af={r:'+ri+',c:'+ci+'};toggleAssign('+it.id+','+ci+')">✓</span></div>';}).join('')
       +'</div>';
   }).join('');

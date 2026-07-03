@@ -314,12 +314,13 @@ main{background:var(--panel);border:1px solid var(--border);border-radius:var(--
 .shopping-toggle{background:linear-gradient(135deg,var(--theme-accent) 0%,var(--theme-accent-dark) 100%);color:#fff;padding:10px 18px;font-weight:700;}
 .shopping-toggle.active{background:#d97706;}
 body.shopping-mode .grocery-controls,
-body.shopping-mode .grocery-workspace-controls,
-body.shopping-mode .grocery-filter-handle,
 body.shopping-mode .grocery-hint,
 body.shopping-mode #assignStoresContainer,
 body.shopping-mode .grocery-table-wrap,
-body.shopping-mode #grocery .two-col{display:none!important;}/* v118: Shop is its own focused screen — the List toolbar is fully hidden; the shopping list renders its own single toolbar + a Done button */
+body.shopping-mode #grocery .two-col{display:none!important;}
+/* v: Shop keeps the SHARED search/Store/Dept filters + progress; only the sort strip is hidden (grouping is always by store in Shop) */
+body.shopping-mode #grocery .grocery-sort-strip{display:none!important;}
+@media(min-width:769px){body.shopping-mode .grocery-workspace-controls{grid-template-areas:"progress filter" "actions filter"!important;}}/* v118: Shop is its own focused screen — the List toolbar is fully hidden; the shopping list renders its own single toolbar + a Done button */
 .shopping-progress{background:var(--panel-warm);border:1px solid var(--border-light);border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:13px;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center;gap:10px;}
 .shopping-progress strong{color:var(--theme-accent);font-weight:700;}
 .shopping-progress-bar{height:6px;background:var(--border-light);border-radius:999px;overflow:hidden;flex:1;margin:0 12px;max-width:200px;}
@@ -1924,7 +1925,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* ---- SHOP mode — match the List iOS look (scoped so it lands) ---- */
 #grocery .shopping-list{background:var(--gk-bg);}
-#grocery .shop-top{background:var(--gk-card)!important;border:none!important;border-radius:16px!important;padding:12px 12px 8px!important;box-shadow:0 1px 3px rgba(0,0,0,.06)!important;margin-bottom:6px;}
+#grocery .shop-top{background:transparent!important;border:none!important;box-shadow:none!important;padding:2px 2px 4px!important;display:flex;justify-content:flex-end;}
 #grocery .shop-search{background:rgba(120,120,128,.14)!important;border:none!important;border-radius:11px!important;font-size:15px!important;padding:10px 14px!important;width:100%;color:var(--gk-label);}
 #grocery .shopping-store-chips{display:flex;gap:8px;overflow-x:auto;padding:11px 2px 4px;scrollbar-width:none;}
 #grocery .shopping-store-chips::-webkit-scrollbar{display:none;}
@@ -5246,17 +5247,14 @@ function renderShoppingList(out,rows){
   rows.forEach(function(r){var a=r.storeAssignments&&r.storeAssignments.length?r.storeAssignments:[r.store||'Unassigned'];a.forEach(function(s){if(activeStores.indexOf(s)<0&&s!=='Unassigned')return;if(!groups[s])groups[s]=[];groups[s].push(r);});});
   /* v139 (G1): pin "Needs a store" (Unassigned) to the top */
   var keys=Object.keys(groups).sort(function(a,b){if(a==='Unassigned')return -1;if(b==='Unassigned')return 1;return a.localeCompare(b);}),total=new Set(rows.map(function(r){return r.key;})).size,bought=rows.filter(function(r){return r.status==='Bought';}).length,left=total-bought,pct=total?Math.round(bought/total*100):0;
-  if(_shopStoreFilter!=='All'&&keys.indexOf(_shopStoreFilter)<0)_shopStoreFilter='All';// chosen store no longer present → fall back to All
-  var renderKeys=(_shopStoreFilter!=='All')?[_shopStoreFilter]:keys;
+  var renderKeys=keys;// v: store filtering handled by the shared Store dropdown (rows pre-filtered in buildGroceryList)
   var storeCounts={};rows.forEach(function(r){var a=r.storeAssignments&&r.storeAssignments.length?r.storeAssignments:[r.store||'Unassigned'];storeCounts[r.key]=a.filter(function(s){return activeStores.indexOf(s)>=0||s==='Unassigned';}).length;});
   // --- focused toolbar: Done · search/add · store chips · slim progress + Hide done ---
-  var doneBtn='';// v140: removed — the persistent List/Assign/Shop sub-tabs replace the Done exit
-  var searchBox='<div class="shop-search-wrap"><input id="shopSearch" class="shop-search" type="search" placeholder="Search or add an item…" value="'+escAttr(q)+'" oninput="onShopSearch(this.value)" /></div>';
-  var storeChips=(keys.length>1)?'<div class="shopping-store-chips"><button class="shop-store-chip'+(_shopStoreFilter==='All'?' active':'')+'" data-store="All">All</button>'+keys.map(function(s){var sb=groups[s].filter(function(r){return r.status==='Bought';}).length;return'<button class="shop-store-chip'+(_shopStoreFilter===s?' active':'')+'" data-store="'+escAttr(s)+'">'+escHtml(s==='Unassigned'?'Needs a store':s)+' <span class="shop-store-chip-count">'+(groups[s].length-sb)+'</span></button>';}).join('')+'</div>':'';
+  // v: Shop now uses the SHARED search/Store/Dept filters + progress (workspace controls, un-hidden on Shop).
+  // Its own toolbar is reduced to the two shop-specific actions.
   var hideBtn='<button class="shopping-toggle-btn'+(_shopHideBought?' active':'')+'" onclick="toggleShopHideBought()">'+(_shopHideBought?'☑':'☐')+' Hide done</button>';
   var uncheckBtn=(total>0)?'<button class="shop-uncheck-btn" onclick="resetGroceryCheckoffs()">↩ Uncheck all</button>':'';
-  var progress='<div class="shop-progress-row"><div class="shopping-progress"><span><strong>'+left+'</strong> left · '+bought+' of '+total+'</span><div class="shopping-progress-bar"><div class="shopping-progress-fill" style="width:'+pct+'%;"></div></div></div><div class="shop-btn-group">'+uncheckBtn+hideBtn+'</div></div>';
-  var toolbar='<div class="shop-top">'+searchBox+storeChips+progress+'</div>';
+  var toolbar='<div class="shop-top"><div class="shop-btn-group">'+uncheckBtn+hideBtn+'</div></div>';
   // --- sections (bought items sink to the bottom of their OWN store) ---
   var sectionsHtml=renderKeys.map(function(store){
     var items=groups[store].slice().sort(function(a,b){var as=a.status==='Bought'?1:0,bs=b.status==='Bought'?1:0;return as-bs||String(a.department).localeCompare(String(b.department))||String(a.item).localeCompare(String(b.item));});
@@ -6296,7 +6294,8 @@ function populateGroceryFilters(){
 function clearGroceryFilters(){groceryNeededOnly=false;setValue('grocerySearch','');setValue('groceryStoreFilter','All');setValue('groceryDepartmentFilter','All');buildGroceryList();}
 function getCurrentGroceryRows(){
   var rows=aggregateRows(),sf=getValue('groceryStoreFilter')||'All',df=getValue('groceryDepartmentFilter')||'All',q=(getValue('grocerySearch')||'').toLowerCase().trim();
-  if(sf!=='All')rows=rows.filter(function(r){return r.store===sf||r.storeAssignments.indexOf(sf)>=0;});
+  // v: Assign mode ignores the store filter — you need to see unassigned items to assign them
+  if(sf!=='All'&&!assignStoresMode)rows=rows.filter(function(r){return r.store===sf||r.storeAssignments.indexOf(sf)>=0;});
   if(df!=='All')rows=rows.filter(function(r){return r.department===df;});
   if(q)rows=rows.filter(function(r){return String(r.item).toLowerCase().indexOf(q)>=0||String(r.dishes.join(' ')).toLowerCase().indexOf(q)>=0||String(r.store).toLowerCase().indexOf(q)>=0||String(r.department).toLowerCase().indexOf(q)>=0;});
   if(groceryNeededOnly)rows=rows.filter(function(r){return r.status!=='Bought'&&r.status!=='Have';});

@@ -1508,7 +1508,7 @@ body.shopping-mode .grocery-controls,body.shopping-mode .grocery-hint{display:no
   .grocery-sort-strip{grid-area:sort;margin-bottom:0;}
   .grocery-progress-card{grid-area:progress;}
   .grocery-actions-row{grid-area:actions;align-self:end;}
-  .grocery-filter-panel{grid-area:filter;display:grid!important;position:static!important;transform:none!important;align-self:stretch;grid-template-columns:1fr;padding:14px;border:1.5px solid var(--border-light);border-radius:14px;}
+  .grocery-filter-panel{grid-area:filter;display:grid!important;position:static!important;transform:none!important;align-self:start;grid-template-columns:1fr;padding:0!important;border:none!important;background:transparent!important;box-shadow:none!important;}
   .grocery-filter-handle{display:none!important;}
 }
 
@@ -1905,10 +1905,22 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #assignStoresGrid tr.unassigned{background:rgba(255,149,0,.05);}
 #assignStoresGrid tr.arow-focus{background:rgba(120,120,128,.06);}
 #assignStoresGrid .acell-focus .assign-store-check{outline:2.5px solid var(--theme-accent-dark,var(--theme-accent));outline-offset:2px;}
-.assign-keys-hint{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 14px 10px 14px;flex-wrap:wrap;}
+.assign-keys-hint{display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:2px 8px 10px 14px;flex-wrap:wrap;}
 .assign-left-count{font-size:12.5px;font-weight:600;color:var(--gk-label2);}
 .assign-left-count.has{color:#b25c00;background:#fff3e0;padding:4px 11px;border-radius:999px;font-weight:700;font-size:12px;}
 .assign-keys{font-size:11.5px;color:var(--gk-label3);}
+/* view toggle (top-right of Assign) */
+.assign-view-toggle{margin-left:auto;display:inline-flex;background:rgba(120,120,128,.12);border-radius:8px;padding:2px;gap:2px;}
+.assign-view-toggle button{font-family:var(--gk-ff);font-size:12px;font-weight:600;color:var(--gk-label2);border:none;background:transparent;border-radius:6px;padding:5px 12px;cursor:pointer;transition:all .2s;}
+.assign-view-toggle button.on{background:#fff;color:var(--gk-label);box-shadow:0 1px 4px rgba(0,0,0,.12);}
+/* Assign LIST view — one store dropdown per item (mobile default) */
+#assignStoresGrid .assign-list-row{display:flex;align-items:center;gap:12px;padding:11px 14px 11px 16px;position:relative;}
+#assignStoresGrid .assign-list-row+.assign-list-row::before{content:'';position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--gk-sep);}
+#assignStoresGrid .assign-list-row.unassigned{box-shadow:inset 3px 0 0 var(--gk-amber);background:rgba(255,149,0,.05);}
+#assignStoresGrid .assign-list-name{flex:1;min-width:0;cursor:pointer;}
+#assignStoresGrid .aln-title{display:block;font-size:15.5px;font-weight:600;letter-spacing:-.01em;color:var(--gk-label);}
+#assignStoresGrid .aln-sub{display:block;font-size:12.5px;color:var(--gk-label2);font-weight:500;margin-top:2px;}
+#assignStoresGrid .assign-list-select{flex-shrink:0;font-family:var(--gk-ff);font-size:14px;font-weight:600;color:var(--gk-label);background:var(--gk-card);border:1px solid var(--gk-sep);border-radius:9px;padding:8px 10px;min-width:128px;max-width:150px;}
 
 /* ---- SHOP mode — match the List iOS look (scoped so it lands) ---- */
 #grocery .shopping-list{background:var(--gk-bg);}
@@ -1920,6 +1932,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #grocery .shop-store-chip.active{background:var(--theme-accent)!important;color:#fff!important;border-color:var(--theme-accent)!important;}
 #grocery .shop-store-chip-count{opacity:.7;font-weight:700;}
 #grocery .shop-progress-row{display:flex;align-items:center;gap:12px;padding:8px 2px 2px;}
+#grocery .shop-btn-group{display:flex;gap:8px;flex-shrink:0;margin-left:auto;}
+/* done / collapsed store sections get a white pane so they don't float on the gray bg */
+#grocery .shopping-section.done .shopping-section-header,#grocery .shopping-section.collapsed .shopping-section-header{background:var(--gk-card)!important;border-radius:14px!important;padding:12px 16px!important;box-shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px -18px rgba(0,0,0,.22);}
 #grocery .shopping-progress{flex:1;font-size:12.5px!important;color:var(--gk-label2)!important;background:transparent!important;border:none!important;padding:0!important;}
 #grocery .shopping-progress-bar{background:rgba(120,120,128,.16)!important;border-radius:4px!important;height:7px;margin-top:5px!important;}
 #grocery .shopping-progress-fill{background:var(--gk-green)!important;border-radius:4px!important;}
@@ -1942,6 +1957,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #grocery .shopping-item-dept{font-size:12.5px!important;color:var(--gk-label3)!important;font-weight:500;flex-shrink:0;}
 #grocery .shopping-item-qty{font-size:14px!important;font-weight:600!important;color:var(--gk-label2)!important;margin-top:2px;}
 #grocery .shopping-item-who{font-size:12px!important;font-weight:600;margin-top:3px;display:flex;align-items:center;gap:5px;}
+/* kill the inherited uppercase + italic on shop rows */
+#grocery .shopping-item-name,#grocery .shopping-item-qty,#grocery .shopping-item-dept,#grocery .shopping-item-titleline,#grocery .shopping-item-body{text-transform:none!important;}
+#grocery .shopping-item-dept{font-style:normal!important;font-size:11.5px!important;color:var(--gk-label2)!important;font-weight:600!important;}
 
 /* ---- ITEM SHEET: modern bottom-sheet skin (CSS-only; .gis-* names preserved) ---- */
 .gis-sheet{background:var(--gk-bg);border-radius:20px 20px 0 0;}
@@ -5073,7 +5091,19 @@ function renderAssignStoresGrid(){
   if(!rows.length){grid.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);">Add dishes with ingredients first.</div>';return;}
   if(!activeStores.length){grid.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);">No active stores — check stores in Event Setup.</div>';return;}
   var unassigned=rows.filter(function(r){return !(r.storeAssignments&&r.storeAssignments.length);}).length;
-  var hint='<div class="assign-keys-hint"><span class="assign-left-count'+(unassigned?' has':'')+'">'+(unassigned?unassigned+' left to assign':'All assigned ✓')+'</span><span class="assign-keys">↑↓ move row · Space toggles</span></div>';
+  if(_assignView!=='grid'&&_assignView!=='list')_assignView=(window.innerWidth<=768?'list':'grid');
+  var vToggle='<div class="assign-view-toggle"><button class="'+(_assignView==='list'?'on':'')+'" onclick="setAssignView(\'list\')">List</button><button class="'+(_assignView==='grid'?'on':'')+'" onclick="setAssignView(\'grid\')">Grid</button></div>';
+  var hint='<div class="assign-keys-hint"><span class="assign-left-count'+(unassigned?' has':'')+'">'+(unassigned?unassigned+' left to assign':'All assigned ✓')+'</span>'+(_assignView==='grid'?'<span class="assign-keys">↑↓ move row · Space toggles</span>':'')+vToggle+'</div>';
+  if(_assignView==='list'){
+    var _opt=['Unassigned'].concat(activeStores);
+    var listBody=rows.map(function(r){
+      var a=r.storeAssignments||[],primary=a[0]||'Unassigned',noStore=!a.length;
+      var sel='<select class="assign-list-select" onchange="_assignListPick(this,\''+escAttr(r.key)+'\')">'+_opt.map(function(s){return'<option'+(primary===s?' selected':'')+'>'+escHtml(s)+'</option>';}).join('')+'</select>';
+      return '<div class="assign-list-row'+(noStore?' unassigned':'')+'"><div class="assign-list-name" onclick="openGroceryItemSheet(\''+escAttr(r.key)+'\')"><span class="aln-title">'+escHtml(dispPlural(r.item,r.quantityText))+'</span><span class="aln-sub">'+escHtml([r.quantityText,r.unit].filter(Boolean).join(' ')||'—')+(r.department?' · '+escHtml(r.department):'')+'</span></div>'+sel+'</div>';
+    }).join('');
+    grid.innerHTML=hint+'<div class="assign-list gk-card">'+listBody+'</div>';
+    return;
+  }
   var hdr='<th style="width:200px;">Ingredient</th><th style="width:50px;">Qty</th>'+activeStores.map(function(s,i){return'<th class="assign-store-col" style="width:66px;white-space:normal;word-break:break-word;">'+escHtml(s)+'</th>';}).join('');
   var body=rows.map(function(r,ri){
     var a=r.storeAssignments||[],dup=a.length>1,noStore=!a.length;
@@ -5086,6 +5116,16 @@ function renderAssignStoresGrid(){
   if(_aFocus.r>rows.length-1)_aFocus.r=rows.length-1;if(_aFocus.r<0)_aFocus.r=0;
   var tbl=grid.querySelector('table');if(tbl&&!grid.contains(document.activeElement)){try{tbl.focus({preventScroll:true});}catch(e){}}
   _renderAssignFocus();
+}
+var _assignView='';// '' until first render → defaults by screen size; 'grid' matrix or 'list' dropdowns
+function setAssignView(v){_assignView=v;renderAssignStoresGrid();}
+// dropdown pick in the Assign LIST view — single store, update highlight + count without a full re-render (no scroll jump)
+function _assignListPick(sel,key){
+  setRowStore(key,sel.value);
+  var row=sel.closest('.assign-list-row');if(row)row.classList.toggle('unassigned',sel.value==='Unassigned');
+  var left=0;document.querySelectorAll('#assignStoresGrid .assign-list-row').forEach(function(r){if(r.classList.contains('unassigned'))left++;});
+  var c=document.querySelector('#assignStoresGrid .assign-left-count');
+  if(c){c.textContent=left?left+' left to assign':'All assigned ✓';c.classList.toggle('has',!!left);}
 }
 function _aFocusRow(ri){_aFocus.r=ri;var t=document.querySelector('#assignStoresGrid table');if(t){try{t.focus({preventScroll:true});}catch(e){}}_renderAssignFocus();}
 function _renderAssignFocus(){
@@ -5213,9 +5253,10 @@ function renderShoppingList(out,rows){
   var doneBtn='';// v140: removed — the persistent List/Assign/Shop sub-tabs replace the Done exit
   var searchBox='<div class="shop-search-wrap"><input id="shopSearch" class="shop-search" type="search" placeholder="Search or add an item…" value="'+escAttr(q)+'" oninput="onShopSearch(this.value)" /></div>';
   var storeChips=(keys.length>1)?'<div class="shopping-store-chips"><button class="shop-store-chip'+(_shopStoreFilter==='All'?' active':'')+'" data-store="All">All</button>'+keys.map(function(s){var sb=groups[s].filter(function(r){return r.status==='Bought';}).length;return'<button class="shop-store-chip'+(_shopStoreFilter===s?' active':'')+'" data-store="'+escAttr(s)+'">'+escHtml(s==='Unassigned'?'Needs a store':s)+' <span class="shop-store-chip-count">'+(groups[s].length-sb)+'</span></button>';}).join('')+'</div>':'';
-  var progress='<div class="shop-progress-row"><div class="shopping-progress"><span><strong>'+left+'</strong> left · '+bought+' of '+total+'</span><div class="shopping-progress-bar"><div class="shopping-progress-fill" style="width:'+pct+'%;"></div></div></div><button class="shopping-toggle-btn'+(_shopHideBought?' active':'')+'" onclick="toggleShopHideBought()">'+(_shopHideBought?'☑':'☐')+' Hide done</button></div>';
-  var uncheckBtn=(total>0)?'<button class="shop-uncheck-btn" onclick="resetGroceryCheckoffs()">↩ Uncheck all</button>':'';// v119: Uncheck all moved to the top, paired with Done
-  var toolbar='<div class="shop-top"><div class="shop-done-row">'+doneBtn+uncheckBtn+'</div>'+searchBox+storeChips+progress+'</div>';
+  var hideBtn='<button class="shopping-toggle-btn'+(_shopHideBought?' active':'')+'" onclick="toggleShopHideBought()">'+(_shopHideBought?'☑':'☐')+' Hide done</button>';
+  var uncheckBtn=(total>0)?'<button class="shop-uncheck-btn" onclick="resetGroceryCheckoffs()">↩ Uncheck all</button>':'';
+  var progress='<div class="shop-progress-row"><div class="shopping-progress"><span><strong>'+left+'</strong> left · '+bought+' of '+total+'</span><div class="shopping-progress-bar"><div class="shopping-progress-fill" style="width:'+pct+'%;"></div></div></div><div class="shop-btn-group">'+uncheckBtn+hideBtn+'</div></div>';
+  var toolbar='<div class="shop-top">'+searchBox+storeChips+progress+'</div>';
   // --- sections (bought items sink to the bottom of their OWN store) ---
   var sectionsHtml=renderKeys.map(function(store){
     var items=groups[store].slice().sort(function(a,b){var as=a.status==='Bought'?1:0,bs=b.status==='Bought'?1:0;return as-bs||String(a.department).localeCompare(String(b.department))||String(a.item).localeCompare(String(b.item));});

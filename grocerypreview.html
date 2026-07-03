@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Grocery — interactive mockup v3</title>
+<title>Grocery — interactive mockup v4</title>
 <style>
   :root{
     --bg:#f2f2f7;--card:#fff;--label:#1c1c1e;--label2:#8e8e93;--label3:#c7c7cc;
     --sep:rgba(60,60,67,.13);--accent:#1a3260;--accent2:#2f5aa8;--accent-soft:rgba(47,90,168,.12);
-    --green:#34c759;--r-card:18px;
+    --green:#34c759;--amber:#ff9500;--r-card:18px;
     --ff:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;font-family:var(--ff);}
@@ -51,23 +51,33 @@
   .badge{font-size:9.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:1px 6px;border-radius:5px;}
   .badge.dup{background:#fff3e0;color:#b25c00;}.badge.multi{background:#e5f0ff;color:#0a5fd0;}.badge.manual{background:rgba(120,120,128,.16);color:var(--label2);}
   .combined{display:inline-block;font-size:10.5px;font-weight:700;color:var(--accent2);background:var(--accent-soft);padding:1px 7px;border-radius:6px;margin-top:4px;}
-  /* aligned quantity: fixed right column, number sub-column + unit after */
   .g-qty{flex-shrink:0;display:flex;align-items:baseline;width:78px;}
   .qn{min-width:30px;text-align:right;font-size:15px;font-weight:600;letter-spacing:-.01em;}
   .qu{margin-left:5px;text-align:left;font-size:12.5px;font-weight:600;color:var(--label2);}
   .chev{color:var(--label3);font-size:17px;font-weight:600;flex-shrink:0;}
   .row.done .g-name{color:var(--label3);}.row.done .qn{color:var(--label3);}
   .have-tag{font-size:9.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:1px 6px;border-radius:5px;background:#e5f0ff;color:#0a5fd0;}
-  /* consistent who-checked component (profile pic + name) — used on EVERY tab */
   .who{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--label2);font-weight:600;}
-  .ava{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:9.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
-  .ava img{width:100%;height:100%;object-fit:cover;}
+  .ava{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:9.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
   .who.me{color:#1e8e3e;}.who.me .ava{background:var(--green);}
-  .store-pick{font-size:13px;font-weight:600;color:var(--accent2);background:var(--accent-soft);padding:6px 12px;border-radius:999px;flex-shrink:0;}
-  .store-pick.empty{color:var(--label2);background:rgba(120,120,128,.13);}
   .add{display:flex;align-items:center;gap:9px;padding:11px 14px;color:var(--accent2);font-size:14.5px;font-weight:600;border-top:.5px solid var(--sep);}
   .add .plus{width:21px;height:21px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:16px;}
-  .assign-help{font-size:12.5px;color:var(--label2);padding:2px 6px 10px;font-weight:500;}
+
+  /* ---- ASSIGN GRID (original matrix format) ---- */
+  .assign-help{font-size:12.5px;color:var(--label2);padding:0 6px 10px;font-weight:600;}
+  .assign-help b{color:var(--amber);}
+  .ag-head,.ag-row{display:grid;align-items:center;}
+  .ag-head{padding:8px 12px;border-bottom:.5px solid var(--sep);position:sticky;top:0;background:var(--card);}
+  .ag-store{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;color:var(--label2);text-align:center;line-height:1.15;padding:0 2px;}
+  .ag-item{font-size:14.5px;font-weight:600;letter-spacing:-.01em;padding-right:6px;overflow:hidden;}
+  .ag-item small{display:block;font-size:11.5px;color:var(--label2);font-weight:500;margin-top:1px;}
+  .ag-item .b-multi{font-size:9px;font-weight:800;color:#0a5fd0;background:#e5f0ff;padding:0 5px;border-radius:4px;margin-left:5px;text-transform:uppercase;}
+  .ag-row{padding:9px 12px;position:relative;}
+  .ag-row + .ag-row::before{content:'';position:absolute;top:0;left:12px;right:12px;height:.5px;background:var(--sep);}
+  .ag-row.unassigned{background:rgba(255,149,0,.07);}
+  .ag-cell{display:flex;justify-content:center;}
+  .ag-check{width:27px;height:27px;border-radius:8px;border:2px solid var(--label3);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:transparent;transition:all .12s;}
+  .ag-check.on{background:var(--accent);border-color:var(--accent);color:#fff;}
 
   /* sheet */
   .sheet-back{position:fixed;inset:0;background:rgba(8,12,24,.4);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);z-index:40;opacity:0;pointer-events:none;transition:opacity .25s;}
@@ -80,8 +90,7 @@
   .sh-done{font-size:16px;font-weight:600;color:var(--accent2);background:none;border:none;}
   .sh-store{font-size:13px;font-weight:500;color:var(--label2);padding:0 18px 6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .buyline{margin:6px 14px 12px;background:var(--accent);color:#fff;border-radius:14px;padding:14px 16px;display:flex;align-items:baseline;justify-content:space-between;}
-  .buyline b{font-size:24px;font-weight:700;letter-spacing:-.02em;}
-  .buyline span{font-size:13px;opacity:.85;font-weight:500;}
+  .buyline b{font-size:24px;font-weight:700;letter-spacing:-.02em;}.buyline span{font-size:13px;opacity:.85;font-weight:500;}
   .grp{background:var(--card);border-radius:14px;margin:0 14px 12px;overflow:hidden;}
   .grp-l{font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label2);padding:12px 16px 4px;}
   .use{display:flex;align-items:center;gap:10px;padding:9px 16px;position:relative;}
@@ -90,8 +99,7 @@
   .use-m{font-size:12px;color:var(--label3);font-weight:500;}
   .use-a{font-size:14px;font-weight:600;color:var(--label2);min-width:52px;text-align:right;}
   .unified{padding:10px 16px 12px;border-top:.5px solid var(--sep);}
-  .unified b{font-size:15px;font-weight:700;}
-  .unified .ex{font-size:12.5px;color:var(--label2);font-weight:500;margin-top:4px;line-height:1.45;}
+  .unified b{font-size:15px;font-weight:700;}.unified .ex{font-size:12.5px;color:var(--label2);font-weight:500;margin-top:4px;line-height:1.45;}
   .adj-r{display:flex;align-items:center;gap:14px;padding:6px 16px 14px;}
   .stepper{display:flex;background:rgba(120,120,128,.12);border-radius:11px;overflow:hidden;}
   .stepper button{width:44px;height:40px;border:none;background:transparent;font-size:22px;color:var(--accent2);}
@@ -103,7 +111,7 @@
 </style>
 </head>
 <body>
-  <div class="note">Interactive mockup v3 — who-checked-off is now a consistent avatar+name on every tab; quantities align (number then unit); the item sheet is an <b>adjustment on top of the recipe total</b> (see <b>Butter</b> for the mixed-unit unification + explanation). Tap tabs; tap an item name.</div>
+  <div class="note">Interactive mockup v4 — Assign tab restored to the original <b>grid</b> (items × stores; check a store per item, multi-store supported). Consistent who-checked avatar+name, aligned quantities, and the sheet is an adjustment on top of the recipe total (see Butter for unit unification). Tap tabs; tap an item name.</div>
 
   <header>
     <h1>Groceries</h1>
@@ -128,95 +136,90 @@
   <div class="sheet" id="sheet"></div>
 
 <script>
-var STORES=['Whole Foods',"Trader Joe's",'Costco','Unassigned'];
-// base = amount from recipes (unified). adj = your signed adjustment. buy = base+adj.
+var ASTORES=['Whole Foods',"Trader Joe's",'Costco'];      // real stores (assign-grid columns)
+var ORDER=['Whole Foods',"Trader Joe's",'Costco','Unassigned'];
+// stores = assignments (array). base = recipe total (unified). adj = signed adjustment. buy = base+adj.
 var ITEMS=[
- {id:1,name:'Blueberries',base:4,unit:'pt',adj:0,dept:'Produce',store:'Whole Foods',status:'Need',uses:[['Blueberry Pancakes','Sat · Breakfast','1 pt'],['Fruit Salad','Sun · Breakfast','3 pt']],unified:'1 pt + 3 pt = 4 pt (same unit)'},
- {id:2,name:'Limes',base:5,unit:'',adj:0,dept:'Produce',store:'Whole Foods',status:'Need',uses:[['Al Pastor Tacos','Fri · Dinner','3'],['Margaritas','Fri · Drinks','2']],unified:'3 + 2 = 5'},
- {id:3,name:'Cilantro',base:2,unit:'bunch',adj:0,dept:'Produce',store:'Whole Foods',status:'Need',badges:['dup'],uses:[['Al Pastor Tacos','Fri · Dinner','2 bunch']]},
- {id:10,name:'Butter',base:4,unit:'lb',adj:0,dept:'Dairy',store:'Whole Foods',status:'Need',uses:[['Croissants','Sun · Breakfast','1 cup'],['Lobster Rolls','Sat · Dinner','2 oz'],['Cookies','Sat · Dessert','3 lb']],unified:'Unified to lb (weight): 1 cup ≈ 0.5 lb + 2 oz ≈ 0.13 lb + 3 lb = 3.63 lb → round up to 4 lb'},
- {id:4,name:'Watermelon',base:1,unit:'',adj:0,dept:'Produce',store:'Whole Foods',status:'Bought',by:'Robbie',me:true,uses:[['Watermelon Salad','Fri · Dinner','1']]},
- {id:5,name:'Ground Chuck',base:3,unit:'lb',adj:0,dept:'Meat',store:"Trader Joe's",status:'Need',badges:['multi'],uses:[['Smash Burgers','Sat · Lunch','3 lb']]},
- {id:6,name:'Brioche Buns',base:2,unit:'pk',adj:0,dept:'Bakery',store:"Trader Joe's",status:'Bought',by:'Sarah',uses:[['Smash Burgers','Sat · Lunch','2 pk']]},
- {id:7,name:'Paper Towels',base:1,unit:'',adj:0,dept:'Household',store:'Costco',status:'Need',manual:true,badges:['manual'],uses:[]},
- {id:8,name:'Lobster Tails',base:6,unit:'',adj:0,dept:'Seafood',store:'Unassigned',status:'Need',uses:[['Lobster Rolls','Sat · Dinner','6']]},
- {id:9,name:'Old Bay',base:1,unit:'',adj:0,dept:'Spices',store:'Unassigned',status:'Need',uses:[['Lobster Rolls','Sat · Dinner','1']]},
+ {id:1,name:'Blueberries',base:4,unit:'pt',adj:0,dept:'Produce',stores:['Whole Foods'],status:'Need',uses:[['Blueberry Pancakes','Sat · Breakfast','1 pt'],['Fruit Salad','Sun · Breakfast','3 pt']],unified:'1 pt + 3 pt = 4 pt (same unit)',combined:true},
+ {id:2,name:'Limes',base:5,unit:'',adj:0,dept:'Produce',stores:['Whole Foods'],status:'Need',uses:[['Al Pastor Tacos','Fri · Dinner','3'],['Margaritas','Fri · Drinks','2']],unified:'3 + 2 = 5'},
+ {id:3,name:'Cilantro',base:2,unit:'bunch',adj:0,dept:'Produce',stores:['Whole Foods'],status:'Need',badges:['dup'],uses:[['Al Pastor Tacos','Fri · Dinner','2 bunch']]},
+ {id:10,name:'Butter',base:4,unit:'lb',adj:0,dept:'Dairy',stores:['Whole Foods'],status:'Need',uses:[['Croissants','Sun · Breakfast','1 cup'],['Lobster Rolls','Sat · Dinner','2 oz'],['Cookies','Sat · Dessert','3 lb']],unified:'Unified to lb (weight): 1 cup ≈ 0.5 lb + 2 oz ≈ 0.13 lb + 3 lb = 3.63 lb → round up to 4 lb'},
+ {id:4,name:'Watermelon',base:1,unit:'',adj:0,dept:'Produce',stores:['Whole Foods'],status:'Bought',by:'Robbie',me:true,uses:[['Watermelon Salad','Fri · Dinner','1']]},
+ {id:5,name:'Ground Chuck',base:3,unit:'lb',adj:0,dept:'Meat',stores:["Trader Joe's",'Costco'],status:'Need',uses:[['Smash Burgers','Sat · Lunch','3 lb']]},
+ {id:6,name:'Brioche Buns',base:2,unit:'pk',adj:0,dept:'Bakery',stores:["Trader Joe's"],status:'Bought',by:'Sarah',uses:[['Smash Burgers','Sat · Lunch','2 pk']]},
+ {id:7,name:'Paper Towels',base:1,unit:'',adj:0,dept:'Household',stores:['Costco'],status:'Need',manual:true,badges:['manual'],uses:[]},
+ {id:8,name:'Lobster Tails',base:6,unit:'',adj:0,dept:'Seafood',stores:[],status:'Need',uses:[['Lobster Rolls','Sat · Dinner','6']]},
+ {id:9,name:'Old Bay',base:1,unit:'',adj:0,dept:'Spices',stores:[],status:'Need',uses:[['Lobster Rolls','Sat · Dinner','1']]},
 ];
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function primary(it){return it.stores[0]||'Unassigned';}
+function multi(it){return it.stores.length>1;}
 function bought(it){return it.status==='Bought'||it.status==='Have';}
 function buyNum(it){return Math.max(0,it.base+it.adj);}
 function qtyHtml(it){return '<div class="g-qty"><span class="qn">'+buyNum(it)+'</span><span class="qu">'+esc(it.unit||'')+'</span></div>';}
 function initials(n){return n.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();}
 function whoHtml(it){if(!it.by)return '';return '<span class="who'+(it.me?' me':'')+'"><span class="ava">'+initials(it.by)+'</span>'+esc(it.by)+'</span>';}
-function badgeHtml(b){return (b||[]).map(function(x){var l={dup:'May be dup',multi:'Multi-store',manual:'Manual'}[x];return '<span class="badge '+x+'">'+l+'</span>';}).join('');}
+function allBadges(it){return (it.badges||[]).concat(multi(it)?['multi']:[]);}
+function badgeHtml(list){return list.map(function(x){var l={dup:'May be dup',multi:'Multi-store',manual:'Manual'}[x];return '<span class="badge '+x+'">'+l+'</span>';}).join('');}
 function pillsHtml(it){if(!it.uses||!it.uses.length)return '';return '<div class="pills">'+it.uses.map(function(u){return '<span class="pill">'+esc(u[0])+'</span>';}).join('')+'</div>';}
-
 function updateProg(){var b=ITEMS.filter(bought).length;document.getElementById('progbar').style.width=Math.round(b/ITEMS.length*100)+'%';document.getElementById('subttl').textContent=ITEMS.length+' items · 3 stores · '+b+' bought';}
 
-function subLine(it){
-  // consistent: if bought, show who (avatar+name) on every tab; else dept (+ Have tag)
-  if(bought(it))return '<div class="g-sub">'+whoHtml(it)+(it.status==='Have'?' <span class="have-tag">Have</span>':'')+'</div>';
-  return '<div class="g-sub">'+esc(it.dept)+'</div>';
-}
-
+function subLine(it){if(bought(it))return '<div class="g-sub">'+whoHtml(it)+(it.status==='Have'?' <span class="have-tag">Have</span>':'')+'</div>';return '<div class="g-sub">'+esc(it.dept)+'</div>';}
 function itemRow(it,opts){opts=opts||{};
   return '<div class="row'+(bought(it)?' done':'')+'">'
     +'<div class="check'+(bought(it)?' done':'')+'" onclick="toggleBought('+it.id+')">'+(bought(it)?'✓':'')+'</div>'
-    +'<div class="g-main" onclick="openSheet('+it.id+')"><div class="g-name">'+esc(it.name)+badgeHtml(it.badges)+'</div>'
-      +subLine(it)
-      +(it.id===1?'<span class="combined">combined: 1 pt + 3 pt</span>':'')
-      +(opts.pills!==false?pillsHtml(it):'')
-    +'</div>'
-    +qtyHtml(it)
-    +'<span class="chev" onclick="openSheet('+it.id+')">›</span></div>';
+    +'<div class="g-main" onclick="openSheet('+it.id+')"><div class="g-name">'+esc(it.name)+badgeHtml(allBadges(it))+'</div>'+subLine(it)
+      +(it.combined?'<span class="combined">combined: 1 pt + 3 pt</span>':'')+(opts.pills!==false?pillsHtml(it):'')+'</div>'
+    +qtyHtml(it)+'<span class="chev" onclick="openSheet('+it.id+')">›</span></div>';
 }
-
-function bucket(order){var m={};ITEMS.forEach(function(it){(m[it.store]=m[it.store]||[]).push(it);});return order.filter(function(s){return m[s];}).map(function(s){return [s,m[s]];});}
+function bucket(order){var m={};ITEMS.forEach(function(it){(m[primary(it)]=m[primary(it)]||[]).push(it);});return order.filter(function(s){return m[s];}).map(function(s){return [s,m[s]];});}
 
 function renderList(){
-  return bucket(STORES).map(function(pair){var st=pair[0],list=pair[1],done=list.filter(bought).length;
+  return bucket(ORDER).map(function(p){var st=p[0],list=p[1],done=list.filter(bought).length;
     return '<div class="section"><div class="sec-head"><span class="sec-name">'+esc(st)+'</span><span class="sec-count">'+done+' of '+list.length+'</span></div>'
       +'<div class="card">'+list.map(function(it){return itemRow(it);}).join('')+'<div class="add"><span class="plus">+</span>Add item</div></div></div>';
   }).join('');
 }
-function renderAssign(){
-  var un=ITEMS.filter(function(i){return i.store==='Unassigned';}).length;
-  return '<div class="section"><div class="assign-help">'+(un?un+' left to assign':'All assigned ✓')+' — tap a store per item</div><div class="card">'
-    +ITEMS.map(function(it){return '<div class="row"><div class="g-main" onclick="openSheet('+it.id+')"><div class="g-name">'+esc(it.name)+badgeHtml(it.badges)+'</div><div class="g-sub">'+esc(it.dept)+'</div>'+pillsHtml(it)+'</div>'
-      +'<span class="store-pick'+(it.store==='Unassigned'?' empty':'')+'">'+(it.store==='Unassigned'?'Choose store ▾':esc(it.store)+' ▾')+'</span></div>';}).join('')
-    +'</div></div>';
-}
 function renderShop(){
-  return bucket(['Unassigned','Whole Foods',"Trader Joe's",'Costco']).map(function(pair){var st=pair[0],list=pair[1].slice().sort(function(a,b){return bought(a)-bought(b);}),done=list.filter(bought).length;
+  return bucket(['Unassigned','Whole Foods',"Trader Joe's",'Costco']).map(function(p){var st=p[0],list=p[1].slice().sort(function(a,b){return bought(a)-bought(b);}),done=list.filter(bought).length;
     return '<div class="section"><div class="sec-head"><span class="sec-name">'+esc(st)+'</span><span class="sec-count">'+done+'/'+list.length+' done</span></div>'
       +'<div class="card">'+list.map(function(it){return itemRow(it,{pills:false});}).join('')+'</div></div>';
   }).join('');
 }
+/* original ASSIGN GRID: rows = items, columns = stores, checkbox at each intersection */
+function renderAssign(){
+  var un=ITEMS.filter(function(i){return !i.stores.length;}).length;
+  var gt='grid-template-columns:minmax(0,1fr) repeat('+ASTORES.length+',46px)';
+  var head='<div class="ag-head" style="'+gt+'"><div class="ag-item"></div>'+ASTORES.map(function(s){return '<div class="ag-store">'+esc(s)+'</div>';}).join('')+'</div>';
+  var rows=ITEMS.map(function(it){
+    return '<div class="ag-row'+(it.stores.length?'':' unassigned')+'" style="'+gt+'">'
+      +'<div class="ag-item">'+esc(it.name)+(multi(it)?'<span class="b-multi">Dup</span>':'')+'<small>'+buyNum(it)+(it.unit?' '+esc(it.unit):'')+' · '+esc(it.dept)+'</small></div>'
+      +ASTORES.map(function(s,ci){var on=it.stores.indexOf(s)>=0;return '<div class="ag-cell"><span class="ag-check'+(on?' on':'')+'" onclick="toggleAssign('+it.id+','+ci+')">✓</span></div>';}).join('')
+      +'</div>';
+  }).join('');
+  return '<div class="section"><div class="assign-help">'+(un?'<b>'+un+' left to assign</b>':'All assigned ✓')+' — check a store for each item (multiple = shops at more than one)</div>'
+    +'<div class="card">'+head+rows+'</div></div>';
+}
+function toggleAssign(id,ci){var it=ITEMS.find(function(x){return x.id===id;});if(!it)return;var s=ASTORES[ci];var i=it.stores.indexOf(s);if(i>=0)it.stores.splice(i,1);else it.stores.push(s);render();}
 
 var MODE='list';
 function setMode(m,btn){MODE=m;document.querySelectorAll('.seg button').forEach(function(b){b.classList.remove('on');});if(btn)btn.classList.add('on');document.getElementById('toolbar').style.display=(m==='list')?'flex':'none';render();}
 function render(){document.getElementById('view').innerHTML=MODE==='list'?renderList():MODE==='assign'?renderAssign():renderShop();updateProg();}
 function toggleBought(id){var it=ITEMS.find(function(x){return x.id===id;});if(!it)return;if(bought(it)){it.status='Need';it.by=null;it.me=false;}else{it.status='Bought';it.by='Robbie';it.me=true;}render();}
 
-/* ---- SHEET: adjustment on top of the recipe total ---- */
 var _si=null;
 function openSheet(id){_si=ITEMS.find(function(x){return x.id===id;});renderSheet();document.getElementById('sheet').classList.add('on');document.getElementById('sheetBack').classList.add('on');}
 function closeSheet(){document.getElementById('sheet').classList.remove('on');document.getElementById('sheetBack').classList.remove('on');}
 function sheetAdj(d){if(!_si)return;_si.adj+=d;renderSheet();render();}
-function renderSheet(){var it=_si;if(!it)return;
+function renderSheet(){var it=_si;if(!it)return;var unit=it.unit||'';
   var uses=(it.uses||[]).map(function(u){return '<div class="use"><span class="use-n">'+esc(u[0])+'</span><span class="use-m">'+esc(u[1])+'</span><span class="use-a">'+esc(u[2])+'</span></div>';}).join('');
-  var unit=it.unit||'';
   var adjTxt=(it.adj>0?'+':'')+it.adj+(unit?' '+unit:'');
   var html='<div class="grabber"></div>'
    +'<div class="sh-head"><div class="sh-title">'+esc(it.name)+'</div><button class="sh-done" onclick="closeSheet()">Done</button></div>'
-   +'<div class="sh-store">'+esc(it.store==='Unassigned'?'Tap to assign a store':it.store)+' · '+esc(it.dept)+(it.by?' · ':'')+(it.by?whoHtml(it):'')+'</div>'
+   +'<div class="sh-store">'+esc(primary(it)==='Unassigned'?'Tap to assign a store':it.stores.join(' + '))+' · '+esc(it.dept)+(it.by?' · ':'')+(it.by?whoHtml(it):'')+'</div>'
    +'<div class="buyline"><b>Buy '+buyNum(it)+(unit?' '+esc(unit):'')+'</b><span>recipes '+it.base+(unit?' '+esc(unit):'')+(it.adj?' · your '+(it.adj>0?'+':'')+it.adj:'')+'</span></div>';
-  if(uses){
-    html+='<div class="grp"><div class="grp-l">From recipes</div>'+uses
-      +'<div class="unified"><b>Total from recipes: '+it.base+(unit?' '+esc(unit):'')+'</b>'+(it.unified?'<div class="ex">'+esc(it.unified)+'</div>':'')+'</div></div>';
-  } else {
-    html+='<div class="grp"><div class="grp-l">Manual item</div><div class="unified"><b>'+it.base+(unit?' '+esc(unit):'')+'</b><div class="ex">Added by hand — not from a recipe.</div></div></div>';
-  }
+  if(uses)html+='<div class="grp"><div class="grp-l">From recipes</div>'+uses+'<div class="unified"><b>Total from recipes: '+it.base+(unit?' '+esc(unit):'')+'</b>'+(it.unified?'<div class="ex">'+esc(it.unified)+'</div>':'')+'</div></div>';
+  else html+='<div class="grp"><div class="grp-l">Manual item</div><div class="unified"><b>'+it.base+(unit?' '+esc(unit):'')+'</b><div class="ex">Added by hand — not from a recipe.</div></div></div>';
   html+='<div class="grp"><div class="grp-l">Your adjustment'+(unit?' (in '+esc(unit)+')':'')+'</div>'
      +'<div class="adj-r"><div class="stepper"><button onclick="sheetAdj(-1)">−</button><span class="v">'+adjTxt+'</span><button onclick="sheetAdj(1)">+</button></div>'
      +'<div class="adj-h">on top of the '+it.base+(unit?' '+esc(unit):'')+' from recipes</div></div></div>'

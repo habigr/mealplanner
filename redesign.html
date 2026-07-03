@@ -1815,7 +1815,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
    so per-trip color schemes still tint. No markup/handler/data changes here.
    ============================================================================ */
 :root{
-  --gk-bg:#f2f2f7;--gk-card:#fff;--gk-label:#1c1c1e;--gk-label2:#8e8e93;--gk-label3:#c7c7cc;
+  --gk-bg:#e7e8ee;--gk-card:#fff;--gk-label:#1c1c1e;--gk-label2:#8e8e93;--gk-label3:#c7c7cc;
   --gk-sep:rgba(60,60,67,.13);--gk-green:#34c759;--gk-amber:#ff9500;--gk-r-card:18px;
   --gk-ff:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI",sans-serif;
 }
@@ -1864,6 +1864,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* ---- GROCERY header/toolbar — modern iOS controls (scoped + !important so it lands) ---- */
 #grocery.page{background:var(--gk-bg);}
+#grocery .grocery-workspace-controls{background:var(--gk-card)!important;border:none!important;border-radius:16px!important;box-shadow:0 1px 3px rgba(0,0,0,.06)!important;}
 #grocery .grocery-mode-row{display:flex!important;justify-content:center!important;}
 #grocery .grocery-mode-toggle{display:flex!important;width:100%;background:rgba(120,120,128,.1)!important;border:none!important;border-radius:12px!important;padding:3px!important;gap:3px!important;max-width:560px;margin:0 auto!important;}
 #grocery .grocery-mode-btn{flex:1;border-radius:10px!important;font-size:14px!important;font-weight:500!important;letter-spacing:-.01em;color:var(--gk-label2)!important;padding:8px 12px!important;background:transparent!important;white-space:nowrap;cursor:pointer;transition:transform .28s cubic-bezier(.34,1.56,.64,1),background .2s ease,color .2s ease,box-shadow .28s ease!important;}
@@ -1909,18 +1910,38 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .assign-left-count.has{color:#b25c00;background:#fff3e0;padding:4px 11px;border-radius:999px;font-weight:700;font-size:12px;}
 .assign-keys{font-size:11.5px;color:var(--gk-label3);}
 
-/* ---- SHOP list: iOS card sections (layout only; who-bought color left as-is) ---- */
-.shopping-list{background:var(--gk-bg);}
-.shopping-section-header h3{font-size:12.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--gk-label2);}
-.shopping-section.done .shopping-section-header h3{color:var(--gk-green);}
-.shopping-section-body{background:var(--gk-card);border-radius:var(--gk-r-card);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px -18px rgba(0,0,0,.22);}
-.shopping-item{padding:11px 14px;position:relative;gap:12px;border-bottom:none;}
-.shopping-item+.shopping-item::before{content:'';position:absolute;top:0;left:52px;right:0;height:.5px;background:var(--gk-sep);}
-.shopping-item-name{font-size:16px;font-weight:600;letter-spacing:-.01em;cursor:pointer;color:var(--gk-label);}
-.shopping-item.bought .shopping-item-name{color:var(--gk-label3);text-decoration:line-through;}
-/* NOTE: shopping checkbox left to the app's existing custom style (already draws its own check) */
-.shop-store-chip{border-radius:999px;font-size:12.5px;font-weight:600;padding:6px 12px;border:.5px solid var(--gk-sep);background:var(--gk-card);}
-.shop-store-chip.active{background:var(--theme-accent);color:#fff;border-color:var(--theme-accent);}
+/* ---- SHOP mode — match the List iOS look (scoped so it lands) ---- */
+#grocery .shopping-list{background:var(--gk-bg);}
+#grocery .shop-top{background:var(--gk-card)!important;border:none!important;border-radius:16px!important;padding:12px 12px 8px!important;box-shadow:0 1px 3px rgba(0,0,0,.06)!important;margin-bottom:6px;}
+#grocery .shop-search{background:rgba(120,120,128,.14)!important;border:none!important;border-radius:11px!important;font-size:15px!important;padding:10px 14px!important;width:100%;color:var(--gk-label);}
+#grocery .shopping-store-chips{display:flex;gap:8px;overflow-x:auto;padding:11px 2px 4px;scrollbar-width:none;}
+#grocery .shopping-store-chips::-webkit-scrollbar{display:none;}
+#grocery .shop-store-chip{flex-shrink:0;border-radius:999px!important;font-size:12.5px!important;font-weight:600!important;padding:7px 13px!important;border:.5px solid var(--gk-sep)!important;background:var(--gk-card)!important;color:var(--gk-label)!important;}
+#grocery .shop-store-chip.active{background:var(--theme-accent)!important;color:#fff!important;border-color:var(--theme-accent)!important;}
+#grocery .shop-store-chip-count{opacity:.7;font-weight:700;}
+#grocery .shop-progress-row{display:flex;align-items:center;gap:12px;padding:8px 2px 2px;}
+#grocery .shopping-progress{flex:1;font-size:12.5px!important;color:var(--gk-label2)!important;background:transparent!important;border:none!important;padding:0!important;}
+#grocery .shopping-progress-bar{background:rgba(120,120,128,.16)!important;border-radius:4px!important;height:7px;margin-top:5px!important;}
+#grocery .shopping-progress-fill{background:var(--gk-green)!important;border-radius:4px!important;}
+#grocery .shopping-toggle-btn,#grocery .shop-uncheck-btn{font-size:12.5px!important;font-weight:600!important;border-radius:999px!important;border:.5px solid var(--gk-sep)!important;background:var(--gk-card)!important;color:var(--gk-label2)!important;padding:6px 12px!important;}
+#grocery .shopping-toggle-btn.active{background:var(--theme-accent)!important;color:#fff!important;border-color:var(--theme-accent)!important;}
+/* sections as iOS cards */
+#grocery .shopping-section{margin:16px 0 0!important;border:none!important;background:transparent!important;box-shadow:none!important;}
+#grocery .shopping-section-header{padding:0 6px 7px!important;background:transparent!important;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+#grocery .shopping-section-header h3{font-size:12.5px!important;font-weight:700!important;letter-spacing:.03em;text-transform:uppercase;color:var(--gk-label2)!important;margin:0;}
+#grocery .shopping-section.done .shopping-section-header h3{color:var(--gk-green)!important;}
+#grocery .shopping-section-count{font-size:12.5px!important;font-weight:600!important;color:var(--gk-label3)!important;}
+#grocery .shopping-section-body{background:var(--gk-card)!important;border-radius:var(--gk-r-card)!important;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px -18px rgba(0,0,0,.22);border:none!important;}
+/* rows */
+#grocery .shopping-item{display:flex!important;align-items:center;gap:13px!important;padding:11px 14px!important;border-bottom:none!important;position:relative;background:transparent!important;}
+#grocery .shopping-item+.shopping-item::before{content:'';position:absolute;top:0;left:52px;right:0;height:.5px;background:var(--gk-sep);}
+#grocery .shopping-item-body{flex:1;min-width:0;}
+#grocery .shopping-item-titleline{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+#grocery .shopping-item-name{font-size:16px!important;font-weight:600!important;letter-spacing:-.01em;color:var(--gk-label)!important;cursor:pointer;}
+#grocery .shopping-item.bought .shopping-item-name{color:var(--gk-label3)!important;text-decoration:line-through;}
+#grocery .shopping-item-dept{font-size:12.5px!important;color:var(--gk-label3)!important;font-weight:500;flex-shrink:0;}
+#grocery .shopping-item-qty{font-size:14px!important;font-weight:600!important;color:var(--gk-label2)!important;margin-top:2px;}
+#grocery .shopping-item-who{font-size:12px!important;font-weight:600;margin-top:3px;display:flex;align-items:center;gap:5px;}
 
 /* ---- ITEM SHEET: modern bottom-sheet skin (CSS-only; .gis-* names preserved) ---- */
 .gis-sheet{background:var(--gk-bg);border-radius:20px 20px 0 0;}

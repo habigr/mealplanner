@@ -1829,9 +1829,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .assign-stores-table tr+tr td{border-top:.5px solid var(--gk-sep);}
 .assign-item-name{font-size:14.5px;font-weight:600;letter-spacing:-.01em;cursor:pointer;color:var(--gk-label);}
 .assign-dish-pill{font-size:11px;font-weight:600;color:var(--gk-label2);background:rgba(120,120,128,.12);border-radius:6px;padding:2px 7px;}
-.assign-store-check{-webkit-appearance:none;appearance:none;width:27px;height:27px;border-radius:8px;border:2px solid var(--gk-label3);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;margin:0;padding:0;vertical-align:middle;}
-.assign-store-check:checked{background:var(--theme-accent);border-color:var(--theme-accent);}
-.assign-store-check:checked::after{content:'✓';color:#fff;font-size:15px;font-weight:800;}
+/* NOTE: assign checkbox is left to the app's existing custom style (it already draws its own check) */
 tr.unassigned td:first-child{box-shadow:inset 3px 0 0 var(--gk-amber);background:rgba(255,149,0,.06);}
 
 /* ---- SHOP list: iOS card sections (layout only; who-bought color left as-is) ---- */
@@ -1839,13 +1837,11 @@ tr.unassigned td:first-child{box-shadow:inset 3px 0 0 var(--gk-amber);background
 .shopping-section-header h3{font-size:12.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--gk-label2);}
 .shopping-section.done .shopping-section-header h3{color:var(--gk-green);}
 .shopping-section-body{background:var(--gk-card);border-radius:var(--gk-r-card);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px -18px rgba(0,0,0,.22);}
-.shopping-item{padding:10px 12px 10px 14px;position:relative;gap:12px;}
-.shopping-item+.shopping-item::before{content:'';position:absolute;top:0;left:50px;right:0;height:.5px;background:var(--gk-sep);}
-.shopping-item-name{font-size:15.5px;font-weight:600;letter-spacing:-.01em;cursor:pointer;color:var(--gk-label);}
+.shopping-item{padding:11px 14px;position:relative;gap:12px;border-bottom:none;}
+.shopping-item+.shopping-item::before{content:'';position:absolute;top:0;left:52px;right:0;height:.5px;background:var(--gk-sep);}
+.shopping-item-name{font-size:16px;font-weight:600;letter-spacing:-.01em;cursor:pointer;color:var(--gk-label);}
 .shopping-item.bought .shopping-item-name{color:var(--gk-label3);text-decoration:line-through;}
-.shopping-item-check{-webkit-appearance:none;appearance:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--gk-label3);background:transparent;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;margin:0;padding:0;}
-.shopping-item-check:checked{background:var(--gk-green);border-color:var(--gk-green);}
-.shopping-item-check:checked::after{content:'✓';color:#fff;font-size:14px;font-weight:800;}
+/* NOTE: shopping checkbox left to the app's existing custom style (already draws its own check) */
 .shop-store-chip{border-radius:999px;font-size:12.5px;font-weight:600;padding:6px 12px;border:.5px solid var(--gk-sep);background:var(--gk-card);}
 .shop-store-chip.active{background:var(--theme-accent);color:#fff;border-color:var(--theme-accent);}
 

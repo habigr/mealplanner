@@ -5237,10 +5237,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v180';
+var APP_VERSION='v181';
 var APP_BUILD_TIME='2026-07-04';
 
-var APP_VERSION_TAG='Meal Planner v180';
+var APP_VERSION_TAG='Meal Planner v181';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -7749,6 +7749,33 @@ function _extractRecipeJsonLd(html){
     return {name:_de(rec.name),servings:String(yield_||'').replace(/[^0-9]/g,''),cookTime:'',isVegetarian:false,ingredients:ings,steps:steps,image:(typeof img==='string'?img:'')};
   }catch(e){return null;}
 }
+// v181: GROUNDED ingredient enrichment. Takes ALREADY-EXTRACTED ingredient lines and asks Haiku to label
+// each with a grocery name + component. It cannot add/remove/invent ingredients (it only labels lines that
+// exist), so it can't fabricate a recipe. Best-effort: any failure leaves the recipe unchanged.
+async function _enrichIngredients(recipe,apiKey){
+  try{
+    var ings=(recipe&&recipe.ingredients)||[];if(!ings.length||!apiKey)return recipe;
+    var lines=ings.map(function(i){return (typeof i==='string')?i:[(i.quantity||i.displayedQuantity||''),(i.unit||''),(i.item||i.name||'')].filter(Boolean).join(' ');});
+    var sys='You normalize already-extracted recipe ingredient lines for a grocery app. You must NOT add, remove, reorder, or invent ingredients — only label the exact lines given, in order. For EACH line output two fields: groceryName = the purchasable item to buy at a store (e.g. "2 cloves garlic, minced"->"garlic"; "1 (14 oz) can diced tomatoes"->"diced tomatoes"; "juice of 1 lime"->"lime"; "kosher salt, to taste"->"kosher salt"), and component = which part of the dish the line belongs to, exactly one of: main, dressing, sauce, marinade, dough, batter, topping, garnish, other. Return ONLY a JSON array, one object per input line, same order: [{"n":1,"groceryName":"...","component":"..."}]';
+    var user='Recipe: '+(recipe.name||'')+'\n\nINGREDIENT LINES:\n'+lines.map(function(l,n){return (n+1)+'. '+l;}).join('\n')+((recipe.steps&&recipe.steps.length)?'\n\nSTEPS (context for component only — do NOT extract ingredients from these):\n'+recipe.steps.slice(0,12).map(function(s,n){return (n+1)+'. '+s;}).join('\n'):'');
+    var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1600,system:sys,messages:[{role:'user',content:user}]})});
+    if(!r.ok)return recipe;
+    var j=await r.json();var txt=(j.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    var m=txt.match(/\[[\s\S]*\]/);if(!m)return recipe;
+    var labels;try{labels=JSON.parse(m[0]);}catch(e){return recipe;}
+    var byN={};labels.forEach(function(l){if(l&&l.n)byN[l.n]=l;});
+    recipe.ingredients=ings.map(function(i,idx){
+      var obj;
+      if(typeof i==='string'){var p=(typeof parseIngLine==='function')?parseIngLine(i):{};obj={quantity:p.quantity||'',displayedQuantity:p.quantity||'',unit:p.unit||'',item:p.item||i,originalQuantity:p.quantity||'',qtyOverride:''};}
+      else{obj={};for(var k in i){obj[k]=i[k];}if(!obj.item&&obj.name)obj.item=obj.name;}
+      var lab=byN[idx+1]||{};
+      if(lab.groceryName)obj.groceryName=String(lab.groceryName);
+      if(lab.component&&String(lab.component).toLowerCase()!=='main'&&String(lab.component).toLowerCase()!=='other')obj.component=String(lab.component);
+      return obj;
+    });
+  }catch(e){/* enrichment is best-effort; never block the import */}
+  return recipe;
+}
 async function backgroundImportAndReview(url,intendedDay,intendedMeal){
   var normalizedUrl=url.split('?')[0].replace(/\/+$/,'');
   var existing=_menuLibrary.find(function(r){return r.url&&r.url.split('?')[0].replace(/\/+$/,'')===normalizedUrl;});
@@ -7777,8 +7804,34 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
     if(!okJ){showToast('Import canceled.','');return;}
     var recExact={name:jld.name,servings:jld.servings||'',cookTime:jld.cookTime||'',isVegetarian:false,ingredients:jld.ingredients,steps:jld.steps,source:source,url:url,id:makeId(),savedAt:getTodayStr()};
     if(jld.image)recExact.imageUrl=jld.image;
-    showToast('✓ Imported exactly from '+source+' — review before saving.','success');
+    showToast('✓ Imported exactly from '+source+' — adding grocery names…','success');
+    recExact=await _enrichIngredients(recExact,key);
     showRecipeReviewPanel(recExact,intendedDay,intendedMeal);return;
+  }
+  // v181: Spoonacular structured extraction (uses your image API key) — reliable ingredients + amounts + units
+  // when the page has no readable JSON-LD. Only runs if the free deterministic tiers above didn't resolve a recipe.
+  var _spoonKey=(typeof getImageApiKey==='function')?getImageApiKey():'';
+  if(_spoonKey){
+    try{
+      var _spRes=await fetch('https://api.spoonacular.com/recipes/extract?forceExtraction=true&url='+encodeURIComponent(url)+'&apiKey='+encodeURIComponent(_spoonKey),{signal:AbortSignal.timeout(20000)});
+      if(_spRes.ok){
+        var _sp=await _spRes.json();
+        var _spIngs=(_sp.extendedIngredients||[]).filter(function(x){return x&&x.original;});
+        var _seenSp={};_spIngs=_spIngs.filter(function(x){var k=String(x.original).toLowerCase();if(_seenSp[k])return false;_seenSp[k]=1;return true;});
+        if(_spIngs.length&&_sp.title){
+          var _spSteps=[];
+          if(_sp.analyzedInstructions&&_sp.analyzedInstructions[0]&&_sp.analyzedInstructions[0].steps)_spSteps=_sp.analyzedInstructions[0].steps.map(function(s){return s.step;});
+          else if(_sp.instructions)_spSteps=String(_sp.instructions).replace(/<[^>]+>/g,' ').split(/\.\s+|\n+/).map(function(s){return s.trim();}).filter(function(s){return s.length>4;});
+          var recSp={name:_sp.title,servings:_sp.servings?String(_sp.servings):'',isVegetarian:!!_sp.vegetarian,ingredients:_spIngs.map(function(x){var amt=(x.amount!=null?String(x.amount):'');return{quantity:amt,displayedQuantity:amt,unit:String(x.unit||''),item:String(x.originalName||x.name||x.original),originalQuantity:amt,qtyOverride:''};}),steps:_spSteps,source:source,url:url,id:makeId(),savedAt:getTodayStr()};
+          if(_sp.image)recSp.imageUrl=_sp.image;
+          var okSp=await confirmAction({title:'Confirm the recipe',message:'Found "'+_sp.title+'" ('+_spIngs.length+' ingredients) via Spoonacular. Import it?',confirmLabel:'Yes, import'});
+          if(!okSp){showToast('Import canceled.','');return;}
+          showToast('✓ Read '+_spIngs.length+' ingredients — adding grocery names…','success');
+          recSp=await _enrichIngredients(recSp,key);
+          showRecipeReviewPanel(recSp,intendedDay,intendedMeal);return;
+        }
+      }
+    }catch(e){/* Spoonacular unavailable/blocked → fall through to Jina + AI */}
   }
   // v79 (DATA INTEGRITY): fetch the ACTUAL page TEXT via Jina Reader so Claude extracts the real
   // recipe from the page — NOT a recipe reconstructed/fabricated from training data.
@@ -7833,7 +7886,8 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
     }
     recipe.url=url;recipe.source=source;recipe.id=recipe.id||makeId();recipe.savedAt=getTodayStr();
     if(imageUrl)recipe.imageUrl=imageUrl;
-    showToast('✓ Extracted from the page at '+source+' — review before saving.','');
+    showToast('✓ Extracted from '+source+' — adding grocery names…','');
+    recipe=await _enrichIngredients(recipe,key);
     showRecipeReviewPanel(recipe,intendedDay,intendedMeal);
   }catch(e){showToast('❌ Import failed: '+(e.message||e),'error');}
 }

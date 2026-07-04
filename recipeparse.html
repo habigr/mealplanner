@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recipe Parse Prototype — Spoonacular + Haiku</title>
+<style>
+  :root{--bg:#f2f2f7;--card:#fff;--label:#1c1c1e;--label2:#8e8e93;--sep:rgba(60,60,67,.14);--accent:#2857c4;--green:#1e8e3e;--red:#c0392b;
+    --ff:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:var(--ff);}
+  body{background:var(--bg);color:var(--label);padding:22px 16px 60px;-webkit-font-smoothing:antialiased;max-width:1100px;margin:0 auto;}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:2px;}
+  .sub{color:var(--label2);font-size:13px;margin-bottom:18px;line-height:1.5;}
+  .card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--label2);margin:0 0 5px;}
+  input{width:100%;font-size:14px;padding:10px 12px;border:1px solid var(--sep);border-radius:9px;background:#fafafd;font-family:var(--ff);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .go{margin-top:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:600;cursor:pointer;}
+  .go:disabled{opacity:.5;}
+  .status{font-size:13px;margin:10px 0;min-height:18px;font-weight:500;}
+  .status.err{color:var(--red);}.status.ok{color:var(--green);}
+  h2{font-size:15px;font-weight:700;margin:0 0 10px;}
+  .rtitle{font-size:20px;font-weight:700;letter-spacing:-.02em;}
+  .meta{font-size:13px;color:var(--label2);margin:2px 0 12px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--label2);padding:6px 8px;border-bottom:1px solid var(--sep);}
+  td{padding:7px 8px;border-bottom:.5px solid var(--sep);vertical-align:top;}
+  td.orig{color:var(--label2);}
+  td.gname{font-weight:700;color:var(--accent);}
+  .comp{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(40,87,196,.1);color:var(--accent);text-transform:capitalize;}
+  .comp.main{background:rgba(120,120,128,.14);color:#444;}
+  ol{margin:0 0 0 18px;}li{font-size:13px;margin-bottom:6px;line-height:1.4;}
+  details{margin-top:10px;}summary{font-size:12px;color:var(--label2);cursor:pointer;}
+  pre{font-size:11px;background:#0b0e14;color:#c7d0e0;padding:12px;border-radius:8px;overflow:auto;margin-top:8px;max-height:280px;}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:rgba(120,120,128,.12);color:var(--label2);margin-left:6px;}
+</style>
+</head>
+<body>
+  <h1>Recipe Parse Prototype</h1>
+  <p class="sub">Stage 1: <b>Spoonacular</b> extracts real ingredients + amounts + units + steps from the page (can't hallucinate).<br>Stage 2: <b>Haiku</b> adds a <b>grocery name</b> + <b>component</b> to each real line (grounded — it only labels lines that exist).</p>
+
+  <div class="card">
+    <div class="row2">
+      <div><label>Spoonacular API key</label><input id="spoonKey" type="password" placeholder="from App Admin → image key"></div>
+      <div><label>Anthropic API key</label><input id="anthKey" type="password" placeholder="from App Admin → AI key (sk-ant-…)"></div>
+    </div>
+    <div style="margin-top:12px;"><label>Recipe URL</label><input id="url" type="url" placeholder="https://…"></div>
+    <button class="go" id="goBtn" onclick="run()">Parse recipe →</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div id="out"></div>
+
+<script>
+// remember keys locally so you don't retype (prototype localStorage only)
+['spoonKey','anthKey'].forEach(function(id){var el=document.getElementById(id);el.value=localStorage.getItem('rp_'+id)||'';el.addEventListener('input',function(){localStorage.setItem('rp_'+id,el.value);});});
+document.getElementById('url').value=localStorage.getItem('rp_url')||'';
+document.getElementById('url').addEventListener('input',function(){localStorage.setItem('rp_url',this.value);});
+
+function setStatus(t,cls){var s=document.getElementById('status');s.textContent=t;s.className='status'+(cls?' '+cls:'');}
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+
+async function fetchJson(u){
+  // try direct; on CORS/error fall back through proxies
+  var tries=[u,'https://corsproxy.io/?url='+encodeURIComponent(u),'https://api.allorigins.win/raw?url='+encodeURIComponent(u)];
+  var lastErr;
+  for(var i=0;i<tries.length;i++){
+    try{var r=await fetch(tries[i]);if(r.ok){return await r.json();}lastErr='HTTP '+r.status;}catch(e){lastErr=e.message;}
+  }
+  throw new Error(lastErr||'fetch failed');
+}
+
+async function run(){
+  var spoon=document.getElementById('spoonKey').value.trim(),anth=document.getElementById('anthKey').value.trim(),url=document.getElementById('url').value.trim();
+  if(!spoon||!anth){setStatus('Paste both API keys first.','err');return;}
+  if(!/^https?:\/\//.test(url)){setStatus('Enter a valid recipe URL.','err');return;}
+  document.getElementById('goBtn').disabled=true;document.getElementById('out').innerHTML='';
+  try{
+    // ---- STAGE 1: Spoonacular extract ----
+    setStatus('Stage 1: Spoonacular reading the page…');
+    var sUrl='https://api.spoonacular.com/recipes/extract?forceExtraction=true&url='+encodeURIComponent(url)+'&apiKey='+encodeURIComponent(spoon);
+    var data=await fetchJson(sUrl);
+    var ings=(data.extendedIngredients||[]).map(function(x){return{original:x.original||x.originalName||x.name,name:x.name||x.originalName||'',amount:x.amount,unit:x.unit||'',aisle:x.aisle||''};});
+    // de-dup identical originals Spoonacular sometimes repeats
+    var seen={};ings=ings.filter(function(i){var k=(i.original||'').toLowerCase();if(seen[k])return false;seen[k]=1;return !!i.original;});
+    var steps=[];
+    if(data.analyzedInstructions&&data.analyzedInstructions[0]&&data.analyzedInstructions[0].steps)steps=data.analyzedInstructions[0].steps.map(function(s){return s.step;});
+    else if(data.instructions)steps=String(data.instructions).replace(/<[^>]+>/g,' ').split(/\.\s+|\n+/).map(function(s){return s.trim();}).filter(function(s){return s.length>4;});
+    if(!ings.length){setStatus('Spoonacular could not extract ingredients from this page (blocked/JS page). This is where the JSON-LD / paste fallback would kick in.','err');document.getElementById('goBtn').disabled=false;return;}
+
+    // ---- STAGE 2: Haiku grocery names + component (grounded on the extracted lines) ----
+    setStatus('Stage 1 got '+ings.length+' ingredients. Stage 2: Haiku naming + component…','ok');
+    var lines=ings.map(function(i,n){return (n+1)+'. '+i.original;}).join('\n');
+    var sys='You normalize already-extracted recipe ingredient lines for a grocery app. You are NOT allowed to add, remove, or invent ingredients — only label the lines given, in the same order. For EACH line output: groceryName = the purchasable item to buy at a store (e.g. "2 cloves garlic, minced"→"garlic"; "1 (14 oz) can diced tomatoes"→"diced tomatoes"; "juice of 1 lime"→"lime"), and component = which part of the dish it belongs to, inferred from the recipe (one of: main, dressing, sauce, marinade, dough, topping, garnish, other). Return ONLY a JSON array, one object per input line, same order: [{"n":1,"groceryName":"...","component":"..."}]';
+    var user='Recipe: '+(data.title||'(untitled)')+'\n\nINGREDIENT LINES:\n'+lines+(steps.length?'\n\nSTEPS (for component context only):\n'+steps.slice(0,12).map(function(s,n){return (n+1)+'. '+s;}).join('\n'):'');
+    var ar=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':anth,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1500,system:sys,messages:[{role:'user',content:user}]})});
+    if(!ar.ok){var et=await ar.text();throw new Error('Anthropic '+ar.status+': '+et.slice(0,200));}
+    var aj=await ar.json();var txt=(aj.content&&aj.content[0]&&aj.content[0].text)||'';
+    var m=txt.match(/\[[\s\S]*\]/);var labels=m?JSON.parse(m[0]):[];
+    var byN={};labels.forEach(function(l){byN[l.n]=l;});
+
+    // ---- render ----
+    setStatus('Done — '+ings.length+' ingredients, '+steps.length+' steps.','ok');
+    var rows=ings.map(function(i,idx){var l=byN[idx+1]||{};var comp=(l.component||'main').toLowerCase();
+      return '<tr><td class="orig">'+esc(i.original)+'</td><td>'+esc(i.amount!=null?i.amount:'')+'</td><td>'+esc(i.unit)+'</td><td>'+esc(i.name)+'</td><td class="gname">'+esc(l.groceryName||'—')+'</td><td><span class="comp '+esc(comp)+'">'+esc(comp)+'</span></td></tr>';}).join('');
+    document.getElementById('out').innerHTML=
+      '<div class="card"><div class="rtitle">'+esc(data.title||'Recipe')+'</div>'
+      +'<div class="meta">'+(data.servings?data.servings+' servings':'')+(data.readyInMinutes?' · '+data.readyInMinutes+' min':'')+' <span class="pill">Spoonacular extract</span><span class="pill">Haiku labels</span></div>'
+      +'<h2>Ingredients</h2><table><thead><tr><th>Original (from page)</th><th>Amt</th><th>Unit</th><th>Spoonacular name</th><th>Grocery name (AI)</th><th>Component (AI)</th></tr></thead><tbody>'+rows+'</tbody></table>'
+      +(steps.length?'<h2 style="margin-top:18px;">Steps</h2><ol>'+steps.map(function(s){return '<li>'+esc(s)+'</li>';}).join('')+'</ol>':'')
+      +'<details><summary>Raw Spoonacular JSON</summary><pre>'+esc(JSON.stringify(data,null,2))+'</pre></details>'
+      +'<details><summary>Raw Haiku output</summary><pre>'+esc(txt)+'</pre></details>'
+      +'</div>';
+  }catch(e){setStatus('Error: '+e.message,'err');}
+  document.getElementById('goBtn').disabled=false;
+}
+</script>
+</body>
+</html>

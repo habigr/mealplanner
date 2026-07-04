@@ -1926,7 +1926,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* ---- SHOP mode — match the List iOS look (scoped so it lands) ---- */
 #grocery .shopping-list{background:var(--gk-bg);}
-#grocery .shop-top{background:transparent!important;border:none!important;box-shadow:none!important;padding:2px 2px 4px!important;display:flex;justify-content:flex-end;}
+#grocery .shop-top{background:transparent!important;border:none!important;box-shadow:none!important;padding:2px 2px 4px!important;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+/* v185: Shop "sort each store" segmented control — matches the other tabs' toggles */
+#grocery .shop-sort-strip{display:inline-flex;background:rgba(120,120,128,.12);border-radius:9px;padding:2px;gap:2px;flex-shrink:0;}
+#grocery .shop-sort-btn{font-family:var(--gk-ff);font-size:12.5px;font-weight:600;color:var(--gk-label2);border:none;background:transparent;border-radius:7px;padding:6px 13px;cursor:pointer;transition:background .2s,color .2s,box-shadow .2s;white-space:nowrap;-webkit-tap-highlight-color:transparent;}
+#grocery .shop-sort-btn.active{background:#fff;color:var(--theme-accent-dark,var(--theme-accent));box-shadow:0 1px 4px rgba(0,0,0,.12);}
+#grocery .shop-sort-btn:active{transform:scale(.96);}
 #grocery .shop-search{background:rgba(120,120,128,.14)!important;border:none!important;border-radius:11px!important;font-size:15px!important;padding:10px 14px!important;width:100%;color:var(--gk-label);}
 #grocery .shopping-store-chips{display:flex;gap:8px;overflow-x:auto;padding:11px 2px 4px;scrollbar-width:none;}
 #grocery .shopping-store-chips::-webkit-scrollbar{display:none;}
@@ -5257,7 +5262,7 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v184';
+var APP_VERSION='v185';
 var APP_BUILD_TIME='2026-07-04';
 
 var APP_VERSION_TAG='Meal Planner v182';
@@ -5292,6 +5297,9 @@ function registerUpdateCheck(){
 /* ===== SHOPPING MODE + RESET ===== */
 var _shopHideBought=false;
 var _shopStoreFilter='All';// v117: per-device "I'm shopping at" filter (display-only, no writes)
+// v185: how items are ordered WITHIN each store section in Shop mode — 'dept' (group by department) or 'alpha' (A–Z by name).
+var _shopSort=(function(){try{var v=localStorage.getItem('mealPlanner.shopSort');return (v==='alpha'||v==='dept')?v:'dept';}catch(e){return 'dept';}})();
+function setShopSort(v){_shopSort=(v==='alpha')?'alpha':'dept';try{localStorage.setItem('mealPlanner.shopSort',_shopSort);}catch(e){}buildGroceryList();}
 function toggleShopHideBought(){_shopHideBought=!_shopHideBought;buildGroceryList();}
 function setShopStore(s){_shopStoreFilter=s;buildGroceryList();}
 // v118: shop search shares the List search filter state (one source of truth), debounced so the input doesn't lose focus per keystroke.
@@ -5319,10 +5327,12 @@ function renderShoppingList(out,rows){
   // Its own toolbar is reduced to the two shop-specific actions.
   var hideBtn='<button class="shopping-toggle-btn'+(_shopHideBought?' active':'')+'" onclick="toggleShopHideBought()">'+(_shopHideBought?'☑':'☐')+' Hide done</button>';
   var uncheckBtn=(total>0)?'<button class="shop-uncheck-btn" onclick="resetGroceryCheckoffs()">↩ Uncheck all</button>':'';
-  var toolbar='<div class="shop-top"><div class="shop-btn-group">'+uncheckBtn+hideBtn+'</div></div>';
+  // v185: sort each store's items — By dept (group by aisle) or A–Z (alphabetical). Same segmented style as the other tabs.
+  var sortStrip='<div class="shop-sort-strip"><button class="shop-sort-btn'+(_shopSort==='dept'?' active':'')+'" onclick="setShopSort(\'dept\')">By dept</button><button class="shop-sort-btn'+(_shopSort==='alpha'?' active':'')+'" onclick="setShopSort(\'alpha\')">A–Z</button></div>';
+  var toolbar='<div class="shop-top">'+sortStrip+'<div class="shop-btn-group">'+uncheckBtn+hideBtn+'</div></div>';
   // --- sections (bought items sink to the bottom of their OWN store) ---
   var sectionsHtml=renderKeys.map(function(store){
-    var items=groups[store].slice().sort(function(a,b){var as=a.status==='Bought'?1:0,bs=b.status==='Bought'?1:0;return as-bs||String(a.department).localeCompare(String(b.department))||String(a.item).localeCompare(String(b.item));});
+    var items=groups[store].slice().sort(function(a,b){var as=a.status==='Bought'?1:0,bs=b.status==='Bought'?1:0;if(as-bs)return as-bs;/* v185: bought always sink; then order by the chosen sort */if(_shopSort==='alpha')return String(a.item).localeCompare(String(b.item));return String(a.department).localeCompare(String(b.department))||String(a.item).localeCompare(String(b.item));});
     var sb=items.filter(function(r){return r.status==='Bought';}).length;
     var allDone=items.length>0&&sb===items.length;
     var visible=_shopHideBought?items.filter(function(r){return r.status!=='Bought';}):items;

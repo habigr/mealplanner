@@ -866,7 +866,8 @@ section#recipes{display:none!important;}
 button,.nav-btn,.top-tab,.dish,.day-card,.day-title,.meal-label,.dish-title,.dish-meta,.trip-card,.ai-chip,.gis-dish-row,.grocery-item-name,.recipe-section-heading,.ing-grp-head,.ing-grp-name,label,.shop-store-chip,.grocery-mode-btn,.recipe-detail-name{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
 input,textarea,select,[contenteditable],.recipe-ing-list,.recipe-steps-list,.recipe-personal-notes{-webkit-user-select:text;user-select:text;}
 /* keep inner scrolls from dragging the whole page + momentum scrolling */
-main,.page,.recipe-detail-body,.gis-sheet,.admin-drawer,#dishModal .modal,.ai-chat-messages,.app-admin-panel{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+.recipe-detail-body,.gis-sheet,.admin-drawer,#dishModal .modal,.ai-chat-messages,.app-admin-panel{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+main,.page{-webkit-overflow-scrolling:touch;}/* v180: removed overscroll-behavior:contain here — it was blocking laptop trackpad scroll-chaining */
 /* tactile press feedback on touch devices */
 @media(hover:none){
   button:active,.dish:active,.day-card:active,.nav-btn:active,.top-tab:active,.ai-chip:active,.grocery-item-name:active,.shopping-item:active,.gis-dish-row:active,.dish-thumb:active,.hdr-btn:active{transform:scale(.97);transition:transform .06s ease;}
@@ -2004,6 +2005,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .gis-dish-name{font-size:15px;font-weight:500;letter-spacing:-.01em;}
 .gis-save{background:var(--theme-accent);color:#fff;border-radius:13px;font-weight:600;}
 .gis-remove{background:rgba(255,59,48,.1);color:#ff3b30;border-radius:13px;font-weight:600;}
+/* ===== v180: iOS-modern bottom nav — Phosphor icons, outline→fill on active, corner notification badge ===== */
+.bottom-nav .nav-ico{position:relative;display:inline-flex;align-items:center;justify-content:center;}
+.bottom-nav .nav-icon{fill:currentColor!important;stroke:none!important;width:26px;height:26px;display:block;}
+.bottom-nav .nav-icon-f{display:none;}
+.bottom-nav .nav-btn.active .nav-icon-o{display:none;}
+.bottom-nav .nav-btn.active .nav-icon-f{display:block;}
+.bottom-nav .nav-btn.active,.bottom-nav .nav-btn.active .nav-label{color:var(--theme-accent)!important;}
+.bottom-nav .nav-btn.active .nav-icon{fill:var(--theme-accent)!important;}
+.bottom-nav .nav-btn:active{transform:none!important;opacity:.55;}
+/* corner badge — small red circle at the icon's top-right, never over the glyph */
+.bottom-nav .nav-badge{position:absolute!important;top:-6px!important;right:-11px!important;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#ff3b30!important;color:#fff!important;font-size:9.5px;font-weight:800;text-align:center;line-height:16px!important;box-sizing:border-box;border:2px solid var(--panel);box-shadow:none!important;letter-spacing:0;}
+.nav-back-btn .nav-icon{opacity:.9;}
 </style>
 </head>
 <body>
@@ -2240,19 +2253,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="nav-btn nav-back-btn" onclick="goToLanding()" title="All Trips">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11 12 4.2l8.5 6.8"/><path d="M5.5 9.8V20h13V9.8"/><path d="M10 20v-4.5h4V20"/></svg>
+      <span class="nav-ico"><svg class="nav-icon nav-icon-o" viewBox="0 0 256 256" fill="currentColor"><path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></svg><svg class="nav-icon nav-icon-f" viewBox="0 0 256 256" fill="currentColor"><path d="M224,120v96a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V164a4,4,0,0,0-4-4H108a4,4,0,0,0-4,4v52a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a16,16,0,0,1,4.69-11.31l80-80a16,16,0,0,1,22.62,0l80,80A16,16,0,0,1,224,120Z"/></svg></span>
       <span class="nav-label">All Trips</span>
     </button>
     <button class="nav-btn active" data-nav="planner" onclick="navTo('planner')">
-      <span id="navPlannerBadge" class="nav-badge" style="display:none;"></span>
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17"/><path d="M8 3.2v3.4"/><path d="M16 3.2v3.4"/></svg>Meal Plan
+      <span class="nav-ico"><span id="navPlannerBadge" class="nav-badge" style="display:none;"></span><svg class="nav-icon nav-icon-o" viewBox="0 0 256 256" fill="currentColor"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-68-76a12,12,0,1,1-12-12A12,12,0,0,1,140,132Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,132ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,140,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"/></svg><svg class="nav-icon nav-icon-f" viewBox="0 0 256 256" fill="currentColor"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM84,184a12,12,0,1,1,12-12A12,12,0,0,1,84,184Zm44,0a12,12,0,1,1,12-12A12,12,0,0,1,128,184Zm0-40a12,12,0,1,1,12-12A12,12,0,0,1,128,144Zm44,40a12,12,0,1,1,12-12A12,12,0,0,1,172,184Zm0-40a12,12,0,1,1,12-12A12,12,0,0,1,172,144Zm36-64H48V48H72v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24Z"/></svg></span>Meal Plan
     </button>
     <button class="nav-btn" data-nav="grocery" onclick="navTo('grocery')">
-      <span id="navGroceryBadge" class="nav-badge" style="display:none;"></span>
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="19.5" r="1.4"/><circle cx="16.5" cy="19.5" r="1.4"/><path d="M2.5 4h2.2l2 10.2a1.5 1.5 0 0 0 1.47 1.2h7.2a1.5 1.5 0 0 0 1.47-1.18L19 7.5H5.6"/></svg>Groceries
+      <span class="nav-ico"><span id="navGroceryBadge" class="nav-badge" style="display:none;"></span><svg class="nav-icon nav-icon-o" viewBox="0 0 256 256" fill="currentColor"><path d="M230.14,58.87A8,8,0,0,0,224,56H62.68L56.6,22.57A8,8,0,0,0,48.73,16H24a8,8,0,0,0,0,16h18L67.56,172.29a24,24,0,0,0,5.33,11.27,28,28,0,1,0,44.4,8.44h45.42A27.75,27.75,0,0,0,160,204a28,28,0,1,0,28-28H91.17a8,8,0,0,1-7.87-6.57L80.13,152h116a24,24,0,0,0,23.61-19.71l12.16-66.86A8,8,0,0,0,230.14,58.87ZM104,204a12,12,0,1,1-12-12A12,12,0,0,1,104,204Zm96,0a12,12,0,1,1-12-12A12,12,0,0,1,200,204Zm4-74.57A8,8,0,0,1,196.1,136H77.22L65.59,72H214.41Z"/></svg><svg class="nav-icon nav-icon-f" viewBox="0 0 256 256" fill="currentColor"><path d="M230.14,58.87A8,8,0,0,0,224,56H62.68L56.6,22.57A8,8,0,0,0,48.73,16H24a8,8,0,0,0,0,16h18L67.56,172.29a24,24,0,0,0,5.33,11.27,28,28,0,1,0,44.4,8.44h45.42A27.75,27.75,0,0,0,160,204a28,28,0,1,0,28-28H91.17a8,8,0,0,1-7.87-6.57L80.13,152h116a24,24,0,0,0,23.61-19.71l12.16-66.86A8,8,0,0,0,230.14,58.87ZM104,204a12,12,0,1,1-12-12A12,12,0,0,1,104,204Zm96,0a12,12,0,1,1-12-12A12,12,0,0,1,200,204Z"/></svg></span>Groceries
     </button>
     <button class="nav-btn" data-nav="setup" onclick="navTo('setup')">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7.5h-8"/><path d="M8 7.5H4"/><circle cx="10" cy="7.5" r="2.2"/><path d="M20 16.5h-4"/><path d="M12 16.5H4"/><circle cx="14" cy="16.5" r="2.2"/></svg>Trip Settings
+      <span class="nav-ico"><svg class="nav-icon nav-icon-o" viewBox="0 0 256 256" fill="currentColor"><path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88-29.84q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.21,107.21,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.71,107.71,0,0,0-26.25-10.87,8,8,0,0,0-7.06,1.49L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.21,107.21,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z"/></svg><svg class="nav-icon nav-icon-f" viewBox="0 0 256 256" fill="currentColor"><path d="M216,130.16q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.6,107.6,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.29,107.29,0,0,0-26.25-10.86,8,8,0,0,0-7.06,1.48L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.6,107.6,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z"/></svg></span>Trip Settings
     </button>
   </nav>
 </div>
@@ -5226,10 +5237,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v179';
-var APP_BUILD_TIME='2026-07-03';
+var APP_VERSION='v180';
+var APP_BUILD_TIME='2026-07-04';
 
-var APP_VERSION_TAG='Meal Planner v179';
+var APP_VERSION_TAG='Meal Planner v180';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

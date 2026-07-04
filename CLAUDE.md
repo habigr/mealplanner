@@ -195,7 +195,19 @@ Browser console tests — run before every push:
 
 ## NEXT SESSION — start here
 
-STATE: **v178 is LIVE** (pushed 2026-07-02) — bottom tab bar: fixed the v177 icon/label OVERLAP (bar 56px + 24px icons) and redrew all four icons as a cohesive clean set (All Trips=house, Meal Plan=calendar, Groceries=cart, Trip Settings=sliders). Render-only, FIP-safe. Phone visual check recommended.
+STATE: **v180 is LIVE** (pushed 2026-07-04). Two big things shipped live this session:
+- **v179 — GROCERY SECTION REDESIGN** (List/Assign/Shop rebuilt as iOS cards, unified shared Store/Dept/Search dropdown filters across all 3 tabs, Assign Grid⇄List toggle [mobile→list dropdowns], status dropdown removed, SF font, medium-blue #2857c4 accent bar). Built iteratively on a **local Node server** (`node` static server on :8000 serving `redesign.html`) then **promoted into `index.html`**. Visual/render-only; data/save/sync + guardrails untouched. Full detail in CHANGELOG.
+- **v180 — bottom nav** = official Phosphor icons w/ iOS outline→fill on active + badge-overlap fix; plus **laptop trackpad scroll fix** (removed `overscroll-behavior:contain` from `main,.page`).
+
+⚠️ **OPEN / NEXT (this redesign):**
+1. **Run `window.runRegressionTests()` 25/25 on LIVE** — it was NOT run pre-push (can't run headless). Overdue.
+2. **Item sheet (grocery `.gis-*` detail/adjust sheet) still unpolished** — the one grocery piece not rebuilt. Next v181.
+3. **Mobile polish continuing** — Robbie flagged fonts/tightness; a mobile tightening pass shipped but keep refining on a phone.
+4. **"App has no character anymore" (Robbie, 2026-07-04, FOR LATER)** — a real vibe/personality pass (warmth, illustration, motion, color moments), its own session — NOT a quick tweak.
+5. **Cleanup:** `redesign.html` is now a redundant copy of index.html (safe to delete); the Phosphor **grocery-mode** work + SF-font spike is still parked in a **git stash** (`git stash list`) — likely obsolete now, review/drop.
+6. Rollback for the whole redesign: tag `pre-grocery-live-v178` or `git revert`.
+
+Prior: **v178 was LIVE** (2026-07-02) — bottom tab bar overlap fix + clean icon set (superseded by v180's Phosphor nav).
 Prior: **v177 is LIVE** (pushed 2026-07-02) — bottom tab bar restyled to an authentic iOS look (mobile, render-only): no more navy "All Trips" chip, SF Pro labels, cohesive accent, glass + 0.5px hairline, iOS press-dim. (Superseded by v178's overlap fix + icon redraw.)
 Prior: **v176 is LIVE** (pushed 2026-07-02, tested on a throwaway trip by Robbie — "it worked") — confirm-before-delete UX fix for the big-shrink guard (Option A): a whole-meal-slot deletion warns in ONE confirm BEFORE removing anything, so Cancel truly cancels (dishes no longer vanish-then-restore). Server-truth stale guard + 9→1 corruption catch untouched. Rollback tag `pre-v176-preconfirm-shrink`. Follow-up option: extend the same pre-confirm to remove-day + single-dish delete paths (v178).
 Prior: **v175 is LIVE** (pushed 2026-07-02) — adds the **big-shrink write guard** (blocks any save dropping >2 dishes / below 70% unless the user confirms; closes the gap v174 missed). ⚠️ **NEEDS a throwaway-trip test** (never FIP): confirm a big deletion prompts + can be cancelled, and a normal 1-dish delete + adds save silently. Rollback tag `pre-v175-shrink-guard`.

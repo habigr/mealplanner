@@ -4212,7 +4212,10 @@ function parseIngLine(line){
 function splitRest(q,rest,original){var pp=String(rest||'').split(' ').filter(Boolean),u='',it=String(rest||'').trim();if(pp.length&&isUnit(pp[0])){u=abbrUnit(pp[0]);it=pp.slice(1).join(' ');}return{quantity:q||'',unit:u,item:toTitleCaseIngredient(cleanItem(it)),originalText:original||String(rest||'')};}
 function cleanItem(item){item=String(item||'').trim().replace(/^\d+[\s\/]*/,'');if(item.toLowerCase().indexOf('of ')===0)item=item.slice(3).trim();return item.replace(/to taste/gi,'').replace(/\s+/g,' ').trim();}
 function addIngredientFromText(line){
-  if(line&&typeof line==='object'){addIngredientRow(line.quantity||line.displayedQuantity||'',line.unit||'',line.item||'');return;}
+  // v183 fix: carry groceryName + component (and packageNote/override) through when loading an ingredient
+  // OBJECT into the editor — previously only qty/unit/item were forwarded, so imported grocery names + sections
+  // were silently dropped at the "Save Details" step and never persisted.
+  if(line&&typeof line==='object'){addIngredientRow(line.quantity||line.displayedQuantity||'',line.unit||'',line.item||line.name||'','',line.packageNote||'',line.qtyOverride||'',line.groceryName||'',line.component||'');return;}
   var p=parseIngLine(line);if(!p.quantity&&!p.unit&&!p.item)return;addIngredientRow(p.quantity,p.unit,p.item,'',p.packageNote);
 }
 function markIngredientOverride(inp,blur){var row=inp.closest('.ingredient-row');if(!row)return;var v=inp.value.trim();if(!v){if(blur){inp.value=scaleQty(row.dataset.baseQty||'',getCurrentModalScale());}row.dataset.override='';inp.classList.remove('is-override');return;}var auto=scaleQty(row.dataset.baseQty||'',getCurrentModalScale());if(v===auto){row.dataset.override='';inp.classList.remove('is-override');}else{row.dataset.override='1';inp.classList.add('is-override');}}
@@ -4268,7 +4271,7 @@ function saveDishFromModal(){
       var dishMeal=wasBankOnly?null:(getValue('dishMeal')||((currentEvent.days[0]&&currentEvent.days[0].meals&&currentEvent.days[0].meals[0])||'Dinner'));
       var vegCheck=safeEl('isVegetarianCheck');
         var pSel=getValue('dishOwner')||'';var pPhoto='',pInit='';if(pSel){var pu=getKnownUserByName(pSel);pPhoto=pu?pu.photo||'':'';pInit=pu?(pu.initials||pSel.slice(0,2)):pSel.slice(0,2);}var oldD=editingDishId?currentEvent.dishes.find(function(d){return String(d.id)===String(editingDishId);}):null;
-        dish=normalizeDish({id:editingDishId||makeId(),dayId:dishDayId,meal:dishMeal,name:name,url:getValue('dishUrl').trim(),servings:getValue('servings').trim(),peopleEating:getValue('peopleEating')||getValue('peopleEatingPlan')||'',notes:getValue('dishNotes').trim(),tags:[],isVegetarian:vegCheck?vegCheck.checked:!!(oldD&&oldD.isVegetarian),ingredients:collectIngredients(),steps:collectSteps(),isEvent:false,cookTime:(oldD&&oldD.cookTime)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.cookTime)||'',bankRecipeId:window._pendingBankRecipeId||'',owner:wasBankOnly?pSel:((oldD&&oldD.owner)||''),assignedTo:wasBankOnly?'':pSel,assignedToPhoto:wasBankOnly?'':pPhoto,assignedToInitials:wasBankOnly?'':pInit});if(window._pendingBankRecipeId&&!wasBankOnly)recordRecipeUsedInTrip(window._pendingBankRecipeId);window._pendingBankRecipeId=null;window._pendingLibraryRecipe=null;
+        dish=normalizeDish({id:editingDishId||makeId(),dayId:dishDayId,meal:dishMeal,name:name,url:getValue('dishUrl').trim(),servings:getValue('servings').trim(),peopleEating:getValue('peopleEating')||getValue('peopleEatingPlan')||'',notes:getValue('dishNotes').trim(),tags:[],isVegetarian:vegCheck?vegCheck.checked:!!(oldD&&oldD.isVegetarian),ingredients:collectIngredients(),steps:collectSteps(),isEvent:false,cookTime:(oldD&&oldD.cookTime)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.cookTime)||'',importMeta:(oldD&&oldD.importMeta)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.importMeta)||'',bankRecipeId:window._pendingBankRecipeId||'',owner:wasBankOnly?pSel:((oldD&&oldD.owner)||''),assignedTo:wasBankOnly?'':pSel,assignedToPhoto:wasBankOnly?'':pPhoto,assignedToInitials:wasBankOnly?'':pInit});if(window._pendingBankRecipeId&&!wasBankOnly)recordRecipeUsedInTrip(window._pendingBankRecipeId);window._pendingBankRecipeId=null;window._pendingLibraryRecipe=null;
     }
     savedDishName=dish.eventName||dish.name||'Dish';
     if(wasBankOnly){
@@ -4276,7 +4279,9 @@ function saveDishFromModal(){
       var u=getUser();
       if(!wasEditing){dish.addedBy=dish.addedBy||(u&&(u.name||u.initials))||'';dish.addedAt=dish.addedAt||getTodayStr();dish.savedAt=getTodayStr();}
       // v81 (#3): on a NEW bank save, skip if an equivalent recipe already exists (prevention only — nothing deleted).
+      // v183: also gate on the race-proof session claim so two near-simultaneous writes can't create a duplicate.
       var dupLib=(!wasEditing)?findExistingLibraryRecipe({name:dish.name,url:dish.url,source:dish.source}):null;
+      if(!dupLib&&!wasEditing&&!_claimLibWrite(dish))dupLib=true; // an identical library write just happened this session
       if(dupLib){
         showToast('"'+dish.name+'" is already in the Recipe Library — not adding a duplicate.','');
       } else {
@@ -4287,6 +4292,9 @@ function saveDishFromModal(){
           if(wasEditing){var bidx=(currentEvent.recipeBank||[]).findIndex(function(d){return String(d.id)===String(editingDishId);});if(bidx>=0)currentEvent.recipeBank[bidx]=dish;else currentEvent.recipeBank.push(dish);}
           else currentEvent.recipeBank.push(dish);
         }
+        // v183: backstop — a manually-typed/photo recipe that arrived WITHOUT grocery labels gets name+dept+section
+        // auto-filled once, at the source (the library), so the library is complete and the plan inherits it.
+        if(db&&dish.id&&typeof _applyGroceryNames==='function'&&(dish.ingredients||[]).some(_ingNeedsGroceryName)){_applyGroceryNames(dish).then(function(c){if(c&&typeof renderMenuLibraryOverlay==='function')renderMenuLibraryOverlay();});}
       }
       window._tempLibraryMode=false;
       // v92 (#5): fill/refresh the recipe image. URL photo is preferred; if a URL was just added, force-update from it.
@@ -4387,10 +4395,11 @@ async function cleanGroceryNames(items){
   items=(items||[]).map(function(s){return String(s||'');});
   if(!items.length)return [];
   var key=getApiKey();if(!key)return items.map(function(){return null;});
-  var prompt='For EACH ingredient line below, return an object {"grocery":"...","dept":"..."}.\n'
+  var prompt='For EACH ingredient line below, return an object {"grocery":"...","dept":"...","component":"..."}.\n'
     +'"grocery" = the core GROCERY name you would write on a shopping list. Remove quantities, package sizes, brand names, and prep words (diced, sliced, drained, chopped, minced, melted, to taste, for serving, etc.). '
     +'KEEP meaningful product distinctions: "crushed tomatoes" stays "crushed tomatoes"; "extra-virgin olive oil" -> "olive oil"; "1 (14 oz) can black beans, drained" -> "black beans"; "2 boneless skinless chicken thighs" -> "chicken thighs"; "kosher salt" -> "salt". Do NOT invent, add, or merge ingredients.\n'
     +'"dept" = the grocery-store aisle, EXACTLY one of: '+GROCERY_DEPTS.join(', ')+'. Examples: salt/black pepper/cumin/spices -> Spices & Seasonings; oils/vinegars/soy sauce/ketchup/condiments -> Condiments & Oils; bell pepper/jalapeno -> Produce; flour/rice/pasta/bread -> Bakery & Pantry; canned beans/broth/sugar -> Pantry.\n'
+    +'"component" = which part of the recipe this ingredient belongs to (the recipe "section"), exactly one of: main, dressing, sauce, marinade, dough, batter, topping, garnish, other. Use "main" if it is just part of the main dish.\n'
     +'Return ONLY a JSON array of these objects, SAME length and order as the input.\n\nINGREDIENTS:\n'
     +JSON.stringify(items);
   try{
@@ -4400,8 +4409,8 @@ async function cleanGroceryNames(items){
     var mm=stripJsonFences(text).match(/\[[\s\S]*\]/);
     var arr=mm?JSON.parse(mm[0]):null;
     if(Array.isArray(arr)&&arr.length===items.length)return arr.map(function(o){
-      if(o&&typeof o==='object')return {grocery:String(o.grocery||'').trim(),dept:(GROCERY_DEPTS.indexOf(o.dept)>=0?o.dept:'')};
-      return {grocery:String(o||'').trim(),dept:''}; // tolerate a bare string
+      if(o&&typeof o==='object')return {grocery:String(o.grocery||'').trim(),dept:(GROCERY_DEPTS.indexOf(o.dept)>=0?o.dept:''),component:String(o.component||'').trim().toLowerCase()};
+      return {grocery:String(o||'').trim(),dept:'',component:''}; // tolerate a bare string
     });
   }catch(e){console.warn('[groceryNames] failed',e);}
   return items.map(function(){return null;});
@@ -4456,7 +4465,7 @@ async function _cleanIngredientNames(ings){
   if(!items.length)return 0;
   var cleaned=await cleanGroceryNames(items);
   var changed=0;
-  needIdx.forEach(function(idx,k){var c=cleaned[k];if(!c)return;if(c.grocery){ings[idx].groceryName=c.grocery;}if(c.dept){ings[idx].groceryDept=c.dept;}if(c.grocery||c.dept)changed++;});
+  needIdx.forEach(function(idx,k){var c=cleaned[k];if(!c)return;if(c.grocery){ings[idx].groceryName=c.grocery;}if(c.dept){ings[idx].groceryDept=c.dept;}if(c.component&&!(ings[idx].component&&String(ings[idx].component).trim())){var cm=String(c.component).toLowerCase();if(cm&&cm!=='main'&&cm!=='other')ings[idx].component=cm;}if(c.grocery||c.dept)changed++;});
   return changed;
 }
 // Apply to one LIBRARY recipe + persist (targeted write to ingredients only).
@@ -5237,7 +5246,7 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v182';
+var APP_VERSION='v183';
 var APP_BUILD_TIME='2026-07-04';
 
 var APP_VERSION_TAG='Meal Planner v182';
@@ -7015,6 +7024,20 @@ function findExistingLibraryRecipe(recipe,excludeId){
   })||null;
 }
 
+// v183: race-proof, path-agnostic dedup for LIBRARY writes. findExistingLibraryRecipe can miss a duplicate
+// because the Firebase menuLibrary listener hasn't echoed the first write back into _menuLibrary yet (async lag)
+// — two near-simultaneous writes then land under two different makeId()s = a duplicate. This session-scoped
+// claim set closes that gap: the first write records its url/name key synchronously; a second identical write
+// (any path — URL import, AI chat, photo, double-tap Save) sees the key and is skipped. Never deletes anything.
+var _libWriteKeys={};
+function _libWriteKeyFor(r){
+  var u=(typeof normLibUrl==='function')?normLibUrl(r&&r.url):String((r&&r.url)||'').toLowerCase();
+  if(u)return 'u:'+u;
+  var n=String((r&&r.name)||'').trim().toLowerCase(),s=String((r&&r.source)||'').trim().toLowerCase();
+  return n?('n:'+n+'|'+s):'';
+}
+function _claimLibWrite(r){var k=_libWriteKeyFor(r);if(!k)return true;if(_libWriteKeys[k])return false;_libWriteKeys[k]=1;return true;}
+
 /* ===== DISH STATUS & ASSIGNMENT ===== */
 function saveDishToLibrary(id){
   var dish=currentEvent.dishes.find(function(d){return d.id===id;});if(!dish)return;
@@ -7398,7 +7421,8 @@ function executeAddBankRecipe(a){
   var recipe=normalizeDish({id:makeId(),name:a.name,url:a.url||'',source:a.source||extractSource(a.url),servings:String(a.servings||''),peopleEating:'',notes:a.notes||'',isVegetarian:!!a.isVegetarian,steps:Array.isArray(a.steps)?a.steps:[],ingredients:(a.ingredients||[]).map(function(line){var p=parseIngLine(String(line));return{quantity:p.quantity,displayedQuantity:p.quantity,unit:p.unit,item:p.item||String(line)};}),tags:Array.isArray(a.tags)?a.tags:[],timesUsed:0,lastUsed:'',savedAt:getTodayStr(),addedBy:(user&&(user.name||user.initials))||'AI',addedAt:getTodayStr(),cookTime:a.cookTime||'',rating:0});
   var dup=findExistingLibraryRecipe(recipe); // v81 (#3): reuse existing instead of creating a duplicate
   if(dup){setTimeout(function(){showAddToTripPrompt(dup);},400);return{ok:true,msg:'"'+dup.name+'" is already in your library — use the prompt below to add it to the plan.'};}
-  if(db){db.ref('menuLibrary/'+recipe.id).set(recipe);}
+  if(!_claimLibWrite(recipe)){setTimeout(function(){showAddToTripPrompt(recipe);},400);return{ok:true,msg:'"'+recipe.name+'" is already in your library — use the prompt below to add it to the plan.'};} // v183: race-proof dedup
+  if(db){db.ref('menuLibrary/'+recipe.id).set(recipe);if(typeof _applyGroceryNames==='function'&&(recipe.ingredients||[]).some(_ingNeedsGroceryName))_applyGroceryNames(recipe);} // v183: auto grocery name+dept+section at the source
   else if(currentEvent){currentEvent.recipeBank=currentEvent.recipeBank||[];currentEvent.recipeBank.push(recipe);commitAndSync();}
   // Show Add to Trip? prompt after a short delay
   setTimeout(function(){showAddToTripPrompt(recipe);},400);
@@ -7702,8 +7726,8 @@ function saveImportedToLibrary(){
   var u=getUser();
   var recipe=normalizeDish({id:makeId(),name:name,url:getValue('dishUrl').trim(),source:'',servings:getValue('servings').trim(),notes:getValue('dishNotes').trim(),isVegetarian:safeEl('isVegetarianCheck')?safeEl('isVegetarianCheck').checked:false,ingredients:collectIngredients(),steps:[],tags:[],addedBy:(u&&(u.name||u.initials))||'',addedAt:getTodayStr(),savedAt:getTodayStr(),timesUsed:0,lastUsed:'',rating:0});
   var dup=findExistingLibraryRecipe(recipe); // v81 (#3): don't create a duplicate
-  if(dup){showToast('"'+name+'" is already in the Recipe Library.','');return;}
-  if(db){db.ref('menuLibrary/'+recipe.id).set(recipe);showToast('"'+name+'" saved to Recipe Library.','success');}
+  if(dup||!_claimLibWrite(recipe)){showToast('"'+name+'" is already in the Recipe Library.','');return;} // v183: race-proof dedup
+  if(db){db.ref('menuLibrary/'+recipe.id).set(recipe);showToast('"'+name+'" saved to Recipe Library.','success');if(typeof _applyGroceryNames==='function'&&(recipe.ingredients||[]).some(_ingNeedsGroceryName))_applyGroceryNames(recipe);}
 }
 
 function executeImportRecipeUrl(a){
@@ -7752,28 +7776,27 @@ function _extractRecipeJsonLd(html){
 // v181: GROUNDED ingredient enrichment. Takes ALREADY-EXTRACTED ingredient lines and asks Haiku to label
 // each with a grocery name + component. It cannot add/remove/invent ingredients (it only labels lines that
 // exist), so it can't fabricate a recipe. Best-effort: any failure leaves the recipe unchanged.
+// v183: record HOW a recipe was imported so we can audit parse quality later.
+function _mkImportMeta(method){return {method:method||'',enriched:false,enrichedCount:0,at:(typeof getTodayStr==='function'?getTodayStr():'')};}
+function importMethodLabel(m){var map={'site-jsonld-server':'Site recipe data — exact','site-jsonld-proxy':'Site recipe data — exact (proxy)','spoonacular':'Spoonacular extract','ai-page-text':'AI read the page text','photo':'Photo (AI vision)','paste':'Pasted text (AI)'};return map[m]||m||'Unknown';}
+// v183: enrich a freshly-imported recipe. Routes through the ONE canonical grocery labeller
+// (_cleanIngredientNames → cleanGroceryNames) so grocery name + dept + section are all set in a single
+// Haiku pass, idempotently (only ingredients missing a name/dept are labelled). Keeps import diagnostics.
 async function _enrichIngredients(recipe,apiKey){
   try{
-    var ings=(recipe&&recipe.ingredients)||[];if(!ings.length||!apiKey)return recipe;
-    var lines=ings.map(function(i){return (typeof i==='string')?i:[(i.quantity||i.displayedQuantity||''),(i.unit||''),(i.item||i.name||'')].filter(Boolean).join(' ');});
-    var sys='You normalize already-extracted recipe ingredient lines for a grocery app. You must NOT add, remove, reorder, or invent ingredients — only label the exact lines given, in order. For EACH line output two fields: groceryName = the purchasable item to buy at a store (e.g. "2 cloves garlic, minced"->"garlic"; "1 (14 oz) can diced tomatoes"->"diced tomatoes"; "juice of 1 lime"->"lime"; "kosher salt, to taste"->"kosher salt"), and component = which part of the dish the line belongs to, exactly one of: main, dressing, sauce, marinade, dough, batter, topping, garnish, other. Return ONLY a JSON array, one object per input line, same order: [{"n":1,"groceryName":"...","component":"..."}]';
-    var user='Recipe: '+(recipe.name||'')+'\n\nINGREDIENT LINES:\n'+lines.map(function(l,n){return (n+1)+'. '+l;}).join('\n')+((recipe.steps&&recipe.steps.length)?'\n\nSTEPS (context for component only — do NOT extract ingredients from these):\n'+recipe.steps.slice(0,12).map(function(s,n){return (n+1)+'. '+s;}).join('\n'):'');
-    var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1600,system:sys,messages:[{role:'user',content:user}]})});
-    if(!r.ok)return recipe;
-    var j=await r.json();var txt=(j.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
-    var m=txt.match(/\[[\s\S]*\]/);if(!m)return recipe;
-    var labels;try{labels=JSON.parse(m[0]);}catch(e){return recipe;}
-    var byN={};labels.forEach(function(l){if(l&&l.n)byN[l.n]=l;});
-    recipe.ingredients=ings.map(function(i,idx){
-      var obj;
-      if(typeof i==='string'){var p=(typeof parseIngLine==='function')?parseIngLine(i):{};obj={quantity:p.quantity||'',displayedQuantity:p.quantity||'',unit:p.unit||'',item:p.item||i,originalQuantity:p.quantity||'',qtyOverride:''};}
-      else{obj={};for(var k in i){obj[k]=i[k];}if(!obj.item&&obj.name)obj.item=obj.name;}
-      var lab=byN[idx+1]||{};
-      if(lab.groceryName)obj.groceryName=String(lab.groceryName);
-      if(lab.component&&String(lab.component).toLowerCase()!=='main'&&String(lab.component).toLowerCase()!=='other')obj.component=String(lab.component);
-      return obj;
+    var _im=recipe&&recipe.importMeta;
+    var ings=(recipe&&recipe.ingredients)||[];
+    if(!ings.length){if(_im)_im.enrichError='no-ingredients';return recipe;}
+    if(!apiKey){if(_im)_im.enrichError='no-anthropic-key';return recipe;}
+    // Normalize any string lines to ingredient OBJECTS first, so the unified labeller (which reads .item) can see them.
+    recipe.ingredients=ings.map(function(i){
+      if(typeof i==='string'){var p=(typeof parseIngLine==='function')?parseIngLine(i):{};return {quantity:p.quantity||'',displayedQuantity:p.quantity||'',unit:p.unit||'',item:p.item||i,originalQuantity:p.quantity||'',qtyOverride:''};}
+      var o={};for(var k in i){o[k]=i[k];}if(!o.item&&o.name)o.item=o.name;return o;
     });
-  }catch(e){/* enrichment is best-effort; never block the import */}
+    await _cleanIngredientNames(recipe.ingredients); // sets groceryName + groceryDept + component in one pass
+    var labeled=recipe.ingredients.filter(function(i){return i.groceryName&&String(i.groceryName).trim();}).length;
+    if(_im){_im.enriched=labeled>0;_im.enrichedCount=labeled;if(labeled===0)_im.enrichError=_im.enrichError||'labels-empty';}
+  }catch(e){if(recipe&&recipe.importMeta)recipe.importMeta.enrichError=String((e&&e.message)||e);}
   return recipe;
 }
 async function backgroundImportAndReview(url,intendedDay,intendedMeal){
@@ -7791,17 +7814,17 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
   }
   // v156: EXACT path — server-side fetcher (Cloud Function: browser User-Agent + schema.org JSON-LD).
   // Deterministic, exact quantities, ZERO AI/fabrication. Falls back to a client proxy, then Jina+AI.
-  var jld=null;
+  var jld=null,jldVia='';
   try{
     var fnRes=await fetch(RECIPE_FETCH_FN+'?url='+encodeURIComponent(url),{signal:AbortSignal.timeout(24000)});
-    if(fnRes.ok){var fnData=await fnRes.json();if(fnData&&fnData.recipe&&(fnData.recipe.ingredients||[]).length&&(fnData.recipe.steps||[]).length)jld=fnData.recipe;}
+    if(fnRes.ok){var fnData=await fnRes.json();if(fnData&&fnData.recipe&&(fnData.recipe.ingredients||[]).length&&(fnData.recipe.steps||[]).length){jld=fnData.recipe;jldVia='site-jsonld-server';}}
   }catch(e){/* function not deployed / unreachable → fall through */}
   // Secondary: client-side proxy → JSON-LD (best-effort, if the function didn't resolve it)
   var rawHtml='';
-  if(!jld){try{rawHtml=await _fetchRawHtmlForImport(url);}catch(e){}if(rawHtml)jld=_extractRecipeJsonLd(rawHtml);}
+  if(!jld){try{rawHtml=await _fetchRawHtmlForImport(url);}catch(e){}if(rawHtml){jld=_extractRecipeJsonLd(rawHtml);if(jld)jldVia='site-jsonld-proxy';}}
   if(jld&&jld.name&&(jld.ingredients||[]).length&&(jld.steps||[]).length){
     /* v182: no upfront confirm — review panel is the confirmation */
-    var recExact={name:jld.name,servings:jld.servings||'',cookTime:jld.cookTime||'',isVegetarian:false,ingredients:jld.ingredients,steps:jld.steps,source:source,url:url,id:makeId(),savedAt:getTodayStr()};
+    var recExact={name:jld.name,servings:jld.servings||'',cookTime:jld.cookTime||'',isVegetarian:false,ingredients:jld.ingredients,steps:jld.steps,source:source,url:url,id:makeId(),savedAt:getTodayStr(),importMeta:_mkImportMeta(jldVia)};
     if(jld.image)recExact.imageUrl=jld.image;
     showToast('✓ Imported exactly from '+source+' — adding grocery names…','success');
     recExact=await _enrichIngredients(recExact,key);
@@ -7821,7 +7844,7 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
           var _spSteps=[];
           if(_sp.analyzedInstructions&&_sp.analyzedInstructions[0]&&_sp.analyzedInstructions[0].steps)_spSteps=_sp.analyzedInstructions[0].steps.map(function(s){return s.step;});
           else if(_sp.instructions)_spSteps=String(_sp.instructions).replace(/<[^>]+>/g,' ').split(/\.\s+|\n+/).map(function(s){return s.trim();}).filter(function(s){return s.length>4;});
-          var recSp={name:_sp.title,servings:_sp.servings?String(_sp.servings):'',isVegetarian:!!_sp.vegetarian,ingredients:_spIngs.map(function(x){var amt=(x.amount!=null?String(x.amount):'');return{quantity:amt,displayedQuantity:amt,unit:String(x.unit||''),item:String(x.originalName||x.name||x.original),originalQuantity:amt,qtyOverride:''};}),steps:_spSteps,source:source,url:url,id:makeId(),savedAt:getTodayStr()};
+          var recSp={name:_sp.title,servings:_sp.servings?String(_sp.servings):'',isVegetarian:!!_sp.vegetarian,ingredients:_spIngs.map(function(x){var amt=(x.amount!=null?String(x.amount):'');return{quantity:amt,displayedQuantity:amt,unit:String(x.unit||''),item:String(x.originalName||x.name||x.original),originalQuantity:amt,qtyOverride:''};}),steps:_spSteps,source:source,url:url,id:makeId(),savedAt:getTodayStr(),importMeta:_mkImportMeta('spoonacular')};
           if(_sp.image)recSp.imageUrl=_sp.image;
           /* v182: no upfront confirm */
           showToast('✓ Read '+_spIngs.length+' ingredients — adding grocery names…','success');
@@ -7881,7 +7904,7 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
       if(looksPaywalled){showToast('This page requires a subscription — copy the recipe text and paste it here instead.','error');return;}
       showToast('❌ No complete recipe found on that page — nothing was imported (no recipe invented). Try "Paste Full Recipe" or the 📷 Photo tab.','error');return;
     }
-    recipe.url=url;recipe.source=source;recipe.id=recipe.id||makeId();recipe.savedAt=getTodayStr();
+    recipe.url=url;recipe.source=source;recipe.id=recipe.id||makeId();recipe.savedAt=getTodayStr();recipe.importMeta=_mkImportMeta('ai-page-text');
     if(imageUrl)recipe.imageUrl=imageUrl;
     showToast('✓ Extracted from '+source+' — adding grocery names…','');
     recipe=await _enrichIngredients(recipe,key);
@@ -8012,10 +8035,14 @@ function showRecipeReviewPanel(recipe,intendedDay,intendedMeal){
   ];
   panel.innerHTML='<div style="font-size:17px;font-weight:800;margin-bottom:12px;">📋 Import Review</div>'
     +(hasIssues?'<div style="background:#fef3c7;border:1.5px solid #fcd34d;border-radius:10px;padding:10px 14px;font-size:12px;color:#78350f;margin-bottom:14px;font-weight:600;">⚠️ Some details look incomplete — review below before saving. Tap Edit to fix.</div>':'<div style="background:#ecfdf3;border:1.5px solid #a7f3d0;border-radius:10px;padding:10px 14px;font-size:12px;color:#065f46;margin-bottom:14px;font-weight:600;">✓ Recipe looks complete!</div>')
+    +(recipe.importMeta?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">'
+      +'<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--theme-accent-soft);color:var(--theme-accent);">via '+escHtml(importMethodLabel(recipe.importMeta.method))+'</span>'
+      +(recipe.importMeta.enriched?'<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(30,142,62,.12);color:#1e8e3e;">AI grocery names ✓ ('+(recipe.importMeta.enrichedCount||0)+')</span>':'<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:#fef3c7;color:#92400e;">No grocery names'+(recipe.importMeta.enrichError?' — '+escHtml(recipe.importMeta.enrichError):'')+'</span>')
+      +'</div>':'')
     +'<div style="background:var(--panel-soft);border-radius:12px;overflow:hidden;margin-bottom:16px;">'
     +checks.map(function(c,i){return'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;'+(i>0?'border-top:1px solid var(--border-light)':'')+';font-size:13px;"><span style="color:var(--muted);font-weight:600;">'+escHtml(c.label)+'</span><span style="font-weight:700;color:'+(c.ok?'var(--text)':'#ef4444')+';">'+escHtml(String(c.value))+'</span></div>';}).join('')
     +'</div>'
-    +(ingCount>0?'<div style="font-size:11px;color:var(--muted);margin-bottom:12px;background:var(--panel-soft);border-radius:8px;padding:8px 12px;"><strong>Ingredients preview:</strong> '+(recipe.ingredients||[]).slice(0,4).map(function(x){return escHtml(x);}).join(', ')+(ingCount>4?' + '+(ingCount-4)+' more…':'')+'</div>':'')
+    +(ingCount>0?'<div style="font-size:11px;color:var(--muted);margin-bottom:12px;background:var(--panel-soft);border-radius:8px;padding:8px 12px;"><strong>Ingredients preview:</strong> '+(recipe.ingredients||[]).slice(0,4).map(function(x){return escHtml(typeof x==='string'?x:(x.groceryName||x.item||x.name||''));}).join(', ')+(ingCount>4?' + '+(ingCount-4)+' more…':'')+'</div>':'')
     +'<button onclick="editRecipeImport()" style="width:100%;background:var(--theme-accent);color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;">Save Details</button>'
     +'<div style="font-size:11px;color:var(--muted);text-align:center;margin:8px 0;">Loads these details into the editor — review and edit, then tap <strong>Save</strong> to add it to your library.</div>'
     +'<button onclick="document.getElementById(\'recipeReviewPanel\').remove();" style="width:100%;background:none;border:none;padding:8px;font-size:12px;color:var(--muted);cursor:pointer;">Cancel — discard this import</button>';

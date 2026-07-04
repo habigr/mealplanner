@@ -5237,10 +5237,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v181';
+var APP_VERSION='v182';
 var APP_BUILD_TIME='2026-07-04';
 
-var APP_VERSION_TAG='Meal Planner v181';
+var APP_VERSION_TAG='Meal Planner v182';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -7800,8 +7800,7 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
   var rawHtml='';
   if(!jld){try{rawHtml=await _fetchRawHtmlForImport(url);}catch(e){}if(rawHtml)jld=_extractRecipeJsonLd(rawHtml);}
   if(jld&&jld.name&&(jld.ingredients||[]).length&&(jld.steps||[]).length){
-    var okJ=await confirmAction({title:'Confirm the recipe',message:'Found "'+jld.name+'" on '+source+', read straight from the page (exact ingredients & steps). Import it?',confirmLabel:'Yes, import'});
-    if(!okJ){showToast('Import canceled.','');return;}
+    /* v182: no upfront confirm — review panel is the confirmation */
     var recExact={name:jld.name,servings:jld.servings||'',cookTime:jld.cookTime||'',isVegetarian:false,ingredients:jld.ingredients,steps:jld.steps,source:source,url:url,id:makeId(),savedAt:getTodayStr()};
     if(jld.image)recExact.imageUrl=jld.image;
     showToast('✓ Imported exactly from '+source+' — adding grocery names…','success');
@@ -7824,8 +7823,7 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
           else if(_sp.instructions)_spSteps=String(_sp.instructions).replace(/<[^>]+>/g,' ').split(/\.\s+|\n+/).map(function(s){return s.trim();}).filter(function(s){return s.length>4;});
           var recSp={name:_sp.title,servings:_sp.servings?String(_sp.servings):'',isVegetarian:!!_sp.vegetarian,ingredients:_spIngs.map(function(x){var amt=(x.amount!=null?String(x.amount):'');return{quantity:amt,displayedQuantity:amt,unit:String(x.unit||''),item:String(x.originalName||x.name||x.original),originalQuantity:amt,qtyOverride:''};}),steps:_spSteps,source:source,url:url,id:makeId(),savedAt:getTodayStr()};
           if(_sp.image)recSp.imageUrl=_sp.image;
-          var okSp=await confirmAction({title:'Confirm the recipe',message:'Found "'+_sp.title+'" ('+_spIngs.length+' ingredients) via Spoonacular. Import it?',confirmLabel:'Yes, import'});
-          if(!okSp){showToast('Import canceled.','');return;}
+          /* v182: no upfront confirm */
           showToast('✓ Read '+_spIngs.length+' ingredients — adding grocery names…','success');
           recSp=await _enrichIngredients(recSp,key);
           showRecipeReviewPanel(recSp,intendedDay,intendedMeal);return;
@@ -7854,8 +7852,7 @@ async function backgroundImportAndReview(url,intendedDay,intendedMeal){
   try{var mlRes=await fetch('https://api.microlink.io/?url='+encodeURIComponent(url)+'&meta=true&force=true',{signal:AbortSignal.timeout(8000)});var mlData=await mlRes.json();if(mlData.status==='success'&&mlData.data){imageUrl=(mlData.data.image&&mlData.data.image.url)||'';}}catch(e){}
   // Confirm the fetched page before parsing (title comes from the real fetched content)
   var fetchedTitle=(((pageText.match(/Title:\s*(.+)/)||[])[1])||(pageText.trim().split('\n').find(function(l){return l.trim();})||'')).slice(0,90);
-  var okPage=await confirmAction({title:'Confirm the recipe page',message:'Read this page: "'+fetchedTitle+'" (from '+source+'). Import this recipe? Cancel if it looks like the wrong page.',confirmLabel:'Yes, import'});
-  if(!okPage){showToast('Import canceled.','');return;}
+  /* v182: no upfront confirm */
   var content=pageText.slice(0,14000);
   var prompt='Extract the recipe from the PAGE CONTENT below. Use ONLY the provided content. Do NOT use prior knowledge, and do NOT invent, guess, or fill in anything that is not present in the content. If the content does not contain a real, complete recipe, respond with EXACTLY: {"error":"No recipe found on this page"}\n\n'
     +'Otherwise return ONLY valid JSON (no markdown, no explanation):\n'

@@ -1997,6 +1997,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 /* shop store-name banner in the same brighter blue (done sections stay green) */
 #grocery .shopping-section:not(.done) .shopping-section-header h3{color:#2857c4!important;}
 
+/* v184: STICKY section headers — Assign grid (column thead) + Shop (store banner).
+   The redesign put overflow:hidden on the table + each section to clip the rounded corners, which makes
+   THAT box the sticky scroll-container and kills viewport stickiness. Drop the clip and give the headers a
+   solid background + rounded top so they still read as clean cards when pinned to the top on scroll. */
+#assignStoresGrid .assign-stores-table{overflow:visible!important;}
+#assignStoresGrid .assign-stores-table thead th{position:sticky!important;top:0!important;z-index:4;background:var(--gk-card)!important;box-shadow:0 .5px 0 var(--gk-sep);}
+#assignStoresGrid .assign-stores-table thead th:first-child{z-index:6!important;}
+#grocery .shopping-section{overflow:visible!important;}
+#grocery .shopping-section-header{position:sticky!important;top:0!important;z-index:5!important;background:#f6f6f8!important;border-radius:var(--gk-r-card) var(--gk-r-card) 0 0!important;}
+#grocery .shopping-section.collapsed .shopping-section-header{border-radius:var(--gk-r-card)!important;}
+
 /* ---- ITEM SHEET: modern bottom-sheet skin (CSS-only; .gis-* names preserved) ---- */
 .gis-sheet{background:var(--gk-bg);border-radius:20px 20px 0 0;}
 .gis-title{font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--gk-label);}
@@ -5246,7 +5257,7 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v183';
+var APP_VERSION='v184';
 var APP_BUILD_TIME='2026-07-04';
 
 var APP_VERSION_TAG='Meal Planner v182';

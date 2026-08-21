@@ -2323,6 +2323,14 @@ body:not(.app-visible) .ai-chat-fab{display:none!important;}
 /* ===== v206: CRITICAL nav-float fix (real cause) — 'overflow-x:hidden' on html,body (line 746) breaks position:fixed on iOS Safari, so the nav scrolls with the page. overflow-x:clip prevents horizontal scroll WITHOUT creating a scroll container, restoring true fixed. Also GPU-layer the nav. ===== */
 html,body{overflow-x:clip!important;overflow-y:visible!important;}
 .bottom-nav{position:fixed!important;bottom:0!important;left:0!important;right:0!important;top:auto!important;transform:translateZ(0)!important;-webkit-transform:translateZ(0)!important;}
+
+/* ===== v207: DEFINITIVE nav-float fix — app-shell flex layout (no more position:fixed for the bars). Header + nav are STATIC flex items that never move; the content scrolls between them inside .app-wrap. This sidesteps iOS Safari's bottom-fixed bar bug entirely, and also keeps the header pinned (sticky) for free. Mobile only. ===== */
+@media(max-width:768px){
+  #appScreen{height:100dvh!important;min-height:100dvh!important;overflow:hidden!important;}
+  #appScreen>header{position:static!important;top:auto!important;transform:none!important;flex:0 0 auto!important;z-index:5;}
+  #appScreen>.app-wrap{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;padding-top:0!important;padding-bottom:0!important;}
+  .bottom-nav{position:static!important;bottom:auto!important;left:auto!important;right:auto!important;top:auto!important;transform:none!important;-webkit-transform:none!important;flex:0 0 auto!important;width:100%!important;}
+}
 </style>
 </head>
 <body>
@@ -5601,10 +5609,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v206';
+var APP_VERSION='v207';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v206';
+var APP_VERSION_TAG='Meal Planner v207';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -8080,7 +8088,7 @@ async function refreshCurrentTrip(showMessage){
 }
 function setupPullToRefresh(){
   var startY=0,pulling=false;var ind=safeEl('pullRefreshIndicator');
-  document.addEventListener('touchstart',function(e){if(window.scrollY<=0){startY=e.touches[0].clientY;pulling=true;}},{passive:true});
+  document.addEventListener('touchstart',function(e){var sc=document.querySelector('.app-wrap');if(window.scrollY<=0&&(!sc||sc.scrollTop<=0)){startY=e.touches[0].clientY;pulling=true;}},{passive:true});
   document.addEventListener('touchmove',function(e){if(!pulling)return;var dy=e.touches[0].clientY-startY;if(dy>70&&ind)ind.classList.add('visible');},{passive:true});
   document.addEventListener('touchend',function(e){if(!pulling)return;var visible=ind&&ind.classList.contains('visible');if(ind)ind.classList.remove('visible');pulling=false;if(!visible)return;
     // v88 (#1): on the home/landing screen there's no trip open — refresh the trip list instead of erroring "No trip open".

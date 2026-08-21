@@ -2161,6 +2161,32 @@ section#planner.page{padding:8px 16px 16px!important;}
 .nav-btn.active,.nav-btn.shop-nav.active{color:var(--mp-blue)!important;}
 .nav-btn.active::before{background:rgba(10,132,255,.10)!important;}
 .bottom-nav .nav-label,.bottom-nav .nav-btn{font-size:10px!important;font-weight:600!important;}
+
+/* ===== v193: Meal Plan header/title/alignment + bottom-nav selected-state ===== */
+/* Title never wraps; Edit Plan stays on the same row, right */
+#planner .toolbar{align-items:center!important;flex-wrap:nowrap!important;gap:12px!important;}
+#planner .toolbar h2{white-space:nowrap!important;flex:0 0 auto!important;}
+#planner .planner-actions{margin-left:auto!important;}
+.plan-trip-header:empty{display:none!important;margin:0!important;}
+/* Equal left/right gutters: day titles, section labels + cards all align to the page's 16px edge */
+.day-header{padding:16px 0 4px!important;}
+.meal-head{padding:12px 0 6px!important;}
+.day-body{padding:0!important;}
+/* Perfectly-centered plus (SVG glyph) */
+.meal-empty .me-plus{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:22px!important;height:22px!important;line-height:0!important;padding:0!important;}
+.meal-empty .me-plus svg{width:14px!important;height:14px!important;display:block!important;}
+/* Header separator: soft gray hairline (was a blue theme border) */
+#appScreen header{border-bottom:1px solid rgba(60,60,67,.14)!important;}
+/* Trip title: don't clip descenders */
+#currentTripChip{line-height:1.25!important;padding-bottom:1px!important;}
+/* Bottom-nav SELECTED: no solid fill — light-blue outline ring + blue outline icon + blue label */
+.nav-btn.active .nav-icon{stroke:var(--mp-blue)!important;fill:none!important;}
+.nav-btn.active,.nav-btn.shop-nav.active{color:var(--mp-blue)!important;}
+.nav-btn.active::before{background:transparent!important;border:1.5px solid rgba(10,132,255,.5)!important;}
+/* Count badges: never cut off */
+.bottom-nav,.bottom-nav .nav-btn,.bottom-nav .nav-ico{overflow:visible!important;}
+.bottom-nav .nav-ico{position:relative!important;}
+.bottom-nav .nav-badge{top:-4px!important;right:-8px!important;left:auto!important;}
 </style>
 </head>
 <body>
@@ -3926,7 +3952,9 @@ function optionList(opts,sel){return(opts||[]).map(function(o){return'<option'+(
 
 /* ===== SYNC EVENT FIELDS ===== */
 function syncEventFieldsFromInputs(){if(!currentEvent)return;currentEvent.name=getValue('eventName').trim();currentEvent.startDate=getValue('startDate');currentEvent.endDate=getValue('endDate');currentEvent.theme=getValue('tripTheme')||currentEvent.theme||'midnight';}
-function syncInputsFromEvent(){setValue('eventName',currentEvent.name||'');setValue('startDate',currentEvent.startDate||'');setValue('endDate',currentEvent.endDate||'');setValue('tripTheme',mapTheme(currentEvent.theme));setText('currentTripChip',currentEvent.name||'Untitled Trip');setText('headerTripDates',tripDateRange(currentEvent));applyTheme(currentEvent.theme);renderActiveStoresList();renderProfileDisplay();var tct=safeEl('drawerTripCodeText');if(tct)tct.textContent=currentCode||'';}
+// v193: the header title shows just the trip NAME — strip a trailing "· Aug 20"-type date (redundant with the date row below). Display-only; the real name is untouched.
+function _cleanTripTitle(n){return String(n||'').replace(/\s*·\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*\d{1,2}(?:\s*[-–]\s*\d{1,2})?\s*$/i,'').trim();}
+function syncInputsFromEvent(){setValue('eventName',currentEvent.name||'');setValue('startDate',currentEvent.startDate||'');setValue('endDate',currentEvent.endDate||'');setValue('tripTheme',mapTheme(currentEvent.theme));setText('currentTripChip',_cleanTripTitle(currentEvent.name)||'Untitled Trip');setText('headerTripDates',tripDateRange(currentEvent));applyTheme(currentEvent.theme);renderActiveStoresList();renderProfileDisplay();var tct=safeEl('drawerTripCodeText');if(tct)tct.textContent=currentCode||'';}
 // v138 color schemes — map legacy photo themes onto the new scheme keys; everything else falls back to midnight.
 var THEME_SCHEMES=['midnight','ocean','forest','sunset','plum','slate','cherry','pride'];
 function mapTheme(t){var legacy={larchmont:'midnight','fire-island':'ocean',adirondacks:'forest'};t=legacy[t]||t;return THEME_SCHEMES.indexOf(t)>=0?t:'midnight';}
@@ -3996,7 +4024,7 @@ function getMealIcon(meal){
 function getDaySummary(day){var ds=currentEvent.dishes.filter(function(d){return d.dayId===day.id;});var dishes=ds.filter(function(d){return !d.isEvent;}).length,events=ds.filter(function(d){return d.isEvent;}).length;var parts=[];if(dishes)parts.push(dishes+' dish'+(dishes!==1?'es':''));if(events)parts.push(events+' event'+(events!==1?'s':''));return parts.join(' · ');}
 function getEaster(y){var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m2=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m2+114)/31),day=((h+l-7*m2+114)%31)+1;return{m:month,d:day};}
 function getHolidayEmoji(dateStr){if(!dateStr)return'';try{var d=new Date(dateStr+'T12:00:00'),m=d.getMonth()+1,day=d.getDate(),y=d.getFullYear(),dow=d.getDay();if(m===1&&day===1)return'🥂 ';if(m===2&&day===14)return'💝 ';if(m===3&&day===17)return'☘️ ';if(m===5&&dow===0&&day>=8&&day<=14)return'👩‍👧 ';if(m===5&&dow===1){var nxt=new Date(y,4,day+7);if(nxt.getMonth()!==4)return'🪖 ';}if(m===6&&dow===0&&day>=15&&day<=21)return'👨‍👧 ';if(m===7&&day===4)return'🎆 ';if(m===9&&dow===1&&day<=7)return'👷 ';if(m===10&&day===31)return'🎃 ';if(m===11&&day===11)return'🪖 ';if(m===11&&dow===4&&day>=22&&day<=28)return'🦃 ';if(m===12&&day===24)return'🎄 ';if(m===12&&day===25)return'🎄 ';if(m===12&&day===26)return'🎁 ';if(m===12&&day===31)return'🎆 ';var e=getEaster(y);if(m===e.m&&day===e.d)return'🐣 ';}catch(e){}return'';}
-function formatDayDate(s){if(!s)return'';try{var d=new Date(s+'T12:00:00');return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});}catch(e){return s;}}
+function formatDayDate(s){if(!s)return'';try{var d=new Date(s+'T12:00:00');return d.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'});}catch(e){return s;}}
 function renderPlanner(){var grid=safeEl('dayGrid');if(!grid)return;
   // Trip header
   var hdr=safeEl('planTripHeader');
@@ -4004,13 +4032,13 @@ function renderPlanner(){var grid=safeEl('dayGrid');if(!grid)return;
     var people=(currentEvent.dishes||[]).reduce(function(m,d){return Math.max(m,parseInt(d.peopleEating)||0);},0);
     var dateStr='';
     if(currentEvent.startDate&&currentEvent.endDate){try{var sd=new Date(currentEvent.startDate+'T12:00:00'),ed=new Date(currentEvent.endDate+'T12:00:00');dateStr=sd.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' – '+ed.toLocaleDateString(undefined,{month:'short',day:'numeric'});}catch(ex){}}
-    hdr.innerHTML='<div class="plan-trip-meta">'+(dateStr?dateStr+' ':'')+(people?'· '+people+' people':'')+'</div>';
+    hdr.innerHTML=''; // v193: dates are in the top header + day rows; people count was unreliable — removed
   }
-  if(!currentEvent.days.length){grid.innerHTML='<div class="empty"><div class="empty-icon">📅</div><h3>No days planned yet</h3><p>Add dates in Event Setup and click Create / Refresh Days.</p></div>';return;}grid.innerHTML=currentEvent.days.map(function(day,idx){var summary=getDaySummary(day);var dateLabel=day.date?formatDayDate(day.date):(day.label||'Day '+(idx+1));var emoji=getHolidayEmoji(day.date);return'<div class="day-card" data-day-idx="'+idx+'"><div class="day-header"><span class="day-drag-handle" data-day-idx="'+idx+'" title="Drag to reorder">⠿</span><div style="flex:1;min-width:0;"><div class="day-title">'+emoji+escHtml(dateLabel)+'</div>'+(summary?'<div class="meal-summary">'+escHtml(summary)+'</div>':'')+'</div><div class="day-tools"><div class="day-up-down"><button class="ghost" title="Move earlier" onclick="moveDay('+idx+',-1)">↑</button><button class="ghost" title="Move later" onclick="moveDay('+idx+',1)">↓</button></div><button class="ghost day-copy-btn" title="Copy this day" onclick="copyDayMeals(\''+escAttr(day.id)+'\')">Copy</button><button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\')">+</button></div></div><div class="day-body">'+orderedDayMeals(day.meals||getDefaultMealTypes()).map(function(meal){return renderMealBlock(day,meal);}).join('')+'</div></div>';}).join('');}
+  if(!currentEvent.days.length){grid.innerHTML='<div class="empty"><div class="empty-icon">📅</div><h3>No days planned yet</h3><p>Add dates in Event Setup and click Create / Refresh Days.</p></div>';return;}grid.innerHTML=currentEvent.days.map(function(day,idx){var summary=getDaySummary(day);var dateLabel=day.date?formatDayDate(day.date):(day.label||'Day '+(idx+1));var emoji=getHolidayEmoji(day.date);return'<div class="day-card" data-day-idx="'+idx+'"><div class="day-header"><span class="day-drag-handle" data-day-idx="'+idx+'" title="Drag to reorder">⠿</span><div style="flex:1;min-width:0;"><div class="day-title">'+emoji+escHtml(dateLabel)+'</div>'+'</div><div class="day-tools"><div class="day-up-down"><button class="ghost" title="Move earlier" onclick="moveDay('+idx+',-1)">↑</button><button class="ghost" title="Move later" onclick="moveDay('+idx+',1)">↓</button></div><button class="ghost day-copy-btn" title="Copy this day" onclick="copyDayMeals(\''+escAttr(day.id)+'\')">Copy</button><button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\')">+</button></div></div><div class="day-body">'+orderedDayMeals(day.meals||getDefaultMealTypes()).map(function(meal){return renderMealBlock(day,meal);}).join('')+'</div></div>';}).join('');}
 function renderMealBlock(day,meal){var dishes=currentEvent.dishes.filter(function(d){return d.dayId===day.id&&d.meal===meal;});var icon=getMealIcon(meal);
   // v82 (P0): scan recipeBank ∪ _menuLibrary (same source cookMeal resolves from) so library recipes show the Cook button. Also count a dish's own steps.
   var cookable=(currentEvent.recipeBank||[]).concat(_menuLibrary||[]);
-  var hasCookable=dishes.some(function(d){return(d.steps&&d.steps.length)||cookable.some(function(r){return r.steps&&r.steps.length&&(d.name.toLowerCase()===r.name.toLowerCase()||d.bankRecipeId===r.id);});});var cookMealBtn='';/* v168: Cook removed from the meal-plan tab — cook from the dish detail/edit screen */return'<div class="meal-block" data-meal="'+escAttr(meal)+'"><div class="meal-head"><div class="meal-label-wrap"><span class="meal-label">'+escHtml(meal)+'</span><button class="remove-meal-btn" onclick="removeMealFromDay(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" title="Remove this meal from day">×</button></div><div style="display:flex;align-items:center;gap:6px;">'+cookMealBtn+'<button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">+</button></div></div><div class="meal-body" data-day-id="'+escAttr(day.id)+'" data-meal="'+escAttr(meal)+'" ondragover="handleMealDragOver(event)" ondragleave="handleMealDragLeave(event)" ondrop="handleMealDrop(event)">'+(dishes.length?dishes.map(renderDish).join(''):'<div class="meal-empty" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" style="cursor:pointer;"><span class="me-plus">+</span>Add '+escHtml(meal)+'</div>')+'</div></div>';}
+  var hasCookable=dishes.some(function(d){return(d.steps&&d.steps.length)||cookable.some(function(r){return r.steps&&r.steps.length&&(d.name.toLowerCase()===r.name.toLowerCase()||d.bankRecipeId===r.id);});});var cookMealBtn='';/* v168: Cook removed from the meal-plan tab — cook from the dish detail/edit screen */return'<div class="meal-block" data-meal="'+escAttr(meal)+'"><div class="meal-head"><div class="meal-label-wrap"><span class="meal-label">'+escHtml(meal)+'</span><button class="remove-meal-btn" onclick="removeMealFromDay(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" title="Remove this meal from day">×</button></div><div style="display:flex;align-items:center;gap:6px;">'+cookMealBtn+'<button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">+</button></div></div><div class="meal-body" data-day-id="'+escAttr(day.id)+'" data-meal="'+escAttr(meal)+'" ondragover="handleMealDragOver(event)" ondragleave="handleMealDragLeave(event)" ondrop="handleMealDrop(event)">'+(dishes.length?dishes.map(renderDish).join(''):'<div class="meal-empty" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" style="cursor:pointer;"><span class="me-plus"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg></span>Add '+escHtml(meal)+'</div>')+'</div></div>';}
 // v169: resolve a dish's display image (its own, else the linked library recipe's) for plan-card thumbnails
 function resolveDishImageUrl(dish){
   if(!dish||dish.isEvent)return '';
@@ -5437,10 +5465,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v192';
+var APP_VERSION='v193';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v192';
+var APP_VERSION_TAG='Meal Planner v193';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

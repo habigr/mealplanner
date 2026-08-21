@@ -2319,6 +2319,10 @@ button{box-shadow:none!important;}
 
 /* ===== v205: hide the AI chat button on the Home screen (no trip loaded = no meal context). Only show it inside a trip, where the assistant knows the full meal plan. ===== */
 body:not(.app-visible) .ai-chat-fab{display:none!important;}
+
+/* ===== v206: CRITICAL nav-float fix (real cause) — 'overflow-x:hidden' on html,body (line 746) breaks position:fixed on iOS Safari, so the nav scrolls with the page. overflow-x:clip prevents horizontal scroll WITHOUT creating a scroll container, restoring true fixed. Also GPU-layer the nav. ===== */
+html,body{overflow-x:clip!important;overflow-y:visible!important;}
+.bottom-nav{position:fixed!important;bottom:0!important;left:0!important;right:0!important;top:auto!important;transform:translateZ(0)!important;-webkit-transform:translateZ(0)!important;}
 </style>
 </head>
 <body>
@@ -5597,10 +5601,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v205';
+var APP_VERSION='v206';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v205';
+var APP_VERSION_TAG='Meal Planner v206';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

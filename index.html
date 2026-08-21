@@ -2434,6 +2434,38 @@ html,body{overflow-x:clip!important;overflow-y:visible!important;}
   #dishModal .ing-gname,#dishModal .ing-section{font-size:12px!important;color:var(--mp-blue)!important;}
   #dishModal .ingredient-row-labels,#dishModal .ing-labels-mobile{display:none!important;}
 }
+
+/* ===== v224: dish editor "A3" — calm recipe list, tap a row to reveal a labeled editor ===== */
+#dishModal .ingredient-row-labels,#dishModal .ing-labels-mobile{display:none!important;}
+#dishModal .ingredient-list-editor{max-height:none!important;overflow:visible!important;}
+#dishModal .ingredient-row{display:block!important;grid-template-columns:none!important;grid-template-areas:none!important;padding:0!important;margin:0 0 10px!important;background:#fff!important;border:1px solid rgba(60,60,67,.12)!important;border-radius:14px!important;box-shadow:0 1px 2px rgba(0,0,0,.04)!important;overflow:hidden!important;}
+#dishModal .ingredient-row:hover{animation:none!important;box-shadow:0 1px 2px rgba(0,0,0,.04)!important;border-color:rgba(60,60,67,.12)!important;}
+/* collapsed summary row */
+#dishModal .ing-summary{display:flex!important;align-items:center;gap:11px;padding:13px 14px;cursor:pointer;}
+#dishModal .ingredient-row .drag-handle{display:inline-block!important;color:#cdced3!important;font-size:13px!important;flex:0 0 auto;letter-spacing:-1px;}
+#dishModal .ing-sum-amt{flex:0 0 auto;min-width:50px;font-size:15px;font-weight:800;color:var(--mp-blue);}
+#dishModal .ing-sum-name{flex:1;min-width:0;}
+#dishModal .ing-sum-title{display:block;font-size:15px;font-weight:600;color:#1C1C1E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#dishModal .ing-sum-sub{font-size:11.5px;color:#8A8A8E;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#dishModal .ing-sum-chev{flex:0 0 auto;color:#c8c8cd;font-size:18px;font-weight:700;transition:transform .18s ease;}
+#dishModal .ingredient-row.expanded .ing-sum-chev{transform:rotate(90deg);}
+/* labeled editor (hidden until expanded) */
+#dishModal .ing-editor{display:none!important;}
+#dishModal .ingredient-row.expanded .ing-editor{display:block!important;padding:2px 14px 10px;border-top:1px solid rgba(60,60,67,.08);}
+#dishModal .ing-fr{display:flex!important;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(60,60,67,.07);}
+#dishModal .ing-fr:last-child{border-bottom:none;}
+#dishModal .ing-flabel{width:72px;flex:0 0 auto;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:#6E6E73;}
+#dishModal .ing-fval{flex:1;min-width:0;display:flex;align-items:center;gap:8px;justify-content:flex-end;}
+#dishModal .ing-editor input{display:inline-block!important;grid-area:auto!important;font-size:15px!important;padding:9px 11px!important;border-radius:9px!important;border:1px solid rgba(60,60,67,.16)!important;background:#fff!important;color:#1C1C1E!important;font-weight:500!important;text-align:left!important;width:auto!important;}
+#dishModal .ing-editor .ing-original,#dishModal .ing-editor .ing-qty{max-width:88px!important;text-align:center!important;}
+#dishModal .ing-editor .ing-unit{max-width:104px!important;text-align:center!important;}
+#dishModal .ing-editor .ing-adjusted{max-width:112px!important;text-align:center!important;font-weight:700!important;}
+#dishModal .ing-editor .ing-adjusted:not(.is-override){color:var(--mp-blue)!important;background:#EAF2FC!important;border-color:rgba(26,111,214,.25)!important;}
+#dishModal .ing-editor .ing-item{flex:1 1 auto;max-width:none!important;width:100%!important;text-align:left!important;font-weight:600!important;}
+#dishModal .ing-editor .ing-gname,#dishModal .ing-editor .ing-section{font-size:13px!important;font-weight:600!important;padding:8px 12px!important;border-radius:9px!important;background:#F2F2F7!important;color:#3C3C43!important;border:1px solid rgba(60,60,67,.14)!important;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:1!important;}
+#dishModal .ing-editor .ing-gname.has-name,#dishModal .ing-editor .ing-section.has-name{background:#EAF2FC!important;color:var(--mp-blue)!important;border-color:rgba(26,111,214,.25)!important;}
+#dishModal .ing-fr-rm{justify-content:flex-start;}
+#dishModal .ing-editor .remove-ingredient{position:static!important;grid-area:auto!important;width:auto!important;padding:4px 0!important;font-size:13.5px!important;font-weight:600!important;color:#FF3B30!important;background:transparent!important;border:none!important;box-shadow:none!important;}
 </style>
 </head>
 <body>
@@ -4685,7 +4717,18 @@ function addIngredientFromText(line){
   var p=parseIngLine(line);if(!p.quantity&&!p.unit&&!p.item)return;addIngredientRow(p.quantity,p.unit,p.item,'',p.packageNote);
 }
 function markIngredientOverride(inp,blur){var row=inp.closest('.ingredient-row');if(!row)return;var v=inp.value.trim();if(!v){if(blur){inp.value=scaleQty(row.dataset.baseQty||'',getCurrentModalScale());}row.dataset.override='';inp.classList.remove('is-override');return;}var auto=scaleQty(row.dataset.baseQty||'',getCurrentModalScale());if(v===auto){row.dataset.override='';inp.classList.remove('is-override');}else{row.dataset.override='1';inp.classList.add('is-override');}}
-function addIngredientRow(q,u,it,adjusted,packageNote,override,groceryName,component){var wrap=safeEl('ingredientRows');if(!wrap)return;var row=document.createElement('div');row.className='ingredient-row';row.draggable=true;u=abbrUnit(u||'');it=toTitleCaseIngredient(it||'');var hasOv=!!(override&&String(override).trim());var adj=hasOv?String(override):(adjusted||q||'');row.dataset.baseQty=q||'';row.dataset.packageNote=packageNote||'';row.dataset.override=hasOv?'1':'';row.dataset.groceryName=groceryName||'';row.dataset.component=component||'';row.dataset.origItem=it||'';/* v145: carry groceryName + component through the edit pipeline; v150: origItem snapshot for rename detection */row.innerHTML='<span class="drag-handle">⋮⋮</span><input class="ing-qty ing-original" placeholder="Amount" value="'+escAttr(q||'')+'" oninput="this.closest(&quot;.ingredient-row&quot;).dataset.baseQty=this.value;updateScaledIngredientDisplay()"><input class="ing-adjusted'+(hasOv?' is-override':'')+'" placeholder="Scaled" value="'+escAttr(adj)+'" title="Adjusted amount. Auto-scales from servings — type your own to override (✎), clear the box to revert." oninput="markIngredientOverride(this)" onblur="markIngredientOverride(this,1)"><input class="ing-unit" placeholder="Unit" value="'+escAttr(u||'')+'"><div class="ing-item-cell"><input class="ing-item" list="ingredientSuggestions" placeholder="Ingredient" value="'+escAttr(it||'')+'"><div class="ing-meta-row"><button type="button" class="ing-gname'+(groceryName?' has-name':'')+'" onclick="editRowGroceryName(this)" title="Set how this appears on the grocery list">🛒 <span class="ing-gname-txt">'+(groceryName?escHtml(groceryName):'Grocery name')+'</span></button><button type="button" class="ing-section'+(component?' has-name':'')+'" onclick="editRowSection(this)" title="Group this ingredient under a recipe section (e.g. Sauce)">📂 <span class="ing-section-txt">'+(component?escHtml(component):'Section')+'</span></button></div></div><button class="remove-ingredient" onclick="this.parentElement.remove()">×</button>';wrap.appendChild(row);row.addEventListener('dragstart',function(){row.classList.add('dragging');});row.addEventListener('dragend',function(){row.classList.remove('dragging');});}
+function addIngredientRow(q,u,it,adjusted,packageNote,override,groceryName,component){var wrap=safeEl('ingredientRows');if(!wrap)return;var row=document.createElement('div');row.className='ingredient-row'+((q||u||it||groceryName||component)?'':' expanded');/* v224: new rows (empty) open expanded so you can type; existing rows load collapsed */row.draggable=true;u=abbrUnit(u||'');it=toTitleCaseIngredient(it||'');var hasOv=!!(override&&String(override).trim());var adj=hasOv?String(override):(adjusted||q||'');row.dataset.baseQty=q||'';row.dataset.packageNote=packageNote||'';row.dataset.override=hasOv?'1':'';row.dataset.groceryName=groceryName||'';row.dataset.component=component||'';row.dataset.origItem=it||'';/* v145: carry groceryName + component through the edit pipeline; v150: origItem snapshot for rename detection */row.innerHTML='<div class="ing-summary" onclick="toggleIngRow(this)"><span class="drag-handle">⋮⋮</span><span class="ing-sum-amt"></span><span class="ing-sum-name"><span class="ing-sum-title"></span><span class="ing-sum-sub"></span></span><span class="ing-sum-chev">›</span></div>'
++'<div class="ing-editor">'
++'<div class="ing-fr"><span class="ing-flabel">Amount</span><span class="ing-fval"><input class="ing-qty ing-original" placeholder="Amount" value="'+escAttr(q||'')+'" oninput="this.closest(&quot;.ingredient-row&quot;).dataset.baseQty=this.value;updateScaledIngredientDisplay()"><input class="ing-unit" placeholder="Unit" value="'+escAttr(u||'')+'" oninput="refreshIngSummary(this.closest(&quot;.ingredient-row&quot;))"></span></div>'
++'<div class="ing-fr"><span class="ing-flabel">Scaled</span><span class="ing-fval"><input class="ing-adjusted'+(hasOv?' is-override':'')+'" placeholder="Scaled" value="'+escAttr(adj)+'" title="Adjusted amount. Auto-scales from servings — type your own to override (✎), clear the box to revert." oninput="markIngredientOverride(this);refreshIngSummary(this.closest(&quot;.ingredient-row&quot;))" onblur="markIngredientOverride(this,1)"></span></div>'
++'<div class="ing-fr"><span class="ing-flabel">Ingredient</span><span class="ing-fval"><input class="ing-item" list="ingredientSuggestions" placeholder="Ingredient" value="'+escAttr(it||'')+'" oninput="refreshIngSummary(this.closest(&quot;.ingredient-row&quot;))"></span></div>'
++'<div class="ing-fr"><span class="ing-flabel">Buys as</span><span class="ing-fval"><button type="button" class="ing-gname'+(groceryName?' has-name':'')+'" onclick="editRowGroceryName(this)" title="Set how this appears on the grocery list">🛒 <span class="ing-gname-txt">'+(groceryName?escHtml(groceryName):'Grocery name')+'</span></button></span></div>'
++'<div class="ing-fr"><span class="ing-flabel">Aisle</span><span class="ing-fval"><button type="button" class="ing-section'+(component?' has-name':'')+'" onclick="editRowSection(this)" title="Group this ingredient under a recipe section (e.g. Sauce)">📂 <span class="ing-section-txt">'+(component?escHtml(component):'Section')+'</span></button></span></div>'
++'<div class="ing-fr ing-fr-rm"><button type="button" class="remove-ingredient" onclick="this.closest(&quot;.ingredient-row&quot;).remove()">Remove ingredient</button></div>'
++'</div>';wrap.appendChild(row);if(typeof refreshIngSummary==='function')refreshIngSummary(row);row.addEventListener('dragstart',function(){row.classList.add('dragging');});row.addEventListener('dragend',function(){row.classList.remove('dragging');});}
+// v224: A3 dish-editor — collapse a row to a calm recipe line; tap to reveal the labeled editor. Inputs are unchanged (save/scale/grocery logic reads the same fields).
+function toggleIngRow(sumEl){var row=sumEl&&sumEl.closest('.ingredient-row');if(!row)return;var open=row.classList.toggle('expanded');if(!open){refreshIngSummary(row);}else{var it=row.querySelector('.ing-item');if(it&&!String(it.value).trim())setTimeout(function(){try{it.focus();}catch(e){}},60);}}
+function refreshIngSummary(row){if(!row)return;var adj=row.querySelector('.ing-adjusted'),orig=row.querySelector('.ing-original')||row.querySelector('.ing-qty'),unit=row.querySelector('.ing-unit'),item=row.querySelector('.ing-item');var amt=((adj&&String(adj.value).trim())||(orig&&String(orig.value).trim())||'');var u=(unit&&String(unit.value).trim())||'';var name=(item&&String(item.value).trim())||'New ingredient';var amtEl=row.querySelector('.ing-sum-amt');if(amtEl)amtEl.textContent=(amt?amt:'')+(amt&&u?' '+u:(amt?'':u));var titleEl=row.querySelector('.ing-sum-title');if(titleEl)titleEl.textContent=name;var subEl=row.querySelector('.ing-sum-sub');if(subEl){var bits=[];var g=row.dataset.groceryName||'';var c=row.dataset.component||'';if(g)bits.push('🛒 '+g);if(c)bits.push('📂 '+c);subEl.textContent=bits.join('   ·   ');subEl.style.display=bits.length?'block':'none';}}
 // v145: edit an ingredient's grocery-list name from inside the dish edit modal — same prompt + trip-name suggestions as the view. Updates the row (saved with the dish via collectIngredients).
 async function editRowGroceryName(btn){
   var row=btn.closest('.ingredient-row');if(!row)return;
@@ -4697,6 +4740,7 @@ async function editRowGroceryName(btn){
   row.dataset.groceryName=val;
   var txt=row.querySelector('.ing-gname-txt');if(txt)txt.textContent=val||'Grocery name';
   btn.classList.toggle('has-name',!!val);
+  if(typeof refreshIngSummary==='function')refreshIngSummary(row);
   if(typeof markDishModalDirty==='function')markDishModalDirty();
 }
 // v147: assign an ingredient to a recipe section (component) from the edit modal — free text + suggestions of this dish's existing sections. Saved with the dish via collectIngredients.
@@ -4708,6 +4752,7 @@ async function editRowSection(btn){
   row.dataset.component=val.trim();
   var txt=row.querySelector('.ing-section-txt');if(txt)txt.textContent=val.trim()||'Section';
   btn.classList.toggle('has-name',!!val.trim());
+  if(typeof refreshIngSummary==='function')refreshIngSummary(row);
   if(typeof markDishModalDirty==='function')markDishModalDirty();
 }
 function getModalSectionNames(){var seen={},out=[];document.querySelectorAll('#ingredientRows .ingredient-row').forEach(function(r){var c=(r.dataset.component||'').trim();if(c&&!seen[c.toLowerCase()]){seen[c.toLowerCase()]=1;out.push(c);}});return out;}
@@ -4832,7 +4877,7 @@ async function deleteEditingDish(){var tid=getValue('deleteEntryId')||editingDis
 function enableIngredientDropZone(){var c=safeEl('ingredientRows');if(!c||c.dataset.dragReady)return;c.dataset.dragReady='true';c.addEventListener('dragover',function(e){e.preventDefault();var after=getDragAfter(c,e.clientY),drag=c.querySelector('.ingredient-row.dragging');if(!drag)return;if(after==null)c.appendChild(drag);else c.insertBefore(drag,after);});}
 function getDragAfter(container,y){return Array.from(container.querySelectorAll('.ingredient-row:not(.dragging)')).reduce(function(cl,ch){var box=ch.getBoundingClientRect(),off=y-box.top-box.height/2;if(off<0&&off>cl.offset)return{offset:off,element:ch};return cl;},{offset:Number.NEGATIVE_INFINITY}).element;}
 function getCurrentModalScale(){var o=parseFloat(getValue('servings')),f=parseFloat(getValue('peopleEating')||getValue('servings'));if(!o||!f)return 1;return f/o;}
-function updateScaledIngredientDisplay(){var s=getCurrentModalScale();document.querySelectorAll('#ingredientRows .ingredient-row').forEach(function(row){var orig=row.querySelector('.ing-original')||row.querySelector('.ing-qty'),adj=row.querySelector('.ing-adjusted')||orig;if(!orig||!adj)return;if(row.dataset.override==='1')return;var base=row.dataset.baseQty||orig.value;adj.value=scaleQty(base,s);});}
+function updateScaledIngredientDisplay(){var s=getCurrentModalScale();document.querySelectorAll('#ingredientRows .ingredient-row').forEach(function(row){var orig=row.querySelector('.ing-original')||row.querySelector('.ing-qty'),adj=row.querySelector('.ing-adjusted')||orig;if(orig&&adj&&row.dataset.override!=='1'){var base=row.dataset.baseQty||orig.value;adj.value=scaleQty(base,s);}if(typeof refreshIngSummary==='function')refreshIngSummary(row);});}
 function getDishScale(dish){var o=parseFloat(dish.servings),f=parseFloat(dish.peopleEating||dish.servings);if(!o||!f)return 1;return f/o;}
 function scaleQty(q,s){if(!q||!s||s===1)return q||'';var f=parseFrac(q);if(f==null)return q;return fmtQty(f*s);}
 function parseFrac(v){var t=String(v||'').trim();if(/^\d+\s+\d+\/\d+$/.test(t)){var m=t.match(/^(\d+)\s+(\d+)\/(\d+)$/);return parseInt(m[1],10)+parseInt(m[2],10)/parseInt(m[3],10);}if(/^\d+\/\d+$/.test(t)){var p=t.split('/'),d=parseFloat(p[1]);return d?parseFloat(p[0])/d:null;}var n=parseFloat(t.replace(',','.'));return isNaN(n)?null:n;}
@@ -5712,10 +5757,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v223';
+var APP_VERSION='v224';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v223';
+var APP_VERSION_TAG='Meal Planner v224';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

@@ -2463,7 +2463,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
       <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border-light);padding-top:10px;">
         <button type="button" class="secondary" onclick="backfillMissingImages()">Backfill missing images</button>
         <button type="button" class="secondary" onclick="backfillGroceryNames()">Clean grocery names (AI)</button>
+        <button type="button" class="secondary" onclick="checkImageHealth()">🩺 Check image health</button>
       </div>
+      <div id="imageHealthReport" style="display:none;margin-top:12px;font-size:13px;line-height:1.5;background:var(--panel-soft);border:1px solid var(--border-light);border-radius:10px;padding:12px;"></div>
       <div class="small-note" style="margin-top:12px;">Spoonacular (recipe matches): <strong>spoonacular.com/food-api</strong>. Pexels (catches niche dishes): one key at <strong>pexels.com/api</strong> — no setup. Both stick with the trip. "Backfill" fills up to 25 image-less recipes at a time.</div>
     </div>
     <div class="admin-card">
@@ -5262,10 +5264,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v185';
-var APP_BUILD_TIME='2026-07-04';
+var APP_VERSION='v186';
+var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v182';
+var APP_VERSION_TAG='Meal Planner v186';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -6525,6 +6527,42 @@ function toggleRecipeSteps(id,btn){
 // This DROPS data: URLs — uploaded screenshots must never be used as the recipe image — and never borrows
 // another recipe's photo. Online image sourcing (recipe URL first, then a similar dish online) is separate.
 function _displayImageUrl(recipe){var u=recipe&&recipe.imageUrl;return (u&&/^https?:\/\//i.test(String(u)))?u:'';}
+// v186: READ-ONLY image health check. Reports key presence + image coverage, then actually load-tests the
+// stored URLs (via new Image()) to count how many are DEAD — proves whether the problem is "no key" vs "link rot".
+// No data writes anywhere; safe on any trip.
+async function checkImageHealth(){
+  var out=safeEl('imageHealthReport');if(!out)return;
+  out.style.display='block';
+  out.innerHTML='Checking… loading images to see which are still alive (can take a few seconds).';
+  var spoon=getImageApiKey(),pex=getPexelsKey();
+  var libs=(_menuLibrary||[]);
+  var dishes=((currentEvent&&currentEvent.dishes)||[]).filter(function(d){return !d.isEvent;});
+  var urlSet={},libWith=0,dishWith=0;
+  libs.forEach(function(r){var u=_displayImageUrl(r);if(u){libWith++;urlSet[u]=1;}});
+  dishes.forEach(function(d){var u=resolveDishImageUrl(d);if(u){dishWith++;urlSet[u]=1;}});
+  var urls=Object.keys(urlSet),CAP=60,testUrls=urls.slice(0,CAP);
+  function testOne(u){return new Promise(function(res){var img=new Image();var done=false;var to=setTimeout(function(){if(!done){done=true;res(false);}},8000);img.onload=function(){if(!done){done=true;clearTimeout(to);res(img.naturalWidth>1);}};img.onerror=function(){if(!done){done=true;clearTimeout(to);res(false);}};img.referrerPolicy='no-referrer';img.src=u;});}
+  var results=await Promise.all(testUrls.map(testOne));
+  var ok=results.filter(Boolean).length,dead=results.length-ok,pct=results.length?Math.round(ok/results.length*100):0;
+  var html='';
+  html+='<b>🔑 Keys</b><br>';
+  html+='&nbsp;&nbsp;Spoonacular: '+(spoon?'<span style="color:#0a7a33">✓ set</span>':'<span style="color:#b91c1c">✗ not set</span>')+((currentEvent&&currentEvent.sharedImageApiKey)?' · shared to trip':'')+'<br>';
+  html+='&nbsp;&nbsp;Pexels: '+(pex?'<span style="color:#0a7a33">✓ set</span>':'<span style="color:#b91c1c">✗ not set</span>')+'<br><br>';
+  html+='<b>🖼 Coverage</b><br>';
+  html+='&nbsp;&nbsp;Library recipes with an image: '+libWith+' / '+libs.length+'<br>';
+  html+='&nbsp;&nbsp;Plan dishes resolving an image: '+dishWith+' / '+dishes.length+'<br><br>';
+  html+='<b>❤️ Do they actually load?</b><br>';
+  html+='&nbsp;&nbsp;Tested '+results.length+' distinct URL'+(results.length!==1?'s':'')+(urls.length>CAP?' (of '+urls.length+' total)':'')+'<br>';
+  html+='&nbsp;&nbsp;<span style="color:#0a7a33">✓ alive: '+ok+'</span> · <span style="color:#b91c1c">✗ dead: '+dead+'</span> ('+pct+'% alive)<br><br>';
+  var verdict;
+  if(!spoon&&!pex&&libWith===0){verdict='⚠️ No image key is set and nothing has images. Add a Spoonacular or Pexels key, then Backfill.';}
+  else if(results.length&&dead>ok){verdict='⚠️ Most stored images are DEAD links (rotted / hotlink-blocked). This is the "vanishing" bug — the real fix is to store images in your own Firebase Storage.';}
+  else if(!spoon&&!pex){verdict='ℹ️ Some images load, but no search key is set — recipes without their own photo can’t get one. Add a key + Backfill.';}
+  else if(dead>0){verdict='ℹ️ '+dead+' image(s) are dead links. Backfill can re-source some; owning the images would stop it recurring.';}
+  else{verdict='✅ Images look healthy on this device.';}
+  html+='<b>Verdict:</b> '+verdict;
+  out.innerHTML=html;
+}
 // v92 (#5): source a real image for a LIBRARY recipe that has none. Order: the recipe URL's own photo (Microlink),
 // else a similar dish via Spoonacular (needs image API key). Persists to menuLibrary/{id}/imageUrl once found
 // (targeted write, like v75 backfill). Only persists for library recipes — never writes a bogus entry for a plan dish id.

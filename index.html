@@ -2061,7 +2061,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 
 /* ===== v189: Meal Plan — match the "Crisp" mockup (iOS blue · flat days · white +Add cards · decluttered view) ===== */
-:root{--mp-blue:#0A84FF;}
+:root{--mp-blue:#1A6FD6;}
 /* page = iOS grouped gray so white cards pop */
 section#planner{background:#F2F2F7!important;}
 /* header: big large-title + subtle Edit */
@@ -2109,11 +2109,11 @@ body.planner-edit-mode #planner #editModeToggle{background:transparent!important
 .meal-head{padding:12px 2px 6px!important;background:transparent!important;}
 .meal-block{margin-bottom:2px!important;}
 /* chat FAB → iOS blue (was navy, clashed) */
-.ai-chat-fab{background:var(--mp-blue)!important;box-shadow:0 6px 18px rgba(10,132,255,.34)!important;}
+.ai-chat-fab{background:var(--mp-blue)!important;box-shadow:0 6px 18px rgba(26,111,214,.34)!important;}
 .ai-chat-fab.chat-open{background:#1c1c1e!important;}
 /* "going out" event dish → consistent card + thumb + meta */
 .dish.dish-event{background:#fff!important;border:1px solid rgba(60,60,67,.10)!important;border-radius:14px!important;box-shadow:0 1px 2px rgba(16,24,40,.03)!important;}
-.dish-thumb-event{background:rgba(10,132,255,.10)!important;color:var(--mp-blue)!important;font-size:20px!important;}
+.dish-thumb-event{background:rgba(26,111,214,.10)!important;color:var(--mp-blue)!important;font-size:20px!important;}
 .dish-event-name{color:#1c1c1e!important;font-size:16px!important;font-weight:600!important;}
 
 /* ===== v192: Meal Plan + header production polish (punch-list items 1–11) ===== */
@@ -2159,7 +2159,7 @@ section#planner.page{padding:8px 16px 16px!important;}
 .bottom-nav .nav-icon-o,.bottom-nav .nav-icon-f{display:none!important;}
 .nav-btn.active .nav-icon{stroke:var(--mp-blue)!important;}
 .nav-btn.active,.nav-btn.shop-nav.active{color:var(--mp-blue)!important;}
-.nav-btn.active::before{background:rgba(10,132,255,.10)!important;}
+.nav-btn.active::before{background:rgba(26,111,214,.10)!important;}
 .bottom-nav .nav-label,.bottom-nav .nav-btn{font-size:10px!important;font-weight:600!important;}
 
 /* ===== v193: Meal Plan header/title/alignment + bottom-nav selected-state ===== */
@@ -2182,7 +2182,7 @@ section#planner.page{padding:8px 16px 16px!important;}
 /* Bottom-nav SELECTED: no solid fill — light-blue outline ring + blue outline icon + blue label */
 .nav-btn.active .nav-icon{stroke:var(--mp-blue)!important;fill:none!important;}
 .nav-btn.active,.nav-btn.shop-nav.active{color:var(--mp-blue)!important;}
-.nav-btn.active::before{background:transparent!important;border:1.5px solid rgba(10,132,255,.5)!important;}
+.nav-btn.active::before{background:transparent!important;border:1.5px solid rgba(26,111,214,.5)!important;}
 /* Count badges: never cut off */
 .bottom-nav,.bottom-nav .nav-btn,.bottom-nav .nav-ico{overflow:visible!important;}
 .bottom-nav .nav-ico{position:relative!important;}
@@ -2190,8 +2190,8 @@ section#planner.page{padding:8px 16px 16px!important;}
 
 /* ===== v195: FORCE nav selected-state + planner gutters past higher-specificity legacy rules ===== */
 /* The navy fill came from '.bottom-nav .nav-btn.active .nav-icon{fill:theme-accent}' (0,3,0) beating my bare rule. Match specificity + come last. */
-.bottom-nav .nav-btn.active .nav-icon{stroke:#0A84FF!important;fill:none!important;}
-.bottom-nav .nav-btn.active,.bottom-nav .nav-btn.active .nav-label{color:#0A84FF!important;}
+.bottom-nav .nav-btn.active .nav-icon{stroke:#1A6FD6!important;fill:none!important;}
+.bottom-nav .nav-btn.active,.bottom-nav .nav-btn.active .nav-label{color:#1A6FD6!important;}
 /* Count badges: guarantee they're never clipped */
 .bottom-nav,.bottom-nav .nav-btn,.bottom-nav .nav-ico{overflow:visible!important;}
 .bottom-nav .nav-ico{position:relative!important;}
@@ -2215,6 +2215,10 @@ section#planner.page{padding-left:16px!important;padding-right:16px!important;}
 /* Edit Plan hard right: let the title fill the row so the button is pinned to the far edge */
 #planner .toolbar h2{flex:1 1 auto!important;white-space:nowrap!important;}
 #planner .planner-actions{flex:0 0 auto!important;margin-left:12px!important;}
+
+/* ===== v197: Edit Plan right-align (kill the mobile width:100%/column) ===== */
+/* Root cause: '.planner-actions{width:100%;flex-direction:column}' at line 1686 (mobile) forced Edit Plan full-width + left. Shrink-wrap + pin right. */
+#planner .planner-actions{width:auto!important;max-width:none!important;flex:0 0 auto!important;flex-direction:row!important;flex-wrap:nowrap!important;justify-content:flex-end!important;margin-left:auto!important;}
 </style>
 </head>
 <body>
@@ -5493,10 +5497,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v196';
+var APP_VERSION='v197';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v196';
+var APP_VERSION_TAG='Meal Planner v197';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -5516,7 +5520,7 @@ function registerUpdateCheck(){
         if(!html||bannerShown||html.indexOf(APP_VERSION_TAG)>=0)return;
         bannerShown=true;
         var b=document.createElement('div');
-        b.style.cssText='position:fixed;bottom:0;left:0;right:0;background:var(--mp-blue,#0A84FF);color:#fff;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:9999;font-size:13px;font-weight:600;box-shadow:0 -4px 20px rgba(0,0,0,.2);';
+        b.style.cssText='position:fixed;bottom:0;left:0;right:0;background:var(--mp-blue,#1A6FD6);color:#fff;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:9999;font-size:13px;font-weight:600;box-shadow:0 -4px 20px rgba(0,0,0,.2);';
         b.innerHTML='<span>🔄 A new version is ready</span><button onclick="window.location.href=location.pathname+\'?_=\'+Date.now()" style="background:rgba(255,255,255,.2);color:#fff;border:1.5px solid rgba(255,255,255,.4);padding:7px 15px;border-radius:9px;font-size:12px;font-weight:700;flex-shrink:0;">Update Now</button>';
         document.body.appendChild(b);
       })

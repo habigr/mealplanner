@@ -195,17 +195,26 @@ Browser console tests — run before every push:
 
 ## NEXT SESSION — start here
 
-STATE: **v180 is LIVE** (pushed 2026-07-04). Two big things shipped live this session:
-- **v179 — GROCERY SECTION REDESIGN** (List/Assign/Shop rebuilt as iOS cards, unified shared Store/Dept/Search dropdown filters across all 3 tabs, Assign Grid⇄List toggle [mobile→list dropdowns], status dropdown removed, SF font, medium-blue #2857c4 accent bar). Built iteratively on a **local Node server** (`node` static server on :8000 serving `redesign.html`) then **promoted into `index.html`**. Visual/render-only; data/save/sync + guardrails untouched. Full detail in CHANGELOG.
-- **v180 — bottom nav** = official Phosphor icons w/ iOS outline→fill on active + badge-overlap fix; plus **laptop trackpad scroll fix** (removed `overscroll-behavior:contain` from `main,.page`).
+STATE: **v185 is LIVE** (git tip `60276e6`). Working tree clean, in sync with origin/main.
 
-⚠️ **OPEN / NEXT (this redesign):**
-1. **Run `window.runRegressionTests()` 25/25 on LIVE** — it was NOT run pre-push (can't run headless). Overdue.
-2. **Item sheet (grocery `.gis-*` detail/adjust sheet) still unpolished** — the one grocery piece not rebuilt. Next v181.
-3. **Mobile polish continuing** — Robbie flagged fonts/tightness; a mobile tightening pass shipped but keep refining on a phone.
-4. **"App has no character anymore" (Robbie, 2026-07-04, FOR LATER)** — a real vibe/personality pass (warmth, illustration, motion, color moments), its own session — NOT a quick tweak.
-5. **Cleanup:** `redesign.html` is now a redundant copy of index.html (safe to delete); the Phosphor **grocery-mode** work + SF-font spike is still parked in a **git stash** (`git stash list`) — likely obsolete now, review/drop.
-6. Rollback for the whole redesign: tag `pre-grocery-live-v178` or `git revert`.
+**CURRENT FOCUS (Robbie, 2026-08-21): the iPhone UI is a mess / embarrassing — a real mobile UI cleanup pass. This is the active priority.** Render-only, FIP-safe territory (CSS/markup); do NOT touch data/save/sync. Fold in the `-apple-system`/SF-Pro font-stack idea (was in the now-dropped v179 stash) fresh against current code.
+
+Shipped since the last doc update (v181–v185, all live — see CHANGELOG for detail):
+- **v181** — recipe URL import: grounded grocery-names (`_enrichIngredients`, Haiku labels existing lines only, no fabrication) + Spoonacular structured-extract tier.
+- **v182** — removed redundant upfront recipe-import confirmations.
+- **v183** — unified grocery-name + section into one idempotent engine; race-proof dedup; import diagnostics.
+- **v184** — sticky section headers on Assign grid + Shop view.
+- **v185** — Shop mode: sort each store's items By dept or A–Z.
+
+Prior big redesign (v179/v180, live): GROCERY SECTION REDESIGN (List/Assign/Shop as iOS cards, unified Store/Dept/Search filters, Assign Grid⇄List toggle, #2857c4 accent) + bottom nav Phosphor icons (outline→fill on active) + laptop trackpad scroll fix. Rollback for that: tag `pre-grocery-live-v178`.
+
+⚠️ **HOUSEKEEPING DONE 2026-08-21:** dropped the obsolete v178→v179 Phosphor/SF-font stash (superseded by v180's live Phosphor nav); removed redundant `redesign.html` (768KB copy of index.html). `navpreview.html` + `recipeparse.html` remain as old prototypes (optional future cleanup).
+
+⚠️ **OPEN / carried over:**
+1. **Run `window.runRegressionTests()` 25/25 on LIVE** — long overdue, still not run headless. Do before the next Firebase-write feature.
+2. **Item sheet (grocery `.gis-*` detail/adjust sheet)** — the one grocery piece never rebuilt to the card look.
+3. **"App has no character anymore"** — a warmth/personality pass (illustration, motion, color moments); may overlap the current iPhone UI cleanup.
+4. **Note on `node --check`:** Node v24 rejects checking `.html` directly — extract the `<script>` to a temp `.js` (or use an older approach) to satisfy the build rule when editing index.html.
 
 Prior: **v178 was LIVE** (2026-07-02) — bottom tab bar overlap fix + clean icon set (superseded by v180's Phosphor nav).
 Prior: **v177 is LIVE** (pushed 2026-07-02) — bottom tab bar restyled to an authentic iOS look (mobile, render-only): no more navy "All Trips" chip, SF Pro labels, cohesive accent, glass + 0.5px hairline, iOS press-dim. (Superseded by v178's overlap fix + icon redraw.)

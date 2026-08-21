@@ -5264,10 +5264,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v186';
+var APP_VERSION='v187';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v186';
+var APP_VERSION_TAG='Meal Planner v187';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -6540,6 +6540,16 @@ async function checkImageHealth(){
   var urlSet={},libWith=0,dishWith=0;
   libs.forEach(function(r){var u=_displayImageUrl(r);if(u){libWith++;urlSet[u]=1;}});
   dishes.forEach(function(d){var u=resolveDishImageUrl(d);if(u){dishWith++;urlSet[u]=1;}});
+  // v187: WHY do dishes resolve (or not)? break down the resolution path.
+  var dOwn=0,dBank=0,dName=0,dNone=0,dNoneEx=[];
+  dishes.forEach(function(d){
+    if(_displayImageUrl(d)){dOwn++;return;}
+    var lb=d.bankRecipeId?libs.find(function(r){return r.id===d.bankRecipeId;}):null;
+    if(lb&&_displayImageUrl(lb)){dBank++;return;}
+    var ln=d.name?libs.find(function(r){return (r.name||'').toLowerCase()===(d.name||'').toLowerCase();}):null;
+    if(ln&&_displayImageUrl(ln)){dName++;return;}
+    dNone++;if(dNoneEx.length<6)dNoneEx.push(d.name||'(unnamed)');
+  });
   var urls=Object.keys(urlSet),CAP=60,testUrls=urls.slice(0,CAP);
   function testOne(u){return new Promise(function(res){var img=new Image();var done=false;var to=setTimeout(function(){if(!done){done=true;res(false);}},8000);img.onload=function(){if(!done){done=true;clearTimeout(to);res(img.naturalWidth>1);}};img.onerror=function(){if(!done){done=true;clearTimeout(to);res(false);}};img.referrerPolicy='no-referrer';img.src=u;});}
   var results=await Promise.all(testUrls.map(testOne));
@@ -6550,13 +6560,21 @@ async function checkImageHealth(){
   html+='&nbsp;&nbsp;Pexels: '+(pex?'<span style="color:#0a7a33">✓ set</span>':'<span style="color:#b91c1c">✗ not set</span>')+'<br><br>';
   html+='<b>🖼 Coverage</b><br>';
   html+='&nbsp;&nbsp;Library recipes with an image: '+libWith+' / '+libs.length+'<br>';
-  html+='&nbsp;&nbsp;Plan dishes resolving an image: '+dishWith+' / '+dishes.length+'<br><br>';
+  html+='&nbsp;&nbsp;Plan dishes resolving an image: '+dishWith+' / '+dishes.length+'<br>';
+  if(dishes.length){
+    html+='&nbsp;&nbsp;&nbsp;&nbsp;• own photo: '+dOwn+' · via linked recipe: '+dBank+' · via name-match: '+dName+'<br>';
+    html+='&nbsp;&nbsp;&nbsp;&nbsp;• <span style="color:#b91c1c">no image at all: '+dNone+'</span>'+(dNoneEx.length?' (e.g. '+dNoneEx.map(escHtml).join(', ')+')':'')+'<br>';
+  }else{
+    html+='&nbsp;&nbsp;<span style="color:#b45309">⚠️ No trip is open here, so plan dishes can\'t be checked. Open the trip, then run this from the trip\'s settings gear.</span><br>';
+  }
+  html+='<br>';
   html+='<b>❤️ Do they actually load?</b><br>';
   html+='&nbsp;&nbsp;Tested '+results.length+' distinct URL'+(results.length!==1?'s':'')+(urls.length>CAP?' (of '+urls.length+' total)':'')+'<br>';
   html+='&nbsp;&nbsp;<span style="color:#0a7a33">✓ alive: '+ok+'</span> · <span style="color:#b91c1c">✗ dead: '+dead+'</span> ('+pct+'% alive)<br><br>';
   var verdict;
   if(!spoon&&!pex&&libWith===0){verdict='⚠️ No image key is set and nothing has images. Add a Spoonacular or Pexels key, then Backfill.';}
   else if(results.length&&dead>ok){verdict='⚠️ Most stored images are DEAD links (rotted / hotlink-blocked). This is the "vanishing" bug — the real fix is to store images in your own Firebase Storage.';}
+  else if(dishes.length&&dNone>=Math.ceil(dishes.length/2)){verdict='⚠️ '+dNone+' of '+dishes.length+' plan dishes have NO image path (not linked to a library recipe, no own photo). Your library images are healthy — the gap is that trip dishes never get their own photo sourced. Fix: proactively source a photo per plan dish (and/or link dishes to library recipes). No Firebase Storage migration needed.';}
   else if(!spoon&&!pex){verdict='ℹ️ Some images load, but no search key is set — recipes without their own photo can’t get one. Add a key + Backfill.';}
   else if(dead>0){verdict='ℹ️ '+dead+' image(s) are dead links. Backfill can re-source some; owning the images would stop it recurring.';}
   else{verdict='✅ Images look healthy on this device.';}

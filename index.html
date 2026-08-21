@@ -2115,6 +2115,52 @@ body.planner-edit-mode #planner #editModeToggle{background:transparent!important
 .dish.dish-event{background:#fff!important;border:1px solid rgba(60,60,67,.10)!important;border-radius:14px!important;box-shadow:0 1px 2px rgba(16,24,40,.03)!important;}
 .dish-thumb-event{background:rgba(10,132,255,.10)!important;color:var(--mp-blue)!important;font-size:20px!important;}
 .dish-event-name{color:#1c1c1e!important;font-size:16px!important;font-weight:600!important;}
+
+/* ===== v192: Meal Plan + header production polish (punch-list items 1–11) ===== */
+/* (6,9) Title: smaller & calmer, title-case — not a giant shouty large-title */
+#planner .toolbar{align-items:center!important;margin-bottom:4px!important;padding-top:6px!important;}
+#planner .toolbar h2{font-size:22px!important;font-weight:800!important;letter-spacing:-.02em!important;text-transform:none!important;}
+/* (5) Edit Plan → subtle blue text button, pinned right */
+#planner #editModeToggle{background:transparent!important;border:none!important;box-shadow:none!important;color:var(--mp-blue)!important;font-size:15px!important;font-weight:500!important;padding:4px 0!important;}
+.plan-trip-header .plan-trip-meta{font-size:12.5px!important;color:rgba(60,60,67,.55)!important;}
+/* (1) consistent page gutter/buffer */
+section#planner.page{padding:8px 16px 16px!important;}
+/* (2) kill the faint band behind section labels (beats the higher-specificity data-meal rules) */
+#planner .meal-block .meal-head,#planner .meal-block[data-meal] .meal-head{background:transparent!important;}
+/* (9) dial the meal-plan type scale down a notch */
+.day-title{font-size:17px!important;font-weight:800!important;}
+.meal-summary{font-size:12px!important;}
+.meal-label{font-size:12px!important;font-weight:700!important;letter-spacing:.04em!important;}
+.dish-title{font-size:15px!important;font-weight:600!important;}
+.dish-meta{font-size:12.5px!important;}
+.dish-thumb{width:44px!important;height:44px!important;}
+/* (3,4) empty "Add" row: smaller text + properly-centered smaller ⊕ */
+.meal-empty{font-size:14px!important;font-weight:500!important;padding:11px 13px!important;gap:10px!important;}
+.meal-empty .me-plus{width:21px!important;height:21px!important;font-size:15px!important;line-height:21px!important;padding:0!important;text-align:center;}
+/* (11) top trip header reliably STICKS on mobile (was scrolling away) */
+@media(max-width:768px){
+  #appScreen>header{position:fixed!important;top:0;left:0;right:0;z-index:60;}
+  #appScreen>.app-wrap{padding-top:var(--header-h)!important;}
+}
+/* (7) cleaner, calmer mobile header */
+@media(max-width:768px){
+  .header-row{gap:10px!important;padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 10px!important;}
+  #currentTripChip{font-size:18px!important;font-weight:800!important;letter-spacing:-.02em!important;}
+  .header-dates{font-size:12.5px!important;color:rgba(60,60,67,.55)!important;}
+  .header-actions{gap:6px!important;}
+  .header-actions .hdr-btn{width:36px!important;height:36px!important;min-width:36px!important;color:#1c1c1e!important;}
+}
+/* (8) avatar fills the circle — no cut-off face */
+#profileAvatarBtn{width:36px!important;height:36px!important;border-radius:50%!important;overflow:hidden!important;}
+#profileAvatarBtn #headerAvatarInner{width:36px!important;height:36px!important;border-radius:50%!important;overflow:hidden!important;}
+#profileAvatarBtn img,#headerAvatarInner img{width:100%!important;height:100%!important;object-fit:cover!important;border-radius:50%!important;display:block!important;}
+/* (10) bottom-nav: clean single OUTLINE icon, iOS-blue on active */
+.bottom-nav .nav-icon{fill:none!important;stroke:currentColor!important;width:25px!important;height:25px!important;}
+.bottom-nav .nav-icon-o,.bottom-nav .nav-icon-f{display:none!important;}
+.nav-btn.active .nav-icon{stroke:var(--mp-blue)!important;}
+.nav-btn.active,.nav-btn.shop-nav.active{color:var(--mp-blue)!important;}
+.nav-btn.active::before{background:rgba(10,132,255,.10)!important;}
+.bottom-nav .nav-label,.bottom-nav .nav-btn{font-size:10px!important;font-weight:600!important;}
 </style>
 </head>
 <body>
@@ -2351,17 +2397,17 @@ body.planner-edit-mode #planner #editModeToggle{background:transparent!important
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="nav-btn nav-back-btn" onclick="goToLanding()" title="All Trips">
-      <span class="nav-ico"><svg class="nav-icon nav-icon-o" viewBox="0 0 256 256" fill="currentColor"><path d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></svg><svg class="nav-icon nav-icon-f" viewBox="0 0 256 256" fill="currentColor"><path d="M224,120v96a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V164a4,4,0,0,0-4-4H108a4,4,0,0,0-4,4v52a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a16,16,0,0,1,4.69-11.31l80-80a16,16,0,0,1,22.62,0l80,80A16,16,0,0,1,224,120Z"/></svg></span>
+      <span class="nav-ico"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></span>
       <span class="nav-label">All Trips</span>
     </button>
     <button class="nav-btn active" data-nav="planner" onclick="navTo('planner')">
-      <span class="nav-ico"><span id="navPlannerBadge" class="nav-badge" style="display:none;"></span><svg class="nav-icon nav-icon-o" viewBox="0 0 256 256" fill="currentColor"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-68-76a12,12,0,1,1-12-12A12,12,0,0,1,140,132Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,132ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,140,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"/></svg><svg class="nav-icon nav-icon-f" viewBox="0 0 256 256" fill="currentColor"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM84,184a12,12,0,1,1,12-12A12,12,0,0,1,84,184Zm44,0a12,12,0,1,1,12-12A12,12,0,0,1,128,184Zm0-40a12,12,0,1,1,12-12A12,12,0,0,1,128,144Zm44,40a12,12,0,1,1,12-12A12,12,0,0,1,172,184Zm0-40a12,12,0,1,1,12-12A12,12,0,0,1,172,144Zm36-64H48V48H72v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24Z"/></svg></span>Meal Plan
+      <span class="nav-ico"><span id="navPlannerBadge" class="nav-badge" style="display:none;"></span><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></span>Meal Plan
     </button>
     <button class="nav-btn" data-nav="grocery" onclick="navTo('grocery')">
-      <span class="nav-ico"><span id="navGroceryBadge" class="nav-badge" style="display:none;"></span><svg class="nav-icon nav-icon-o" viewBox="0 0 256 256" fill="currentColor"><path d="M230.14,58.87A8,8,0,0,0,224,56H62.68L56.6,22.57A8,8,0,0,0,48.73,16H24a8,8,0,0,0,0,16h18L67.56,172.29a24,24,0,0,0,5.33,11.27,28,28,0,1,0,44.4,8.44h45.42A27.75,27.75,0,0,0,160,204a28,28,0,1,0,28-28H91.17a8,8,0,0,1-7.87-6.57L80.13,152h116a24,24,0,0,0,23.61-19.71l12.16-66.86A8,8,0,0,0,230.14,58.87ZM104,204a12,12,0,1,1-12-12A12,12,0,0,1,104,204Zm96,0a12,12,0,1,1-12-12A12,12,0,0,1,200,204Zm4-74.57A8,8,0,0,1,196.1,136H77.22L65.59,72H214.41Z"/></svg><svg class="nav-icon nav-icon-f" viewBox="0 0 256 256" fill="currentColor"><path d="M230.14,58.87A8,8,0,0,0,224,56H62.68L56.6,22.57A8,8,0,0,0,48.73,16H24a8,8,0,0,0,0,16h18L67.56,172.29a24,24,0,0,0,5.33,11.27,28,28,0,1,0,44.4,8.44h45.42A27.75,27.75,0,0,0,160,204a28,28,0,1,0,28-28H91.17a8,8,0,0,1-7.87-6.57L80.13,152h116a24,24,0,0,0,23.61-19.71l12.16-66.86A8,8,0,0,0,230.14,58.87ZM104,204a12,12,0,1,1-12-12A12,12,0,0,1,104,204Zm96,0a12,12,0,1,1-12-12A12,12,0,0,1,200,204Z"/></svg></span>Groceries
+      <span class="nav-ico"><span id="navGroceryBadge" class="nav-badge" style="display:none;"></span><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="17.5" cy="20" r="1.4"/><path d="M2.5 3.5h2.3l2.2 11a1.6 1.6 0 0 0 1.57 1.3h8.1a1.6 1.6 0 0 0 1.57-1.28L20 7.5H6"/></svg></span>Groceries
     </button>
     <button class="nav-btn" data-nav="setup" onclick="navTo('setup')">
-      <span class="nav-ico"><svg class="nav-icon nav-icon-o" viewBox="0 0 256 256" fill="currentColor"><path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88-29.84q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.21,107.21,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.71,107.71,0,0,0-26.25-10.87,8,8,0,0,0-7.06,1.49L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.21,107.21,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z"/></svg><svg class="nav-icon nav-icon-f" viewBox="0 0 256 256" fill="currentColor"><path d="M216,130.16q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.6,107.6,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.29,107.29,0,0,0-26.25-10.86,8,8,0,0,0-7.06,1.48L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.6,107.6,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z"/></svg></span>Trip Settings
+      <span class="nav-ico"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.1"/><circle cx="7" cy="17" r="2.1"/></svg></span>Trip Settings
     </button>
   </nav>
 </div>
@@ -5391,10 +5437,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v191';
+var APP_VERSION='v192';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v191';
+var APP_VERSION_TAG='Meal Planner v192';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

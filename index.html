@@ -2293,6 +2293,22 @@ body.dark-mode .bottom-nav{background:rgba(24,24,26,.98)!important;}
 .landing-app-settings button{background:transparent!important;color:var(--mp-blue)!important;border:none!important;box-shadow:none!important;font-weight:500!important;}
 /* trip cards + archived: subtle, not floating */
 #landingTripList .trip-card,.landing-body .trip-card{box-shadow:0 1px 2px rgba(16,24,40,.05)!important;border:1px solid rgba(60,60,67,.08)!important;}
+
+/* ===== v203: kill blue button glow · flatten pane shadows · fix Reset spill · Shop controls · Home hero color ===== */
+/* The blue 'eye-shadow' behind every button = line 1770 'button{box-shadow:0 4px 14px -6px var(--theme-accent)}'. Kill it. */
+button{box-shadow:none!important;}
+/* Flat white grocery/assign/shop cards on the gray canvas — no gray halo/border */
+.gk-card,#grocery .gk-card,#grocery .shopping-section,#assignStoresContainer .gk-card,#assignStoresContainer .assign-list{box-shadow:none!important;border:none!important;}
+/* Reset button no longer clipped — icon-action buttons auto-width with a min size */
+#grocery .grocery-icon-btn{width:auto!important;min-width:38px!important;height:38px!important;padding:0 12px!important;white-space:nowrap!important;}
+/* Shop controls (By dept / A–Z / Uncheck all / Hide done): flat, clean pills, not floating */
+#grocery .shop-sort-btn,#grocery .shopping-toggle-btn,#grocery .shop-uncheck-btn{box-shadow:none!important;}
+#grocery .shop-sort-btn.active{background:#fff!important;box-shadow:0 1px 3px rgba(0,0,0,.10)!important;}
+#grocery .shopping-toggle-btn,#grocery .shop-uncheck-btn{background:#fff!important;border:1px solid rgba(60,60,67,.14)!important;border-radius:999px!important;color:#3a3a3c!important;font-weight:600!important;}
+/* Home hero: soft blue tint so the top has some color (was flat gray after killing the navy) */
+.landing-hero{background:linear-gradient(180deg,#E4EEFC 0%,#F2F2F7 100%)!important;}
+/* segmented 'selected' pills keep a subtle lift even with button shadows off */
+#grocery .segmented-control button.active,#grocery .grocery-mode-btn.active,#grocery .assign-view-toggle button.on{box-shadow:0 1px 3px rgba(0,0,0,.12)!important;}
 </style>
 </head>
 <body>
@@ -5571,10 +5587,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v202';
+var APP_VERSION='v203';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v202';
+var APP_VERSION_TAG='Meal Planner v203';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

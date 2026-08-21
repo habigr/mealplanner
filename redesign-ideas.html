@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meal Planner — Redesign Ideas</title>
+<style>
+  :root{
+    --blue:#1A6FD6;
+    --blue-tint:#EAF2FC;
+    --bg:#F2F2F7;
+    --card:#FFFFFF;
+    --sep:rgba(60,60,67,.12);
+    --sep-strong:rgba(60,60,67,.20);
+    --ink:#1C1C1E;
+    --ink2:#3C3C43;
+    --muted:#8A8A8E;
+    --label:#6E6E73;
+    --green:#34C759;
+    --red:#FF3B30;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+    background:#dfe1e8;
+    color:var(--ink);
+    padding:28px 18px 80px;
+  }
+  h1.page{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px;text-align:center;}
+  p.sub{color:#5b5d66;text-align:center;margin:0 0 26px;font-size:14px;}
+
+  .tabs{display:flex;gap:8px;justify-content:center;margin:0 auto 30px;max-width:520px;}
+  .tabs button{
+    flex:1;padding:12px 10px;border-radius:12px;border:none;cursor:pointer;
+    font-size:15px;font-weight:700;background:#fff;color:var(--ink2);
+    box-shadow:0 1px 3px rgba(0,0,0,.06);transition:.15s;
+  }
+  .tabs button.active{background:var(--blue);color:#fff;box-shadow:0 4px 14px -4px var(--blue);}
+
+  .stage{display:none;}
+  .stage.active{display:block;}
+
+  .row{
+    display:flex;gap:26px;justify-content:flex-start;align-items:flex-start;
+    overflow-x:auto;padding:6px 4px 24px;scroll-snap-type:x mandatory;
+  }
+  .col{scroll-snap-align:center;flex:0 0 auto;}
+  .ideaLabel{text-align:center;margin:0 0 12px;}
+  .ideaLabel .n{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);}
+  .ideaLabel .t{font-size:16px;font-weight:800;margin-top:2px;letter-spacing:-.01em;}
+  .ideaLabel .d{font-size:12.5px;color:#5b5d66;max-width:320px;margin:4px auto 0;line-height:1.4;}
+
+  /* ---- phone frame ---- */
+  .phone{
+    width:340px;background:var(--bg);border-radius:42px;padding:12px;
+    box-shadow:0 18px 50px -12px rgba(0,0,0,.32), 0 0 0 10px #111, 0 0 0 11px #2a2a2e;
+    position:relative;
+  }
+  .screen{background:var(--bg);border-radius:32px;overflow:hidden;height:700px;display:flex;flex-direction:column;}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:12px 22px 6px;font-size:13px;font-weight:700;}
+  .statusbar .dots{display:flex;gap:5px;align-items:center;color:#111;font-size:12px;}
+  .navhdr{padding:4px 18px 12px;border-bottom:1px solid var(--sep);background:#fff;}
+  .navhdr .big{font-size:22px;font-weight:800;letter-spacing:-.02em;}
+  .navhdr .small{font-size:13px;color:var(--muted);margin-top:1px;}
+  .scroll{flex:1;overflow-y:auto;padding:16px 16px 24px;}
+  .scroll::-webkit-scrollbar{display:none;}
+
+  /* section label (grouped iOS) */
+  .grp-label{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--label);margin:22px 4px 8px;}
+  .grp-label:first-child{margin-top:4px;}
+
+  /* grouped list card */
+  .list{background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04);}
+  .li{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--sep);min-height:52px;}
+  .li:last-child{border-bottom:none;}
+  .li .ic{width:29px;height:29px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;color:#fff;font-size:15px;}
+  .li .lab{font-size:16px;font-weight:500;flex:1;}
+  .li .val{font-size:16px;color:var(--muted);text-align:right;}
+  .li .chev{color:#c4c4c9;font-size:19px;margin-left:2px;}
+  .li.stacked{flex-direction:column;align-items:stretch;gap:7px;}
+  .li .k{font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label);}
+
+  input.fld,textarea.fld{
+    width:100%;border:none;background:transparent;font-size:17px;font-family:inherit;color:var(--ink);
+    padding:0;outline:none;resize:none;
+  }
+  input.fld::placeholder,textarea.fld::placeholder{color:#b6b6bb;}
+  .fldbox{background:#F2F2F7;border-radius:10px;padding:11px 13px;}
+
+  .hint{font-size:12.5px;color:var(--muted);padding:8px 6px 0;line-height:1.4;}
+
+  .btn{border:none;border-radius:12px;font-size:16px;font-weight:700;font-family:inherit;padding:13px;width:100%;cursor:pointer;}
+  .btn.blue{background:var(--blue);color:#fff;}
+  .btn.tint{background:var(--blue-tint);color:var(--blue);}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--sep-strong);}
+  .btn.red{background:#fff;color:var(--red);border:1px solid rgba(255,59,48,.25);}
+
+  /* bottom nav */
+  .tabbar{display:flex;background:#fff;border-top:1px solid var(--sep);padding:8px 6px 6px;}
+  .tabbar .t{flex:1;text-align:center;font-size:10px;font-weight:600;color:var(--muted);}
+  .tabbar .t.on{color:var(--blue);}
+  .tabbar .t .g{font-size:19px;display:block;margin-bottom:2px;}
+
+  /* ---- dish: ingredient cards ---- */
+  .ing{background:#fff;border-radius:14px;padding:12px;box-shadow:0 1px 2px rgba(0,0,0,.05);margin-bottom:10px;}
+  .ing .name{width:100%;border:none;background:#F2F2F7;border-radius:9px;padding:11px 12px;font-size:15.5px;font-weight:600;font-family:inherit;outline:none;}
+  .ing .metarow{display:flex;align-items:center;gap:8px;margin:9px 2px 10px;}
+  .cart-pill{display:inline-flex;align-items:center;gap:5px;background:var(--blue-tint);color:var(--blue);font-size:13px;font-weight:700;padding:5px 10px;border-radius:999px;}
+  .cat-pill{display:inline-flex;align-items:center;gap:5px;background:#F2F2F7;color:var(--label);font-size:13px;font-weight:600;padding:5px 10px;border-radius:999px;}
+  .qtygrid{display:grid;grid-template-columns:1fr 1fr 1.1fr;gap:8px;}
+  .qcell{background:#F2F2F7;border-radius:9px;padding:7px 8px;text-align:center;}
+  .qcell .cap{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--label);display:block;margin-bottom:2px;}
+  .qcell .v{font-size:16px;font-weight:600;}
+  .qcell.scaled{background:var(--blue-tint);}
+  .qcell.scaled .v{color:var(--blue);}
+  .qcell.scaled .cap{color:var(--blue);}
+  .ing .del{background:none;border:none;color:#c4c4c9;font-size:20px;position:absolute;}
+
+  /* compact ingredient (idea B) */
+  .ingc{display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--sep);}
+  .ingc:last-child{border-bottom:none;}
+  .ingc .grip{color:#cdced3;font-size:15px;}
+  .ingc .body{flex:1;min-width:0;}
+  .ingc .nm{font-size:15px;font-weight:600;}
+  .ingc .meta{display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap;}
+  .qty-inline{display:inline-flex;align-items:center;gap:4px;background:var(--blue-tint);color:var(--blue);font-weight:700;font-size:13px;padding:3px 9px;border-radius:8px;}
+  .unit-inline{font-size:13px;color:var(--muted);}
+  .ingc .x{color:#d0d1d6;font-size:18px;}
+
+  .modal-actions{display:flex;gap:10px;padding:12px 16px;background:#fff;border-top:1px solid var(--sep);}
+  .modal-actions .btn{flex:1;}
+  .modal-actions .btn.rmv{flex:0 0 auto;padding:13px 16px;}
+
+  .seg{display:flex;background:#E9E9EF;border-radius:10px;padding:3px;margin:2px 0 4px;}
+  .seg .s{flex:1;text-align:center;font-size:13.5px;font-weight:600;padding:7px;border-radius:8px;color:var(--ink2);}
+  .seg .s.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+
+  .avatarwrap{display:flex;gap:14px;align-items:center;}
+  .members{display:flex;}
+  .members .a{width:30px;height:30px;border-radius:50%;border:2px solid #fff;margin-left:-8px;background:linear-gradient(135deg,#7EA6E0,#1A6FD6);}
+  .members .a:first-child{margin-left:0;}
+
+  .note{max-width:520px;margin:34px auto 0;background:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06);font-size:13.5px;color:#42444c;line-height:1.55;}
+  .note b{color:var(--ink);}
+  .swipehint{text-align:center;color:#6b6d76;font-size:12.5px;margin:-8px 0 14px;}
+</style>
+</head>
+<body>
+
+<h1 class="page">Meal Planner — Redesign Ideas</h1>
+<p class="sub">Crisp / native-iOS direction · softened blue #1A6FD6 · equal padding everywhere</p>
+
+<div class="tabs">
+  <button id="tabDish" class="active" onclick="show('dish')">🍽️ Dish Editor</button>
+  <button id="tabSet" onclick="show('set')">⚙️ Trip Settings</button>
+</div>
+
+<!-- ============ DISH EDITOR ============ -->
+<div id="dish" class="stage active">
+  <p class="swipehint">← swipe to compare all 3 →</p>
+  <div class="row">
+
+    <!-- IDEA 1: Grouped + labeled qty -->
+    <div class="col">
+      <div class="ideaLabel">
+        <span class="n">Idea 1</span>
+        <div class="t">Labeled & grouped</div>
+        <div class="d">Every field is captioned. The mystery “2 / 2” becomes clear <b>Recipe</b> vs <b>Scaled</b> tiles with the blue one obviously the one that matters.</div>
+      </div>
+      <div class="phone"><div class="screen">
+        <div class="statusbar"><span>4:43</span><span class="dots">📶 📡 🔋</span></div>
+        <div class="navhdr">
+          <div class="big">Mimosas</div>
+          <div class="small">Brunch · Aug 21</div>
+        </div>
+        <div class="scroll">
+          <div class="grp-label">Details</div>
+          <div class="list">
+            <div class="li stacked"><span class="k">Recipe link</span><input class="fld" placeholder="https://…"></div>
+            <div class="li"><span class="lab">Recipe serves</span><input class="fld" style="text-align:right;max-width:90px" placeholder="4"></div>
+            <div class="li"><span class="lab">Cooking for</span><input class="fld" style="text-align:right;max-width:90px" placeholder="8 people"></div>
+          </div>
+
+          <div class="grp-label">Notes</div>
+          <div class="list"><div class="li stacked"><textarea class="fld" rows="2" placeholder="Make ahead, serve chilled…"></textarea></div></div>
+
+          <div class="grp-label">Ingredients</div>
+          <div class="ing">
+            <input class="name" value="champagne or prosecco">
+            <div class="metarow">
+              <span class="cart-pill">🛒 champagne</span>
+              <span class="cat-pill">📂 Beverages</span>
+            </div>
+            <div class="qtygrid">
+              <div class="qcell"><span class="cap">Recipe</span><span class="v">2</span></div>
+              <div class="qcell scaled"><span class="cap">Scaled</span><span class="v">2</span></div>
+              <div class="qcell"><span class="cap">Unit</span><span class="v">bottle</span></div>
+            </div>
+          </div>
+          <div class="ing">
+            <input class="name" value="fresh orange juice">
+            <div class="metarow">
+              <span class="cart-pill">🛒 orange juice</span>
+              <span class="cat-pill">📂 Produce</span>
+            </div>
+            <div class="qtygrid">
+              <div class="qcell"><span class="cap">Recipe</span><span class="v">4</span></div>
+              <div class="qcell scaled"><span class="cap">Scaled</span><span class="v">4</span></div>
+              <div class="qcell"><span class="cap">Unit</span><span class="v">cup</span></div>
+            </div>
+          </div>
+          <button class="btn tint" style="margin-top:2px">+ Add ingredient</button>
+        </div>
+        <div class="modal-actions">
+          <button class="btn red rmv">Remove</button>
+          <button class="btn ghost">Cancel</button>
+          <button class="btn blue">Save</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- IDEA 2: Compact single-line -->
+    <div class="col">
+      <div class="ideaLabel">
+        <span class="n">Idea 2</span>
+        <div class="t">Compact list</div>
+        <div class="d">Ingredients collapse to one tidy line each — name on top, a blue qty chip + unit below. See 5–6 at once instead of 2. Tap to expand for scaling.</div>
+      </div>
+      <div class="phone"><div class="screen">
+        <div class="statusbar"><span>4:43</span><span class="dots">📶 📡 🔋</span></div>
+        <div class="navhdr">
+          <div class="big">Mimosas</div>
+          <div class="small">Brunch · Aug 21</div>
+        </div>
+        <div class="scroll">
+          <div class="grp-label">Details</div>
+          <div class="list">
+            <div class="li stacked"><span class="k">Recipe link</span><input class="fld" placeholder="https://…"></div>
+            <div class="li"><span class="lab">Recipe serves</span><input class="fld" style="text-align:right;max-width:90px" placeholder="4"></div>
+            <div class="li"><span class="lab">Cooking for</span><input class="fld" style="text-align:right;max-width:90px" placeholder="8 people"></div>
+            <div class="li stacked"><span class="k">Notes</span><textarea class="fld" rows="2" placeholder="Make ahead, serve chilled…"></textarea></div>
+          </div>
+
+          <div class="grp-label" style="display:flex;justify-content:space-between;align-items:baseline">
+            <span>Ingredients</span><span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted)">Drag to reorder</span>
+          </div>
+          <div class="list" style="padding:2px 14px">
+            <div class="ingc"><span class="grip">≡</span><div class="body"><div class="nm">champagne or prosecco</div><div class="meta"><span class="qty-inline">2 bottle</span><span class="cart-pill">🛒 champagne</span></div></div><span class="x">×</span></div>
+            <div class="ingc"><span class="grip">≡</span><div class="body"><div class="nm">fresh orange juice</div><div class="meta"><span class="qty-inline">4 cup</span><span class="cart-pill">🛒 orange juice</span></div></div><span class="x">×</span></div>
+            <div class="ingc"><span class="grip">≡</span><div class="body"><div class="nm">triple sec</div><div class="meta"><span class="qty-inline">2 oz</span><span class="cart-pill">🛒 triple sec</span></div></div><span class="x">×</span></div>
+            <div class="ingc"><span class="grip">≡</span><div class="body"><div class="nm">fresh strawberries</div><div class="meta"><span class="qty-inline">1 pint</span><span class="cart-pill">🛒 strawberries</span></div></div><span class="x">×</span></div>
+          </div>
+          <button class="btn tint" style="margin-top:12px">+ Add ingredient</button>
+        </div>
+        <div class="modal-actions">
+          <button class="btn red rmv">Remove</button>
+          <button class="btn ghost">Cancel</button>
+          <button class="btn blue">Save</button>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- IDEA 3: Scaling as a header toggle -->
+    <div class="col">
+      <div class="ideaLabel">
+        <span class="n">Idea 3</span>
+        <div class="t">One scaling switch</div>
+        <div class="d">Kill the double-number confusion entirely. A single switch at top: “Show recipe amounts” ↔ “Scaled for 8.” Each row shows just ONE clean amount.</div>
+      </div>
+      <div class="phone"><div class="screen">
+        <div class="statusbar"><span>4:43</span><span class="dots">📶 📡 🔋</span></div>
+        <div class="navhdr">
+          <div class="big">Mimosas</div>
+          <div class="small">Brunch · Aug 21</div>
+        </div>
+        <div class="scroll">
+          <div class="grp-label">Details</div>
+          <div class="list">
+            <div class="li stacked"><span class="k">Recipe link</span><input class="fld" placeholder="https://…"></div>
+            <div class="li"><span class="lab">Recipe serves</span><input class="fld" style="text-align:right;max-width:90px" placeholder="4"></div>
+            <div class="li"><span class="lab">Cooking for</span><input class="fld" style="text-align:right;max-width:90px" placeholder="8 people"></div>
+          </div>
+
+          <div class="grp-label">Ingredients</div>
+          <div class="seg">
+            <div class="s">Recipe (4)</div>
+            <div class="s on">Scaled for 8</div>
+          </div>
+          <div class="list" style="padding:2px 14px">
+            <div class="ingc"><span class="grip">≡</span><div class="body"><div class="nm">champagne or prosecco</div><div class="meta"><span class="cart-pill">🛒 champagne</span></div></div><span class="qty-inline" style="font-size:15px">2 bottle</span></div>
+            <div class="ingc"><span class="grip">≡</span><div class="body"><div class="nm">fresh orange juice</div><div class="meta"><span class="cart-pill">🛒 orange juice</span></div></div><span class="qty-inline" style="font-size:15px">4 cup</span></div>
+            <div class="ingc"><span class="grip">≡</span><div class="body"><div class="nm">triple sec</div><div class="meta"><span class="cart-pill">🛒 triple sec</span></div></div><span class="qty-inline" style="font-size:15px">2 oz</span></div>
+          </div>
+          <div class="hint">Editing a scaled amount overrides just this trip. Recipe amounts stay untouched.</div>
+          <button class="btn tint" style="margin-top:12px">+ Add ingredient</button>
+        </div>
+        <div class="modal-actions">
+          <button class="btn red rmv">Remove</button>
+          <button class="btn ghost">Cancel</button>
+          <button class="btn blue">Save</button>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ TRIP SETTINGS ============ -->
+<div id="set" class="stage">
+  <p class="swipehint">← swipe to compare all 3 →</p>
+  <div class="row">
+
+    <!-- IDEA 1: iOS grouped settings -->
+    <div class="col">
+      <div class="ideaLabel">
+        <span class="n">Idea 1</span>
+        <div class="t">iOS Settings list</div>
+        <div class="d">The native pattern people already know. Tight grouped rows with colored icons + values on the right. Kills the wall of identical boxes and the huge gaps.</div>
+      </div>
+      <div class="phone"><div class="screen">
+        <div class="statusbar"><span>4:43</span><span class="dots">📶 📡 🔋</span></div>
+        <div class="navhdr">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div class="big">Cape Cod</div><div class="small">Aug 20 – Aug 23</div></div>
+            <div class="members"><span class="a"></span><span class="a"></span><span class="a"></span></div>
+          </div>
+        </div>
+        <div class="scroll">
+          <div class="grp-label">Trip</div>
+          <div class="list">
+            <div class="li"><span class="ic" style="background:#1A6FD6">✏️</span><span class="lab">Name</span><span class="val">Cape Cod · Aug 20</span><span class="chev">›</span></div>
+            <div class="li"><span class="ic" style="background:#34C759">📅</span><span class="lab">Dates</span><span class="val">Aug 20 – 23</span><span class="chev">›</span></div>
+            <div class="li"><span class="ic" style="background:#FF9500">🔄</span><span class="lab">Refresh day layout</span><span class="chev">›</span></div>
+          </div>
+          <div class="grp-label">Stores</div>
+          <div class="list">
+            <div class="li"><span class="ic" style="background:#5856D6">🛒</span><span class="lab">Active stores</span><span class="val">4 of 6</span><span class="chev">›</span></div>
+          </div>
+          <div class="grp-label">Share</div>
+          <div class="list">
+            <div class="li"><span class="ic" style="background:#0A84FF">🔗</span><span class="lab">Invite code</span><span class="val" style="font-family:monospace">cape-cod-0820-zp</span></div>
+            <div class="li"><span class="ic" style="background:#34C759">📤</span><span class="lab">Share trip</span><span class="chev">›</span></div>
+            <div class="li"><span class="ic" style="background:#8E8E93">📱</span><span class="lab">Share app</span><span class="chev">›</span></div>
+          </div>
+          <div class="grp-label">More</div>
+          <div class="list">
+            <div class="li"><span class="ic" style="background:#8E8E93">📋</span><span class="lab">Activity log</span><span class="chev">›</span></div>
+            <div class="li"><span class="ic" style="background:#5856D6">🛠️</span><span class="lab">App admin</span><span class="chev">›</span></div>
+            <div class="li"><span class="ic" style="background:#FF9500">🗄️</span><span class="lab" style="color:var(--blue)">Archive trip</span><span class="chev">›</span></div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="t"><span class="g">⌂</span>All Trips</div>
+          <div class="t"><span class="g">📖</span>Meal Plan</div>
+          <div class="t"><span class="g">🛒</span>Groceries</div>
+          <div class="t on"><span class="g">⚙</span>Settings</div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- IDEA 2: Cards with hierarchy -->
+    <div class="col">
+      <div class="ideaLabel">
+        <span class="n">Idea 2</span>
+        <div class="t">Cards with hierarchy</div>
+        <div class="d">Keeps your card layout but adds icons + tighter spacing, and demotes the primary actions (Share trip) vs secondary (audit, admin) so the eye has somewhere to land.</div>
+      </div>
+      <div class="phone"><div class="screen">
+        <div class="statusbar"><span>4:43</span><span class="dots">📶 📡 🔋</span></div>
+        <div class="navhdr">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div class="big">Cape Cod</div><div class="small">Aug 20 – Aug 23</div></div>
+            <div class="members"><span class="a"></span><span class="a"></span><span class="a"></span></div>
+          </div>
+        </div>
+        <div class="scroll">
+          <div class="grp-label">Details</div>
+          <div class="list">
+            <div class="li stacked"><span class="k">Trip name</span><input class="fld" value="Cape Cod · Aug 20"></div>
+            <div class="li"><span class="lab">Start</span><span class="val" style="color:var(--ink)">Aug 20, 2026</span></div>
+            <div class="li"><span class="lab">End</span><span class="val" style="color:var(--ink)">Aug 23, 2026</span></div>
+          </div>
+          <button class="btn tint" style="margin-top:10px">🔄  Refresh days</button>
+          <div class="hint">Rebuilds the day layout when dates change. Existing dishes are preserved.</div>
+
+          <div class="grp-label">Share</div>
+          <div class="list"><div class="li"><span class="lab" style="font-family:monospace;font-size:14px">cape-cod-0820-zp</span><span class="chev" style="color:var(--blue);font-size:15px;font-weight:700">Copy</span></div></div>
+          <div style="display:flex;gap:10px;margin-top:10px">
+            <button class="btn blue" style="flex:1">Share trip</button>
+            <button class="btn ghost" style="flex:1">Share app</button>
+          </div>
+
+          <div class="grp-label">Manage</div>
+          <div class="list">
+            <div class="li"><span class="lab">View audit log</span><span class="chev">›</span></div>
+            <div class="li"><span class="lab">App admin — stores, rules, AI</span><span class="chev">›</span></div>
+            <div class="li"><span class="lab" style="color:var(--blue)">Archive trip</span><span class="chev">›</span></div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="t"><span class="g">⌂</span>All Trips</div>
+          <div class="t"><span class="g">📖</span>Meal Plan</div>
+          <div class="t"><span class="g">🛒</span>Groceries</div>
+          <div class="t on"><span class="g">⚙</span>Settings</div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- IDEA 3: Hero + minimal -->
+    <div class="col">
+      <div class="ideaLabel">
+        <span class="n">Idea 3</span>
+        <div class="t">Trip hero + minimal</div>
+        <div class="d">A small trip “hero” card up top (name, dates, who’s here) makes the screen feel finished and personal, then a clean minimal settings list below it.</div>
+      </div>
+      <div class="phone"><div class="screen">
+        <div class="statusbar"><span>4:43</span><span class="dots">📶 📡 🔋</span></div>
+        <div class="navhdr"><div class="big">Trip Settings</div></div>
+        <div class="scroll">
+          <div style="background:linear-gradient(160deg,#3F86E8,#1A6FD6,#1560C4);border-radius:18px;padding:18px;color:#fff;box-shadow:0 8px 22px -8px rgba(26,111,214,.6)">
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.02em">Cape Cod</div>
+            <div style="opacity:.9;font-size:14px;margin-top:2px">Aug 20 – Aug 23 · 4 days</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+              <div class="members"><span class="a" style="border-color:transparent;background:#fff3"></span><span class="a" style="border-color:transparent;background:#fff3"></span><span class="a" style="border-color:transparent;background:#fff3"></span></div>
+              <span style="font-size:13px;opacity:.92">You, Sarah, Mike +1</span>
+            </div>
+          </div>
+
+          <div class="grp-label">Trip</div>
+          <div class="list">
+            <div class="li"><span class="lab">Trip name</span><span class="val">Cape Cod · Aug 20</span><span class="chev">›</span></div>
+            <div class="li"><span class="lab">Dates</span><span class="val">Aug 20 – 23</span><span class="chev">›</span></div>
+            <div class="li"><span class="lab">Stores</span><span class="val">4 active</span><span class="chev">›</span></div>
+            <div class="li"><span class="lab">Refresh day layout</span><span class="chev">›</span></div>
+          </div>
+
+          <div class="grp-label">Share &amp; manage</div>
+          <div class="list">
+            <div class="li"><span class="lab">Share trip</span><span class="chev">›</span></div>
+            <div class="li"><span class="lab">Activity log</span><span class="chev">›</span></div>
+            <div class="li"><span class="lab">App admin</span><span class="chev">›</span></div>
+            <div class="li"><span class="lab" style="color:var(--blue)">Archive trip</span><span class="chev">›</span></div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="t"><span class="g">⌂</span>All Trips</div>
+          <div class="t"><span class="g">📖</span>Meal Plan</div>
+          <div class="t"><span class="g">🛒</span>Groceries</div>
+          <div class="t on"><span class="g">⚙</span>Settings</div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="note">
+  <b>How to read this:</b> each screen shows three directions — pick one per screen (or mix, e.g. “Dish idea 3 + Settings idea 1”). Nothing here touches your data; it’s pure visual. Once you point at favorites I’ll build them into the live app.<br><br>
+  <b>My picks:</b> Dish <b>Idea 3</b> (the single scaling switch — it permanently ends the “which number is which” confusion) and Settings <b>Idea 1</b> (the iOS list is the most “finished,” most native, and scrolls in half the space).
+</div>
+
+<script>
+  function show(id){
+    document.querySelectorAll('.stage').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('tabDish').classList.toggle('active',id==='dish');
+    document.getElementById('tabSet').classList.toggle('active',id==='set');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+</script>
+</body>
+</html>

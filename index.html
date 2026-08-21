@@ -2093,6 +2093,28 @@ body.planner-edit-mode .day-tools .add-button{display:inline-flex!important;}
 .dish-thumb{width:48px!important;height:48px!important;border-radius:11px!important;}
 .dish-title{font-size:16px!important;font-weight:600!important;color:#1c1c1e!important;}
 .dish-meta{font-size:13px!important;color:rgba(60,60,67,.6)!important;}
+
+/* ===== v191: Meal Plan production polish ===== */
+/* Large title: title-case (not shouty caps), left-aligned; Edit = subtle top-right text button */
+#planner .toolbar{flex-wrap:nowrap!important;justify-content:space-between!important;align-items:flex-end!important;margin-bottom:6px!important;padding-top:6px!important;}
+#planner .toolbar h2{text-transform:none!important;font-size:32px!important;font-weight:800!important;letter-spacing:-.03em!important;line-height:1.05!important;}
+#planner .planner-actions{flex:0 0 auto!important;display:flex!important;align-items:center!important;gap:8px!important;}
+#planner #editModeToggle{background:transparent!important;border:none!important;box-shadow:none!important;color:var(--mp-blue)!important;font-size:15px!important;font-weight:500!important;padding:6px 2px!important;}
+body.planner-edit-mode #planner #editModeToggle{background:transparent!important;color:var(--mp-blue)!important;font-weight:700!important;}
+.plan-trip-header{margin:0 0 2px!important;}
+/* tighten day + section spacing */
+.day-header{padding:16px 2px 2px!important;}
+.day-card{margin-bottom:2px!important;}
+.day-body{padding:2px 0 8px!important;}
+.meal-head{padding:12px 2px 6px!important;background:transparent!important;}
+.meal-block{margin-bottom:2px!important;}
+/* chat FAB → iOS blue (was navy, clashed) */
+.ai-chat-fab{background:var(--mp-blue)!important;box-shadow:0 6px 18px rgba(10,132,255,.34)!important;}
+.ai-chat-fab.chat-open{background:#1c1c1e!important;}
+/* "going out" event dish → consistent card + thumb + meta */
+.dish.dish-event{background:#fff!important;border:1px solid rgba(60,60,67,.10)!important;border-radius:14px!important;box-shadow:0 1px 2px rgba(16,24,40,.03)!important;}
+.dish-thumb-event{background:rgba(10,132,255,.10)!important;color:var(--mp-blue)!important;font-size:20px!important;}
+.dish-event-name{color:#1c1c1e!important;font-size:16px!important;font-weight:600!important;}
 </style>
 </head>
 <body>
@@ -3952,7 +3974,7 @@ function resolveDishImageUrl(dish){
 }
 function renderDish(dish){
   if(dish.isEvent){
-    return'<div class="dish dish-event" draggable="true" data-dish-id="'+escAttr(dish.id)+'" ondragstart="handleDishDragStart(event,\''+escAttr(dish.id)+'\')" ondragend="handleDishDragEnd(event)" ondragover="event.preventDefault();dragOverDishId=this.dataset.dishId"><div class="dish-title-row"><span class="dish-drag-handle" title="Drag to move">⠿</span><div style="flex:1;min-width:0;"><div class="dish-event-name" onclick="event.stopPropagation();showDishDetail(\''+escAttr(dish.id)+'\');" style="cursor:pointer;">'+escHtml(dish.eventName||'Going out')+'</div>'+(dish.notes?'<div class="dish-note">'+escHtml(dish.notes)+'</div>':'')+'</div></div></div>';
+    return'<div class="dish dish-event" draggable="true" data-dish-id="'+escAttr(dish.id)+'" ondragstart="handleDishDragStart(event,\''+escAttr(dish.id)+'\')" ondragend="handleDishDragEnd(event)" ondragover="event.preventDefault();dragOverDishId=this.dataset.dishId"><div class="dish-title-row"><span class="dish-drag-handle" title="Drag to move">⠿</span><div class="dish-thumb dish-thumb-none dish-thumb-event" onclick="event.stopPropagation();showDishDetail(\''+escAttr(dish.id)+'\');">🍴</div><div style="flex:1;min-width:0;"><div class="dish-title dish-event-name" onclick="event.stopPropagation();showDishDetail(\''+escAttr(dish.id)+'\');" style="cursor:pointer;">'+escHtml(dish.eventName||'Going out')+'</div><div class="dish-meta">Dining out'+(dish.notes?' · '+escHtml(dish.notes):'')+'</div></div></div></div>';
   }
   // v188: when a dish is backed by a library recipe, fall back to the recipe's servings/ingredients for the
   // meta line so photo-linked dishes show "For X · Y ingredients" too (fixes the ragged cards). Display-only.
@@ -5369,10 +5391,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v190';
+var APP_VERSION='v191';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v190';
+var APP_VERSION_TAG='Meal Planner v191';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

@@ -2273,6 +2273,10 @@ section#setup.page{background:#F2F2F7!important;padding:8px 16px 16px!important;
 #assignStoresContainer{padding-top:10px!important;}
 /* Shop: tame the heavy button shadows (Uncheck all / Hide done were floating) */
 #grocery .shop-toolbar button,#grocery .shopping-list .shop-controls button,#grocery .grocery-bottom-share button{box-shadow:0 1px 3px rgba(16,24,40,.08)!important;}
+
+/* ===== v201: CRITICAL — bottom nav floats/detaches while scrolling on iOS. Cause: position:fixed + backdrop-filter (line 1768) is a known iOS Safari bug. Make the nav SOLID + re-assert fixed. ===== */
+.bottom-nav{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(255,255,255,.98)!important;position:fixed!important;bottom:0!important;left:0!important;right:0!important;top:auto!important;transform:none!important;}
+body.dark-mode .bottom-nav{background:rgba(24,24,26,.98)!important;}
 </style>
 </head>
 <body>
@@ -5551,10 +5555,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v200';
+var APP_VERSION='v201';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v200';
+var APP_VERSION_TAG='Meal Planner v201';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

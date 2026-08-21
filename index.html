@@ -2277,6 +2277,22 @@ section#setup.page{background:#F2F2F7!important;padding:8px 16px 16px!important;
 /* ===== v201: CRITICAL — bottom nav floats/detaches while scrolling on iOS. Cause: position:fixed + backdrop-filter (line 1768) is a known iOS Safari bug. Make the nav SOLID + re-assert fixed. ===== */
 .bottom-nav{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(255,255,255,.98)!important;position:fixed!important;bottom:0!important;left:0!important;right:0!important;top:auto!important;transform:none!important;}
 body.dark-mode .bottom-nav{background:rgba(24,24,26,.98)!important;}
+
+/* ===== v202: Home / All Trips — kill the dark navy hero, clean buttons, no emojis ===== */
+.landing-hero{background:#F2F2F7!important;padding:calc(env(safe-area-inset-top,0px) + 22px) 20px 10px!important;}
+.landing-hero::before,.landing-hero::after,.landing-hero-ring{display:none!important;}
+.landing-app-name{color:#1c1c1e!important;}
+.landing-tagline{color:rgba(60,60,67,.6)!important;}
+.landing-icon-wrap{background:var(--mp-blue)!important;border-radius:18px!important;overflow:hidden!important;}
+.landing-body{background:#F2F2F7!important;}
+#landingUserBadge{filter:none!important;}
+/* primary 'New Trip' → clean blue (was dark navy) */
+.landing-ctas button:not(.secondary){background:var(--mp-blue)!important;color:#fff!important;border:none!important;border-radius:14px!important;padding:16px!important;font-weight:600!important;font-size:16px!important;box-shadow:none!important;letter-spacing:-.01em!important;}
+/* secondary → clean white cards (were shadow-only) */
+.landing-ctas button.secondary{background:#fff!important;color:#1c1c1e!important;border:1px solid rgba(60,60,67,.12)!important;border-radius:14px!important;padding:16px!important;font-weight:600!important;font-size:16px!important;box-shadow:0 1px 2px rgba(16,24,40,.04)!important;}
+.landing-app-settings button{background:transparent!important;color:var(--mp-blue)!important;border:none!important;box-shadow:none!important;font-weight:500!important;}
+/* trip cards + archived: subtle, not floating */
+#landingTripList .trip-card,.landing-body .trip-card{box-shadow:0 1px 2px rgba(16,24,40,.05)!important;border:1px solid rgba(60,60,67,.08)!important;}
 </style>
 </head>
 <body>
@@ -2318,10 +2334,10 @@ body.dark-mode .bottom-nav{background:rgba(24,24,26,.98)!important;}
     <div class="landing-ctas">
       <button onclick="openNewTripModal()">+ New Trip</button>
       <button class="secondary" onclick="openJoinTripModal()">Join a Trip</button>
-      <button class="secondary" onclick="openMenuLibraryFromLanding()">📖 Recipe Library</button>
+      <button class="secondary" onclick="openMenuLibraryFromLanding()">Recipe Library</button>
     </div>
     <div class="landing-app-settings">
-      <button onclick="toggleAppAdmin(true)">⚙ App Settings</button>
+      <button onclick="toggleAppAdmin(true)">App Settings</button>
     </div>
   </div>
 </div>
@@ -5555,10 +5571,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v201';
+var APP_VERSION='v202';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v201';
+var APP_VERSION_TAG='Meal Planner v202';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

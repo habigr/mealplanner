@@ -195,7 +195,22 @@ Browser console tests — run before every push:
 
 ## NEXT SESSION — start here
 
-STATE: **v185 is LIVE** (git tip `60276e6`). Working tree clean, in sync with origin/main.
+STATE: **v199 is LIVE** (2026-08-21). Big multi-push UI overhaul in progress — see "CRISP REDESIGN" below.
+
+### CRISP REDESIGN (v186–v199, 2026-08-21) — the app's whole look is being modernized to "production native-iOS"
+**Design direction is LOCKED: "Crisp" — clean iOS grouped lists, grouped-gray canvas (#F2F2F7), white cards, softened iOS blue accent `#1A6FD6`, SF type, 44px targets, equal 16px gutters.** Reference mockup lives at `mockup.html` (pushed; open `habigr.github.io/mealplanner/mockup.html`). Robbie rejected the busier "Soft Lift" and "Bold Cards" options.
+- **Global accent (v199):** `body{--theme-accent:#1A6FD6 ...}` overrides the per-trip theme so EVERY screen is consistent blue. (This supersedes the v138 color-scheme feature for now.) `--mp-blue` = same blue.
+- **Done:** Meal Plan (v186–197, heavily polished), Groceries List/Assign/Shop (v198), Trip Settings canvas + global accent (v199).
+- **NEXT (this redesign):** verify all screens on Robbie's iPhone; then polish modals/overlays (dish edit, recipe detail, item sheet, App Admin, Recipe Library) to Crisp; then the non-visual phases: **storage auto-prune** (D), **photos: source per-dish + kill wrong Pexels matches** (E), **AI meal-plan transparency** (F), settings consolidation (C).
+- **KEY LEARNINGS / GOTCHAS (critical for continuity):**
+  - `node --check` can't read `.html` on Node v24 → extract `<script>` blocks to a temp `.js` and check that (see the build commands in git history).
+  - **CSS specificity traps that ate multiple pushes:** legacy `.bottom-nav .nav-btn.active .nav-icon{fill:theme-accent}` (0,3,0) beat bare `.nav-btn.active` rules; `.planner-actions{width:100%;flex-direction:column}` (line ~1686, mobile) forced Edit Plan full-width/left; `.bottom-nav{overflow:hidden}` (line ~702, mobile) clipped the count badges. Fix: match `.bottom-nav`/`#planner` specificity AND override inside the SAME `@media(max-width:768px)` context, appended last.
+  - All redesign CSS is appended as dated blocks (`/* ===== vNNN ... */`) right before `</style>` so it wins the cascade. Every build has a `pre-vNNN-*` rollback tag.
+  - **Update lag:** v194 made the update-check run on load (was only on 60s tab-refocus), so Robbie stops seeing stale cached versions. Still: verify live version via `curl .../index.html` when in doubt.
+  - Robbie tests on iPhone Safari and sends screenshots (drops them in `C:\Users\habig\Downloads\app*\`); read them by path.
+- **Roadmap tasks** exist in the session task list (Phases A–G). Robbie's directive: "make big-swing fixes, push in a series, work in the background, don't involve me in every step" — so keep pushing render-only builds with rollback tags; only pause for data-touching changes (storage/photos = Phase D/E).
+
+Prior baseline: v185 (git tip `60276e6`) — grocery redesign v179/v180.
 
 **CURRENT FOCUS (Robbie, 2026-08-21): the iPhone UI is a mess / embarrassing — a real mobile UI cleanup pass. This is the active priority.** Render-only, FIP-safe territory (CSS/markup); do NOT touch data/save/sync. Fold in the `-apple-system`/SF-Pro font-stack idea (was in the now-dropped v179 stash) fresh against current code.
 

@@ -2240,6 +2240,11 @@ section#grocery.page{background:#F2F2F7!important;padding:8px 16px 16px!importan
 #grocery .grocery-filter-handle{background:#fff!important;border:1px solid rgba(60,60,67,.12)!important;color:var(--mp-blue)!important;box-shadow:0 2px 12px rgba(16,24,40,.14)!important;border-radius:999px!important;font-weight:600!important;left:16px!important;right:auto!important;}
 /* align grocery sections to the page gutter */
 #grocery .gk-section{padding-left:0!important;padding-right:0!important;}
+
+/* ===== v199: app-wide accent → the Crisp iOS blue, so EVERY screen is consistent ===== */
+body{--theme-accent:#1A6FD6;--theme-accent-dark:#12559F;--theme-accent-soft:#EAF1FB;--theme-accent-muted:rgba(26,111,214,.10);--theme-border:#BCD3EF;--theme-wash:#F5F9FE;--mp-blue:#1A6FD6;}
+/* grouped-gray canvas + consistent gutters on the Trip Settings page too */
+section#setup.page{background:#F2F2F7!important;padding:8px 16px 16px!important;}
 </style>
 </head>
 <body>
@@ -5518,10 +5523,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v198';
+var APP_VERSION='v199';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v198';
+var APP_VERSION_TAG='Meal Planner v199';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

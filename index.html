@@ -2355,6 +2355,11 @@ html,body{overflow-x:clip!important;overflow-y:visible!important;}
 #setup .active-stores-grid{grid-template-columns:1fr!important;gap:8px!important;}
 #setup .active-stores-grid .active-store-row{padding:12px 14px!important;font-size:15px!important;border:1px solid rgba(60,60,67,.12)!important;border-radius:12px!important;background:#fff!important;white-space:normal!important;min-width:0!important;color:#1c1c1e!important;font-weight:500!important;}
 #setup .active-store-check{width:20px!important;height:20px!important;accent-color:var(--mp-blue)!important;flex:0 0 auto!important;}
+
+/* ===== v211: remove the drop-shadow under the top app header (mobile + desktop) — clean hairline only ===== */
+#appScreen header,#appScreen>header{box-shadow:none!important;}
+/* belt-and-suspenders: no shadow on grocery section headers / cards either */
+#grocery .gk-sec-head,#grocery .gk-card,#grocery .gk-list-card,#grocery .shopping-section,#grocery .grocery-workspace-controls{box-shadow:none!important;}
 </style>
 </head>
 <body>
@@ -5633,10 +5638,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v210';
+var APP_VERSION='v211';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v210';
+var APP_VERSION_TAG='Meal Planner v211';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

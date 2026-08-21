@@ -2187,6 +2187,22 @@ section#planner.page{padding:8px 16px 16px!important;}
 .bottom-nav,.bottom-nav .nav-btn,.bottom-nav .nav-ico{overflow:visible!important;}
 .bottom-nav .nav-ico{position:relative!important;}
 .bottom-nav .nav-badge{top:-4px!important;right:-8px!important;left:auto!important;}
+
+/* ===== v195: FORCE nav selected-state + planner gutters past higher-specificity legacy rules ===== */
+/* The navy fill came from '.bottom-nav .nav-btn.active .nav-icon{fill:theme-accent}' (0,3,0) beating my bare rule. Match specificity + come last. */
+.bottom-nav .nav-btn.active .nav-icon{stroke:#0A84FF!important;fill:none!important;}
+.bottom-nav .nav-btn.active,.bottom-nav .nav-btn.active .nav-label{color:#0A84FF!important;}
+/* Count badges: guarantee they're never clipped */
+.bottom-nav,.bottom-nav .nav-btn,.bottom-nav .nav-ico{overflow:visible!important;}
+.bottom-nav .nav-ico{position:relative!important;}
+.bottom-nav .nav-btn .nav-badge{top:-3px!important;right:-6px!important;left:auto!important;}
+/* Planner: force equal left/right gutters (id specificity beats legacy .day-header/.meal-head rules) */
+#planner .day-header,#planner .meal-head,#planner .day-body,#planner .meal-body{padding-left:0!important;padding-right:0!important;}
+#planner .dish,#planner .meal-empty,#planner .day-card{margin-left:0!important;margin-right:0!important;}
+section#planner.page{padding-left:16px!important;padding-right:16px!important;}
+/* Edit Plan pinned hard to the right of the title row */
+#planner .toolbar{justify-content:space-between!important;}
+#planner .planner-actions{margin-left:auto!important;flex:0 0 auto!important;}
 </style>
 </head>
 <body>
@@ -5465,10 +5481,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v194';
+var APP_VERSION='v195';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v194';
+var APP_VERSION_TAG='Meal Planner v195';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

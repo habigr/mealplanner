@@ -2033,6 +2033,32 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 /* corner badge — small red circle at the icon's top-right, never over the glyph */
 .bottom-nav .nav-badge{position:absolute!important;top:-6px!important;right:-11px!important;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#ff3b30!important;color:#fff!important;font-size:9.5px;font-weight:800;text-align:center;line-height:16px!important;box-sizing:border-box;border:2px solid var(--panel);box-shadow:none!important;letter-spacing:0;}
 .nav-back-btn .nav-icon{opacity:.9;}
+
+/* ===== v188: Meal Plan "Crisp" — clean, native-iOS grouped look (render-only, appended last to win the cascade) ===== */
+.day-card{background:#fff!important;border:1px solid rgba(60,60,67,.12)!important;border-left:1px solid rgba(60,60,67,.12)!important;border-radius:16px!important;box-shadow:0 1px 2px rgba(16,24,40,.04),0 10px 26px rgba(16,24,40,.05)!important;overflow:hidden;margin-bottom:16px!important;}
+.day-card:hover{transform:none!important;box-shadow:0 1px 2px rgba(16,24,40,.04),0 10px 26px rgba(16,24,40,.05)!important;}
+.day-header{background:#fff!important;border-bottom:1px solid rgba(60,60,67,.12)!important;padding:15px 16px 12px!important;}
+.day-title{font-size:19px!important;font-weight:800!important;letter-spacing:-.02em!important;color:#1c1c1e!important;}
+.meal-summary{font-size:12.5px!important;color:rgba(60,60,67,.6)!important;font-weight:500!important;margin-top:3px!important;}
+.day-body{padding:6px 14px 12px!important;}
+.meal-block{background:transparent!important;border:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important;}
+.meal-head{background:transparent!important;border-bottom:none!important;padding:14px 2px 6px!important;}
+.meal-label{font-size:12px!important;font-weight:700!important;letter-spacing:.05em!important;text-transform:uppercase!important;color:rgba(60,60,67,.55)!important;}
+.meal-body{padding:0!important;min-height:0!important;}
+.meal-empty{font-style:normal!important;color:var(--theme-accent)!important;font-size:15px!important;font-weight:600!important;padding:11px 12px!important;background:rgba(120,120,128,.06)!important;border-radius:12px!important;min-height:0!important;display:flex;align-items:center;}
+.dish{background:#fff!important;border:1px solid rgba(60,60,67,.12)!important;border-radius:14px!important;box-shadow:none!important;padding:9px 11px!important;margin-bottom:8px!important;}
+.dish-title-row{align-items:center!important;gap:11px!important;}
+.dish-thumb{width:46px!important;height:46px!important;border-radius:11px!important;}
+.dish-thumb.dish-thumb-none{font-size:22px!important;background:rgba(120,120,128,.10)!important;color:rgba(60,60,67,.45)!important;}
+.dish-title{font-size:16px!important;font-weight:600!important;letter-spacing:-.01em!important;color:#1c1c1e!important;margin-bottom:2px!important;}
+.dish-meta{font-size:13px!important;color:rgba(60,60,67,.6)!important;}
+.day-tools .add-button,.meal-head .add-button{color:var(--theme-accent)!important;font-weight:700!important;}
+@media(max-width:768px){
+  .day-card{margin-bottom:14px!important;}
+  .day-title{font-size:18px!important;}
+  .dish{padding:9px 11px!important;}
+  .dish-title{font-size:16px!important;}
+}
 </style>
 </head>
 <body>
@@ -3844,7 +3870,7 @@ function renderPlanner(){var grid=safeEl('dayGrid');if(!grid)return;
 function renderMealBlock(day,meal){var dishes=currentEvent.dishes.filter(function(d){return d.dayId===day.id&&d.meal===meal;});var icon=getMealIcon(meal);
   // v82 (P0): scan recipeBank ∪ _menuLibrary (same source cookMeal resolves from) so library recipes show the Cook button. Also count a dish's own steps.
   var cookable=(currentEvent.recipeBank||[]).concat(_menuLibrary||[]);
-  var hasCookable=dishes.some(function(d){return(d.steps&&d.steps.length)||cookable.some(function(r){return r.steps&&r.steps.length&&(d.name.toLowerCase()===r.name.toLowerCase()||d.bankRecipeId===r.id);});});var cookMealBtn='';/* v168: Cook removed from the meal-plan tab — cook from the dish detail/edit screen */return'<div class="meal-block" data-meal="'+escAttr(meal)+'"><div class="meal-head"><div class="meal-label-wrap"><span class="meal-label">'+escHtml(meal)+'</span><button class="remove-meal-btn" onclick="removeMealFromDay(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" title="Remove this meal from day">×</button></div><div style="display:flex;align-items:center;gap:6px;">'+cookMealBtn+'<button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">+</button></div></div><div class="meal-body" data-day-id="'+escAttr(day.id)+'" data-meal="'+escAttr(meal)+'" ondragover="handleMealDragOver(event)" ondragleave="handleMealDragLeave(event)" ondrop="handleMealDrop(event)">'+(dishes.length?dishes.map(renderDish).join(''):'<div class="meal-empty" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" style="cursor:pointer;"></div>')+'</div></div>';}
+  var hasCookable=dishes.some(function(d){return(d.steps&&d.steps.length)||cookable.some(function(r){return r.steps&&r.steps.length&&(d.name.toLowerCase()===r.name.toLowerCase()||d.bankRecipeId===r.id);});});var cookMealBtn='';/* v168: Cook removed from the meal-plan tab — cook from the dish detail/edit screen */return'<div class="meal-block" data-meal="'+escAttr(meal)+'"><div class="meal-head"><div class="meal-label-wrap"><span class="meal-label">'+escHtml(meal)+'</span><button class="remove-meal-btn" onclick="removeMealFromDay(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" title="Remove this meal from day">×</button></div><div style="display:flex;align-items:center;gap:6px;">'+cookMealBtn+'<button class="add-button ghost" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')">+</button></div></div><div class="meal-body" data-day-id="'+escAttr(day.id)+'" data-meal="'+escAttr(meal)+'" ondragover="handleMealDragOver(event)" ondragleave="handleMealDragLeave(event)" ondrop="handleMealDrop(event)">'+(dishes.length?dishes.map(renderDish).join(''):'<div class="meal-empty" onclick="openDishModal(\''+escAttr(day.id)+'\',\''+escAttr(meal)+'\')" style="cursor:pointer;">+ Add '+escHtml(meal)+'</div>')+'</div></div>';}
 // v169: resolve a dish's display image (its own, else the linked library recipe's) for plan-card thumbnails
 function resolveDishImageUrl(dish){
   if(!dish||dish.isEvent)return '';
@@ -3856,8 +3882,15 @@ function renderDish(dish){
   if(dish.isEvent){
     return'<div class="dish dish-event" draggable="true" data-dish-id="'+escAttr(dish.id)+'" ondragstart="handleDishDragStart(event,\''+escAttr(dish.id)+'\')" ondragend="handleDishDragEnd(event)" ondragover="event.preventDefault();dragOverDishId=this.dataset.dishId"><div class="dish-title-row"><span class="dish-drag-handle" title="Drag to move">⠿</span><div style="flex:1;min-width:0;"><div class="dish-event-name" onclick="event.stopPropagation();showDishDetail(\''+escAttr(dish.id)+'\');" style="cursor:pointer;">'+escHtml(dish.eventName||'Going out')+'</div>'+(dish.notes?'<div class="dish-note">'+escHtml(dish.notes)+'</div>':'')+'</div></div></div>';
   }
-  var parts=[];if(dish.peopleEating)parts.push('For '+escHtml(String(dish.peopleEating)));else if(dish.servings)parts.push('Serves '+escHtml(String(dish.servings)));var isVeg=dish.isVegetarian||(dish.tags||[]).some(function(t){return /veg|vegetarian/i.test(t);});var tags=(dish.tags&&dish.tags.length)?'<div class="dish-tags">'+dish.tags.map(function(t){return'<span class="dish-tag">'+escHtml(t)+'</span>';}).join('')+'</div>':'';
-  var ingCount=(dish.ingredients||[]).length;if(ingCount)parts.push(ingCount+' ingredient'+(ingCount!==1?'s':''));
+  // v188: when a dish is backed by a library recipe, fall back to the recipe's servings/ingredients for the
+  // meta line so photo-linked dishes show "For X · Y ingredients" too (fixes the ragged cards). Display-only.
+  var _lib=null;
+  if((!dish.peopleEating&&!dish.servings)||!(dish.ingredients&&dish.ingredients.length)){
+    if(dish.bankRecipeId)_lib=(_menuLibrary||[]).find(function(r){return r.id===dish.bankRecipeId;});
+    if(!_lib&&dish.name)_lib=(_menuLibrary||[]).find(function(r){return (r.name||'').toLowerCase()===(dish.name||'').toLowerCase();});
+  }
+  var parts=[];if(dish.peopleEating)parts.push('For '+escHtml(String(dish.peopleEating)));else if(dish.servings)parts.push('Serves '+escHtml(String(dish.servings)));else if(_lib&&_lib.servings)parts.push('Serves '+escHtml(String(_lib.servings)));var isVeg=dish.isVegetarian||(dish.tags||[]).some(function(t){return /veg|vegetarian/i.test(t);});var tags=(dish.tags&&dish.tags.length)?'<div class="dish-tags">'+dish.tags.map(function(t){return'<span class="dish-tag">'+escHtml(t)+'</span>';}).join('')+'</div>':'';
+  var ingCount=((dish.ingredients&&dish.ingredients.length)?dish.ingredients:((_lib&&_lib.ingredients)||[])).length;if(ingCount)parts.push(ingCount+' ingredient'+(ingCount!==1?'s':''));
   var hasNotes=!!(dish.notes);
   var conflicts=getDietaryConflicts(dish);
   var conflictBadge=conflicts.length?'<div class="dish-conflict">⚠️ '+escHtml(conflicts.join(' · '))+'</div>':'';
@@ -5264,10 +5297,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v187';
+var APP_VERSION='v188';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v187';
+var APP_VERSION_TAG='Meal Planner v188';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

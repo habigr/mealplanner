@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meal Planner — Redesign Options (Modern iOS)</title>
+<style>
+  :root{
+    /* iOS system colors (light) */
+    --bg:#F2F2F7;               /* system grouped background */
+    --elev:#FFFFFF;             /* elevated surface */
+    --label:#1C1C1E;            /* primary label */
+    --label2:rgba(60,60,67,.60);/* secondary label */
+    --label3:rgba(60,60,67,.30);/* tertiary label */
+    --sep:rgba(60,60,67,.29);   /* separator */
+    --fill:rgba(120,120,128,.12);/* segmented track / fills */
+    --fill2:rgba(120,120,128,.20);
+    --tint:#0A84FF;             /* modern iOS blue (swappable) */
+    --tint-press:#0060df;
+    --green:#34C759;
+    --radius:12px;
+    --radius-lg:18px;
+    --ff:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Segoe UI',system-ui,sans-serif;
+    --shadow-card:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--ff);
+    background:#e7e7ec;
+    color:var(--label);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.4;
+  }
+
+  /* ---------- Review page chrome ---------- */
+  .review-top{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:1px solid var(--sep);
+    padding:14px 18px;
+  }
+  .review-top h1{font-size:19px;font-weight:700;margin:0 0 2px;letter-spacing:-.02em;}
+  .review-top p{margin:0;font-size:12.5px;color:var(--label2);}
+  .jump{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .jump a{font-size:12px;font-weight:600;color:var(--tint);text-decoration:none;background:var(--fill);padding:5px 11px;border-radius:20px;}
+
+  .legend{max-width:980px;margin:18px auto 0;padding:0 18px;}
+  .legend-card{background:#fff;border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-card);}
+  .legend-card h2{font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--label2);margin:0 0 12px;}
+  .swatches{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;}
+  .swatch{text-align:center;font-size:10.5px;color:var(--label2);}
+  .swatch .chip{width:44px;height:44px;border-radius:12px;margin:0 auto 5px;border:1px solid rgba(0,0,0,.06);}
+  .tints{display:flex;gap:8px;margin-top:4px;}
+  .tint-dot{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.08);}
+  .type-scale div{margin:2px 0;}
+
+  .section-label{max-width:980px;margin:34px auto 4px;padding:0 20px;}
+  .section-label h2{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0;}
+  .section-label p{margin:3px 0 0;font-size:13px;color:var(--label2);}
+
+  .rail{display:flex;gap:26px;overflow-x:auto;padding:20px;scroll-snap-type:x mandatory;justify-content:center;flex-wrap:wrap;}
+  .col{scroll-snap-align:center;}
+  .col .caption{text-align:center;font-size:13px;font-weight:700;margin:0 0 10px;color:var(--label);}
+  .col .caption span{display:block;font-weight:500;font-size:11.5px;color:var(--label2);margin-top:1px;}
+
+  /* ---------- iPhone frame ---------- */
+  .phone{
+    width:390px;background:#000;border-radius:52px;padding:11px;
+    box-shadow:0 30px 70px rgba(0,0,0,.28),0 6px 16px rgba(0,0,0,.16);
+  }
+  .screen{
+    position:relative;width:368px;min-height:760px;background:var(--bg);
+    border-radius:42px;overflow:hidden;display:flex;flex-direction:column;
+  }
+  .screen.plain{background:#fff;}
+  .statusbar{height:52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 8px;font-size:15px;font-weight:600;flex:none;}
+  .statusbar .r{display:flex;gap:6px;align-items:center;}
+  .statusbar svg{display:block;}
+  .content{flex:1;overflow:hidden;}
+  .content-scroll{padding-bottom:8px;}
+
+  /* iOS nav header */
+  .nav{padding:6px 20px 8px;}
+  .nav .eyebrow{font-size:13px;color:var(--label2);font-weight:500;}
+  .nav-large{font-size:32px;font-weight:800;letter-spacing:-.03em;margin:1px 0 0;}
+  .nav-sub{font-size:14px;color:var(--label2);margin-top:2px;}
+  .nav-inline{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 6px;}
+  .nav-inline .title{font-size:17px;font-weight:700;letter-spacing:-.01em;}
+  .nav-inline .actions{display:flex;gap:14px;color:var(--tint);}
+  .avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#7aa5d8,#4a6fa5);}
+
+  /* Segmented control (iOS) */
+  .seg{display:flex;background:var(--fill);border-radius:9px;padding:2px;margin:6px 16px 0;}
+  .seg button{flex:1;border:0;background:transparent;font:inherit;font-size:13.5px;font-weight:600;color:var(--label);padding:7px 4px;border-radius:7px;cursor:pointer;}
+  .seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12),0 1px 1px rgba(0,0,0,.04);}
+  .seg.small button{font-size:12.5px;padding:6px 4px;font-weight:600;}
+
+  /* Grouped list (iOS inset) */
+  .group-label{font-size:12.5px;letter-spacing:.02em;color:var(--label2);font-weight:600;padding:16px 20px 6px;text-transform:none;}
+  .group{background:var(--elev);margin:0 16px;border-radius:var(--radius);overflow:hidden;}
+  .row{display:flex;align-items:center;gap:12px;padding:11px 15px;position:relative;min-height:48px;}
+  .row + .row::before{content:"";position:absolute;top:0;left:15px;right:0;height:1px;background:var(--sep);}
+  .row.inset-sep + .row::before{left:62px;}
+  .row .txt{flex:1;min-width:0;}
+  .row .t{font-size:16px;font-weight:500;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row .s{font-size:13px;color:var(--label2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row .trail{font-size:15px;color:var(--label2);font-weight:400;flex:none;}
+  .chev{color:var(--label3);flex:none;}
+  .thumb{width:38px;height:38px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--fill);}
+  .thumb.big{width:52px;height:52px;border-radius:12px;font-size:26px;}
+  .add-row{color:var(--tint);font-weight:500;font-size:16px;display:flex;align-items:center;gap:10px;padding:11px 15px;min-height:48px;cursor:pointer;}
+  .add-row .plus{width:22px;height:22px;border-radius:50%;background:var(--tint);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none;}
+  .checkc{width:24px;height:24px;border-radius:50%;border:2px solid var(--label3);flex:none;}
+  .checkc.done{background:var(--green);border-color:var(--green);display:flex;align-items:center;justify-content:center;}
+  .meal-cap{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--label2);text-transform:uppercase;padding:14px 20px 5px;}
+  .meal-cap .add{color:var(--tint);width:26px;height:26px;display:flex;align-items:center;justify-content:center;}
+  .src{display:inline;font-size:13px;color:var(--label2);}
+
+  /* Modern card style */
+  .daycard{background:#fff;margin:14px 16px;border-radius:var(--radius-lg);box-shadow:var(--shadow-card);overflow:hidden;}
+  .daycard-head{padding:14px 18px 10px;display:flex;align-items:center;justify-content:space-between;}
+  .daycard-head .d{font-size:18px;font-weight:800;letter-spacing:-.02em;}
+  .daycard-head .dc{font-size:12.5px;color:var(--label2);font-weight:500;}
+  .mealblock{padding:2px 12px 10px;}
+  .mealblock .mh{display:flex;align-items:center;justify-content:space-between;padding:8px 6px 6px;}
+  .mealblock .mh .n{font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--label2);text-transform:uppercase;}
+  .mealblock .mh .a{color:var(--tint);font-size:22px;line-height:1;}
+  .dishcard{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--sep);border-radius:14px;padding:8px;margin:6px 0;}
+  .dishcard .ph{width:52px;height:52px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;font-size:26px;background:linear-gradient(135deg,#eef1f6,#e3e8f0);}
+  .dishcard .t{font-size:15.5px;font-weight:600;letter-spacing:-.01em;}
+  .dishcard .s{font-size:12.5px;color:var(--label2);margin-top:1px;}
+  .empty-add{display:flex;align-items:center;gap:8px;color:var(--tint);font-weight:600;font-size:14px;padding:10px 8px;border:1.5px dashed var(--fill2);border-radius:12px;margin:4px 0;justify-content:center;}
+
+  .gcard{background:#fff;margin:12px 16px;border-radius:var(--radius-lg);box-shadow:var(--shadow-card);overflow:hidden;}
+  .gcard-head{display:flex;align-items:center;gap:9px;padding:12px 16px 10px;border-bottom:1px solid var(--sep);}
+  .gcard-head .ic{font-size:17px;}
+  .gcard-head .nm{font-size:13px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label);flex:1;}
+  .gcard-head .ct{font-size:12.5px;color:var(--label2);font-weight:600;}
+  .gitem{display:flex;align-items:center;gap:12px;padding:11px 16px;position:relative;min-height:50px;}
+  .gitem + .gitem::before{content:"";position:absolute;top:0;left:52px;right:0;height:1px;background:var(--sep);}
+
+  /* progress bar */
+  .progress-wrap{margin:12px 16px;background:#fff;border-radius:14px;box-shadow:var(--shadow-card);padding:14px 16px;display:flex;align-items:center;gap:12px;}
+  .bar{flex:1;height:8px;border-radius:4px;background:var(--fill);overflow:hidden;}
+  .bar i{display:block;height:100%;width:0%;background:var(--green);border-radius:4px;}
+  .progress-wrap .pc{font-size:14px;font-weight:700;color:var(--label2);}
+
+  /* toolbar (clean, labeled) */
+  .toolbar{display:flex;gap:8px;margin:10px 16px 0;}
+  .toolbar button{flex:1;border:0;background:#fff;box-shadow:var(--shadow-card);border-radius:11px;padding:9px 6px;font:inherit;font-size:12.5px;font-weight:600;color:var(--tint);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+  .toolbar button .i{font-size:16px;}
+
+  /* iOS tab bar */
+  .tabbar{flex:none;background:rgba(249,249,249,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--sep);display:flex;padding:8px 4px 22px;}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:500;color:var(--label2);position:relative;}
+  .tab.on{color:var(--tint);}
+  .tab .badge{position:absolute;top:-4px;left:52%;background:#FF3B30;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+
+  .note{max-width:980px;margin:6px auto 0;padding:0 22px;font-size:12.5px;color:var(--label2);}
+  .footer{max-width:980px;margin:40px auto;padding:0 22px 60px;font-size:13px;color:var(--label2);}
+  .footer b{color:var(--label);}
+</style>
+</head>
+<body>
+
+<div class="review-top">
+  <h1>Meal Planner — Redesign Options</h1>
+  <p>Modern, native-iOS direction · 2 options per screen · tap through on your phone</p>
+  <div class="jump">
+    <a href="#mp">Meal Plan</a>
+    <a href="#gl">Groceries · List</a>
+    <a href="#extra">Assign / Shop</a>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-card">
+    <h2>The design system (shared by both options)</h2>
+    <div class="swatches">
+      <div class="swatch"><div class="chip" style="background:#F2F2F7"></div>Grouped bg</div>
+      <div class="swatch"><div class="chip" style="background:#fff"></div>Surface</div>
+      <div class="swatch"><div class="chip" style="background:#1C1C1E"></div>Label</div>
+      <div class="swatch"><div class="chip" style="background:rgba(60,60,67,.6)"></div>Secondary</div>
+      <div class="swatch"><div class="chip" style="background:#34C759"></div>Done</div>
+      <div class="swatch" style="min-width:150px;text-align:left">
+        <div style="font-weight:600;color:var(--label);margin-bottom:4px">Accent (swappable)</div>
+        <div class="tints">
+          <div class="tint-dot" style="background:#0A84FF" title="iOS Blue" onclick="setTint('#0A84FF','#0060df')"></div>
+          <div class="tint-dot" style="background:#30B0C7" title="Teal" onclick="setTint('#30B0C7','#1f8a9c')"></div>
+          <div class="tint-dot" style="background:#FF375F" title="Rose" onclick="setTint('#FF375F','#d81b45')"></div>
+          <div class="tint-dot" style="background:#FF9500" title="Orange" onclick="setTint('#FF9500','#d97a00')"></div>
+          <div class="tint-dot" style="background:#5E5CE6" title="Indigo" onclick="setTint('#5E5CE6','#4644c9')"></div>
+        </div>
+        <div style="font-size:10.5px;margin-top:5px">tap a dot to recolor everything live</div>
+      </div>
+      <div class="swatch type-scale" style="min-width:150px;text-align:left;color:var(--label)">
+        <div style="font-weight:600;color:var(--label2);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Type — SF Pro</div>
+        <div style="font-size:28px;font-weight:800;letter-spacing:-.03em;line-height:1.1">Large title</div>
+        <div style="font-size:16px;font-weight:500">Body 16</div>
+        <div style="font-size:13px;color:var(--label2)">Secondary 13</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MEAL PLAN ============ -->
+<div class="section-label" id="mp">
+  <h2>Meal Plan</h2>
+  <p>Fixes: the giant empty meal bands → slim add rows · ragged dish cards → one consistent card, every dish shows the same info.</p>
+</div>
+
+<div class="rail">
+  <!-- Meal Plan — Option A: iOS Grouped -->
+  <div class="col">
+    <p class="caption">Option A — “iOS Grouped”<span>calm, minimal, Apple Reminders style</span></p>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">
+        <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1" fill="rgba(0,0,0,.3)"/></svg>
+        <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2.5c2.3 0 4.4.9 6 2.4l-1.4 1.4a6.6 6.6 0 00-9.2 0L2.5 4.9A8.5 8.5 0 018.5 2.5z"/><path d="M8.5 6c1.2 0 2.3.5 3.1 1.3l-3.1 3.1-3.1-3.1A4.4 4.4 0 018.5 6z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="1" y="1" width="21" height="10" rx="2.6" fill="none" stroke="rgba(0,0,0,.35)"/><rect x="2.5" y="2.5" width="16" height="7" rx="1.3"/><rect x="23" y="4" width="1.5" height="4" rx=".7" fill="rgba(0,0,0,.35)"/></svg>
+      </span></div>
+      <div class="content"><div class="content-scroll">
+        <div class="nav">
+          <div class="eyebrow">Cape Cod · Aug 20–24 · 8 people</div>
+          <div class="nav-large">Meal Plan</div>
+        </div>
+
+        <div class="group-label">Thursday, Aug 20</div>
+        <div class="meal-cap">Breakfast <span class="add">＋</span></div>
+        <div class="group"><div class="add-row"><span class="plus">＋</span> Add breakfast</div></div>
+        <div class="meal-cap">Lunch <span class="add">＋</span></div>
+        <div class="group"><div class="add-row"><span class="plus">＋</span> Add lunch</div></div>
+        <div class="meal-cap">Dinner <span class="add">＋</span></div>
+        <div class="group">
+          <div class="row inset-sep"><div class="thumb">🦞</div><div class="txt"><div class="t">Steamed Whole Lobsters</div><div class="s">For 4 · 6 ingredients</div></div><svg class="chev" width="8" height="13" viewBox="0 0 8 13"><path d="M1 1l6 5.5L1 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <div class="row inset-sep"><div class="thumb">🌽</div><div class="txt"><div class="t">Corn on the Cob</div><div class="s">For 4 · 3 ingredients</div></div><svg class="chev" width="8" height="13" viewBox="0 0 8 13"><path d="M1 1l6 5.5L1 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <div class="row inset-sep"><div class="thumb">🥖</div><div class="txt"><div class="t">Crusty Bread</div><div class="s">For 4 · 2 ingredients</div></div><svg class="chev" width="8" height="13" viewBox="0 0 8 13"><path d="M1 1l6 5.5L1 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+        </div>
+
+        <div class="group-label">Friday, Aug 21</div>
+        <div class="meal-cap">Breakfast <span class="add">＋</span></div>
+        <div class="group"><div class="add-row"><span class="plus">＋</span> Add breakfast</div></div>
+      </div></div>
+      <div class="tabbar">
+        <div class="tab on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>Meal Plan</div>
+        <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M2 3h3l2.2 11.2a1.5 1.5 0 001.5 1.2h7.6a1.5 1.5 0 001.5-1.2L20 7H6"/></svg>Groceries<span class="badge">41</span></div>
+        <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/></svg>All Trips</div>
+        <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>Settings</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Meal Plan — Option B: Modern Cards -->
+  <div class="col">
+    <p class="caption">Option B — “Modern Cards”<span>photo-forward, warmer, more visual</span></p>
+    <div class="phone"><div class="screen plain">
+      <div class="statusbar"><span>9:41</span><span class="r">
+        <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1" fill="rgba(0,0,0,.3)"/></svg>
+        <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2.5c2.3 0 4.4.9 6 2.4l-1.4 1.4a6.6 6.6 0 00-9.2 0L2.5 4.9A8.5 8.5 0 018.5 2.5z"/><path d="M8.5 6c1.2 0 2.3.5 3.1 1.3l-3.1 3.1-3.1-3.1A4.4 4.4 0 018.5 6z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="1" y="1" width="21" height="10" rx="2.6" fill="none" stroke="rgba(0,0,0,.35)"/><rect x="2.5" y="2.5" width="16" height="7" rx="1.3"/><rect x="23" y="4" width="1.5" height="4" rx=".7" fill="rgba(0,0,0,.35)"/></svg>
+      </span></div>
+      <div class="content"><div class="content-scroll">
+        <div class="nav">
+          <div class="eyebrow">Cape Cod · Aug 20–24 · 8 people</div>
+          <div class="nav-large">Meal Plan</div>
+        </div>
+        <div class="daycard">
+          <div class="daycard-head"><span class="d">Thu, Aug 20</span><span class="dc">Day 1</span></div>
+          <div class="mealblock">
+            <div class="mh"><span class="n">Breakfast</span><span class="a">＋</span></div>
+            <div class="empty-add">＋ Add breakfast</div>
+            <div class="mh"><span class="n">Dinner</span><span class="a">＋</span></div>
+            <div class="dishcard"><div class="ph">🦞</div><div class="txt"><div class="t">Steamed Whole Lobsters</div><div class="s">For 4 · 6 ingredients</div></div></div>
+            <div class="dishcard"><div class="ph" style="background:linear-gradient(135deg,#e9f3e4,#d6ead0)">🥗</div><div class="txt"><div class="t">Grilled Asparagus</div><div class="s">For 4 · 5 ingredients</div></div></div>
+            <div class="dishcard"><div class="ph" style="background:linear-gradient(135deg,#fbe6ea,#f6d2da)">🍓</div><div class="txt"><div class="t">Strawberry Shortcake</div><div class="s">For 8 · 7 ingredients</div></div></div>
+          </div>
+        </div>
+        <div class="daycard">
+          <div class="daycard-head"><span class="d">Fri, Aug 21</span><span class="dc">Day 2</span></div>
+          <div class="mealblock">
+            <div class="mh"><span class="n">Breakfast</span><span class="a">＋</span></div>
+            <div class="empty-add">＋ Add breakfast</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="tabbar">
+        <div class="tab on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>Meal Plan</div>
+        <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M2 3h3l2.2 11.2a1.5 1.5 0 001.5 1.2h7.6a1.5 1.5 0 001.5-1.2L20 7H6"/></svg>Groceries<span class="badge">41</span></div>
+        <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/></svg>All Trips</div>
+        <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>Settings</div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ GROCERIES — LIST ============ -->
+<div class="section-label" id="gl">
+  <h2>Groceries · List</h2>
+  <p>Fixes: uneven row heights (recipe chips) → one tidy line · orphaned red × removed · colored edge-bars gone · floating FILTERS pill replaced by a real toolbar.</p>
+</div>
+
+<div class="rail">
+  <!-- Grocery — Option A: iOS Grouped -->
+  <div class="col">
+    <p class="caption">Option A — “iOS Grouped”<span>tight, scannable, Apple Reminders style</span></p>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">
+        <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1" fill="rgba(0,0,0,.3)"/></svg>
+        <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2.5c2.3 0 4.4.9 6 2.4l-1.4 1.4a6.6 6.6 0 00-9.2 0L2.5 4.9A8.5 8.5 0 018.5 2.5z"/><path d="M8.5 6c1.2 0 2.3.5 3.1 1.3l-3.1 3.1-3.1-3.1A4.4 4.4 0 018.5 6z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="1" y="1" width="21" height="10" rx="2.6" fill="none" stroke="rgba(0,0,0,.35)"/><rect x="2.5" y="2.5" width="16" height="7" rx="1.3"/><rect x="23" y="4" width="1.5" height="4" rx=".7" fill="rgba(0,0,0,.35)"/></svg>
+      </span></div>
+      <div class="content"><div class="content-scroll">
+        <div class="nav-inline"><span class="title">Cape Cod</span><span class="actions"><div class="avatar"></div></span></div>
+        <div class="seg"><button class="on">List</button><button>Assign</button><button>Shop</button></div>
+        <div class="progress-wrap"><div class="bar"><i style="width:0%"></i></div><span class="pc">0 / 41</span></div>
+        <div class="seg small" style="margin-top:0"><button>Store</button><button class="on">Dept</button><button>A–Z</button></div>
+
+        <div class="group-label" style="display:flex;justify-content:space-between"><span>🥬  PRODUCE</span><span style="font-weight:500">0 of 11</span></div>
+        <div class="group">
+          <div class="row inset-sep"><div class="checkc"></div><div class="txt"><div class="t">Celery</div><div class="s src">Speedy Fish Chowder</div></div><span class="trail">3</span></div>
+          <div class="row inset-sep"><div class="checkc"></div><div class="txt"><div class="t">Lemon</div><div class="s src">Israeli Salad Martini +3 more</div></div><span class="trail">6</span></div>
+          <div class="row inset-sep"><div class="checkc"></div><div class="txt"><div class="t">Parsley</div><div class="s src">Speedy Fish Chowder +2 more</div></div><span class="trail">1 bunch</span></div>
+          <div class="row inset-sep"><div class="checkc"></div><div class="txt"><div class="t">Potatoes</div><div class="s src">Speedy Fish Chowder</div></div><span class="trail">1 lb</span></div>
+        </div>
+
+        <div class="group-label" style="display:flex;justify-content:space-between"><span>🍞  BAKERY &amp; PANTRY</span><span style="font-weight:500">0 of 1</span></div>
+        <div class="group">
+          <div class="row inset-sep"><div class="checkc"></div><div class="txt"><div class="t">Crusty Bread</div><div class="s src">Crusty Bread</div></div><span class="trail">2</span></div>
+        </div>
+
+        <div class="group-label" style="display:flex;justify-content:space-between"><span>🍸  ALCOHOL</span><span style="font-weight:500">0 of 2</span></div>
+        <div class="group">
+          <div class="row inset-sep"><div class="checkc done"><svg width="13" height="13" viewBox="0 0 13 13"><path d="M2 7l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="txt"><div class="t" style="text-decoration:line-through;color:var(--label2)">Champagne</div><div class="s src">Manually added</div></div><span class="trail">1</span></div>
+          <div class="row inset-sep"><div class="checkc"></div><div class="txt"><div class="t">Gin</div><div class="s src">Israeli Salad Martini</div></div><span class="trail">16 oz</span></div>
+        </div>
+      </div></div>
+      <div class="tabbar">
+        <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>Meal Plan</div>
+        <div class="tab on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M2 3h3l2.2 11.2a1.5 1.5 0 001.5 1.2h7.6a1.5 1.5 0 001.5-1.2L20 7H6"/></svg>Groceries<span class="badge">41</span></div>
+        <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/></svg>All Trips</div>
+        <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>Settings</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Grocery — Option B: Modern Cards -->
+  <div class="col">
+    <p class="caption">Option B — “Modern Cards”<span>each department a soft card, more air</span></p>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">
+        <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1" fill="rgba(0,0,0,.3)"/></svg>
+        <svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2.5c2.3 0 4.4.9 6 2.4l-1.4 1.4a6.6 6.6 0 00-9.2 0L2.5 4.9A8.5 8.5 0 018.5 2.5z"/><path d="M8.5 6c1.2 0 2.3.5 3.1 1.3l-3.1 3.1-3.1-3.1A4.4 4.4 0 018.5 6z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="1" y="1" width="21" height="10" rx="2.6" fill="none" stroke="rgba(0,0,0,.35)"/><rect x="2.5" y="2.5" width="16" height="7" rx="1.3"/><rect x="23" y="4" width="1.5" height="4" rx=".7" fill="rgba(0,0,0,.35)"/></svg>
+      </span></div>
+      <div class="content"><div class="content-scroll">
+        <div class="nav"><div class="eyebrow">Cape Cod · 41 items</div><div class="nav-large" style="font-size:28px">Groceries</div></div>
+        <div class="seg"><button class="on">List</button><button>Assign</button><button>Shop</button></div>
+        <div class="toolbar">
+          <button><span class="i">＋</span>Add item</button>
+          <button><span class="i">⤴</span>Share</button>
+          <button><span class="i">↻</span>Refresh</button>
+        </div>
+
+        <div class="gcard">
+          <div class="gcard-head"><span class="ic">🥬</span><span class="nm">Produce</span><span class="ct">0 of 11</span></div>
+          <div class="gitem"><div class="checkc"></div><div class="txt" style="flex:1"><div class="t">Celery</div><div class="s src">Speedy Fish Chowder</div></div><span class="trail">3</span></div>
+          <div class="gitem"><div class="checkc"></div><div class="txt" style="flex:1"><div class="t">Lemon</div><div class="s src">Israeli Salad Martini +3</div></div><span class="trail">6</span></div>
+          <div class="gitem"><div class="checkc"></div><div class="txt" style="flex:1"><div class="t">Potatoes</div><div class="s src">Speedy Fish Chowder</div></div><span class="trail">1 lb</span></div>
+        </div>
+        <div class="gcard">
+          <div class="gcard-head"><span class="ic">🍸</span><span class="nm">Alcohol</span><span class="ct">0 of 2</span></div>
+          <div class="gitem"><div class="checkc"></div><div class="txt" style="flex:1"><div class="t">Champagne</div><div class="s src">Manually added</div></div><span class="trail">1</span></div>
+          <div class="gitem"><div class="checkc"></div><div class="txt" style="flex:1"><div class="t">Gin</div><div class="s src">Israeli Salad Martini</div></div><span class="trail">16 oz</span></div>
+        </div>
+      </div></div>
+      <div class="tabbar">
+        <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>Meal Plan</div>
+        <div class="tab on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M2 3h3l2.2 11.2a1.5 1.5 0 001.5 1.2h7.6a1.5 1.5 0 001.5-1.2L20 7H6"/></svg>Groceries<span class="badge">41</span></div>
+        <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/></svg>All Trips</div>
+        <div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>Settings</div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<div class="section-label" id="extra">
+  <h2>Assign Stores &amp; Shop</h2>
+  <p>These will follow whichever direction you pick above — same type, spacing, and controls. Shown here in the “iOS Grouped” language as a preview.</p>
+</div>
+<div class="rail">
+  <div class="col">
+    <p class="caption">Assign Stores<span>inline picker, no cryptic icons</span></p>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">
+        <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1" fill="rgba(0,0,0,.3)"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="1" y="1" width="21" height="10" rx="2.6" fill="none" stroke="rgba(0,0,0,.35)"/><rect x="2.5" y="2.5" width="16" height="7" rx="1.3"/><rect x="23" y="4" width="1.5" height="4" rx=".7" fill="rgba(0,0,0,.35)"/></svg>
+      </span></div>
+      <div class="content"><div class="content-scroll">
+        <div class="nav-inline"><span class="title">Cape Cod</span><span class="actions"><div class="avatar"></div></span></div>
+        <div class="seg"><button>List</button><button class="on">Assign</button><button>Shop</button></div>
+        <div class="group-label" style="display:flex;justify-content:space-between"><span>21 left to assign</span><span style="color:var(--tint);font-weight:600">Auto-assign all</span></div>
+        <div class="group">
+          <div class="row inset-sep"><div class="thumb" style="background:#fde7d3">🍸</div><div class="txt"><div class="t">Champagne</div><div class="s">1 · Alcohol</div></div><div style="display:flex;align-items:center;gap:4px;font-size:15px;color:var(--tint);font-weight:500">Liquor Store <svg class="chev" width="8" height="13" viewBox="0 0 8 13"><path d="M1 4l3 3 3-3M1 8l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></div></div>
+          <div class="row inset-sep"><div class="thumb" style="background:#f4f4f6">🍸</div><div class="txt"><div class="t">Gin</div><div class="s">16 oz · Alcohol</div></div><div style="display:flex;align-items:center;gap:4px;font-size:15px;color:var(--label3);font-weight:500">Choose <svg class="chev" width="8" height="13" viewBox="0 0 8 13"><path d="M1 4l3 3 3-3M1 8l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></div></div>
+          <div class="row inset-sep"><div class="thumb" style="background:#f0e7da">🥖</div><div class="txt"><div class="t">Crusty Bread</div><div class="s">2 · Bakery</div></div><div style="display:flex;align-items:center;gap:4px;font-size:15px;color:var(--tint);font-weight:500">Bakery <svg class="chev" width="8" height="13" viewBox="0 0 8 13"><path d="M1 4l3 3 3-3M1 8l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></div></div>
+        </div>
+      </div></div>
+      <div class="tabbar"><div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>Meal Plan</div><div class="tab on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M2 3h3l2.2 11.2a1.5 1.5 0 001.5 1.2h7.6a1.5 1.5 0 001.5-1.2L20 7H6"/></svg>Groceries</div><div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/></svg>All Trips</div><div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>Settings</div></div>
+    </div></div>
+  </div>
+
+  <div class="col">
+    <p class="caption">Shop<span>big taps, progress, clean sections</span></p>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span class="r">
+        <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1" fill="rgba(0,0,0,.3)"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x="1" y="1" width="21" height="10" rx="2.6" fill="none" stroke="rgba(0,0,0,.35)"/><rect x="2.5" y="2.5" width="16" height="7" rx="1.3"/><rect x="23" y="4" width="1.5" height="4" rx=".7" fill="rgba(0,0,0,.35)"/></svg>
+      </span></div>
+      <div class="content"><div class="content-scroll">
+        <div class="nav-inline"><span class="title">Cape Cod</span><span class="actions"><div class="avatar"></div></span></div>
+        <div class="seg"><button>List</button><button>Assign</button><button class="on">Shop</button></div>
+        <div class="progress-wrap"><div class="bar"><i style="width:22%"></i></div><span class="pc">9 / 41</span></div>
+        <div class="seg small"><button class="on">By dept</button><button>A–Z</button></div>
+        <div class="group-label" style="display:flex;justify-content:space-between"><span>🍸  ALCOHOL</span><span style="font-weight:500">0 of 2</span></div>
+        <div class="group">
+          <div class="row inset-sep"><div class="checkc"></div><div class="txt"><div class="t">Gin</div><div class="s">16 oz</div></div></div>
+          <div class="row inset-sep"><div class="checkc"></div><div class="txt"><div class="t">Champagne</div><div class="s">1 bottle</div></div></div>
+        </div>
+        <div class="group-label" style="display:flex;justify-content:space-between"><span>🧀  DAIRY</span><span style="font-weight:500">1 of 3</span></div>
+        <div class="group">
+          <div class="row inset-sep"><div class="checkc done"><svg width="13" height="13" viewBox="0 0 13 13"><path d="M2 7l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="txt"><div class="t" style="text-decoration:line-through;color:var(--label2)">Butter</div><div class="s">2 sticks</div></div></div>
+          <div class="row inset-sep"><div class="checkc"></div><div class="txt"><div class="t">Heavy Cream</div><div class="s">1 pint</div></div></div>
+        </div>
+      </div></div>
+      <div class="tabbar"><div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 9h16M8 3v4M16 3v4"/></svg>Meal Plan</div><div class="tab on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M2 3h3l2.2 11.2a1.5 1.5 0 001.5 1.2h7.6a1.5 1.5 0 001.5-1.2L20 7H6"/></svg>Groceries</div><div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/></svg>All Trips</div><div class="tab"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>Settings</div></div>
+    </div></div>
+  </div>
+</div>
+
+<div class="footer">
+  <p><b>How to use this:</b> scroll through both options for each screen. Tap the accent dots up top to try different tint colors live. Tell me: which direction for <b>Meal Plan</b> (A grouped / B cards), which for <b>Groceries</b> (A grouped / B cards), and which <b>accent color</b>. You can mix — e.g. “Meal Plan B, Groceries A, teal accent.” Then I build it into the real app, one screen per version.</p>
+  <p style="margin-top:10px">Everything here is a static mockup — no data, no Firebase, totally safe.</p>
+</div>
+
+<script>
+  function setTint(c,p){document.documentElement.style.setProperty('--tint',c);document.documentElement.style.setProperty('--tint-press',p);}
+</script>
+</body>
+</html>

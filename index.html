@@ -2331,6 +2331,16 @@ html,body{overflow-x:clip!important;overflow-y:visible!important;}
   #appScreen>.app-wrap{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;padding-top:0!important;padding-bottom:0!important;}
   .bottom-nav{position:static!important;bottom:auto!important;left:auto!important;right:auto!important;top:auto!important;transform:none!important;-webkit-transform:none!important;flex:0 0 auto!important;width:100%!important;}
 }
+
+/* ===== v208: Home hero polish — flat bottom, centered logo+text, fix name-pill 'selected' highlight ===== */
+.landing-hero{border-bottom-left-radius:0!important;border-bottom-right-radius:0!important;padding-bottom:22px!important;}
+.landing-hero-inner{justify-content:center!important;align-items:center!important;gap:12px!important;}
+.landing-hero-text{text-align:left!important;}
+.landing-icon-wrap{background:transparent!important;border:none!important;box-shadow:none!important;}
+.landing-app-name{color:#fff!important;line-height:1.1!important;}
+.landing-tagline{color:rgba(255,255,255,.82)!important;}
+#landingUserBadge,#landingUserBadge *{-webkit-user-select:none!important;user-select:none!important;-webkit-tap-highlight-color:transparent!important;}
+#landingUserBadge>*{background:rgba(255,255,255,.15)!important;border:1px solid rgba(255,255,255,.22)!important;color:#fff!important;border-radius:999px!important;}
 </style>
 </head>
 <body>
@@ -5609,10 +5619,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v207';
+var APP_VERSION='v208';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v207';
+var APP_VERSION_TAG='Meal Planner v208';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

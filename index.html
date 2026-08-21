@@ -2413,7 +2413,9 @@ body.planner-edit-mode .day-tools .add-button{display:inline-flex!important;}
     <div class="set-section-title">Manage</div>
     <button id="archiveTripBtn" class="secondary" type="button" style="width:100%;margin-bottom:8px;" onclick="toggleArchiveCurrentTrip()">Archive trip</button>
     <button class="secondary" type="button" style="width:100%;margin-bottom:8px;" onclick="toggleAppAdmin(true)">App admin — stores, rules, AI</button>
-    <button class="secondary" type="button" style="width:100%;" onclick="saveCurrentTrip()">Save trip now</button>
+    <button class="secondary" type="button" style="width:100%;margin-bottom:8px;" onclick="saveCurrentTrip()">Save trip now</button>
+    <button class="secondary" type="button" style="width:100%;" onclick="showStorageReport()">Check device storage</button>
+    <div id="storageReport" style="display:none;margin-top:10px;font-size:13px;line-height:1.5;background:var(--panel-soft);border:1px solid var(--border-light);border-radius:10px;padding:12px;"></div>
     <div class="small-note">Archived trips move to the “Archived” section on the home screen (per-user; trip data is untouched).</div>
   </div>
 </aside>
@@ -2983,6 +2985,42 @@ function getLocalBackup(code){
     var backups=JSON.parse(localStorage.getItem(BACKUP_KEY)||'{}');
     return backups[code]||null;
   }catch(e){return null;}
+}
+
+// v190: device localStorage fills up because a local backup of every trip ever opened accumulates.
+// Read-only report + a SAFE prune that keeps the current trip + the 3 most-recent backups. Firebase
+// stays the source of truth; this only touches redundant LOCAL copies, never Firebase, never live data.
+function _lsUsageKB(){var t=0;try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);t+=(k.length+(localStorage.getItem(k)||'').length);}}catch(e){}return t/1024;}
+function showStorageReport(){
+  var out=safeEl('storageReport');if(!out)return;out.style.display='block';
+  var total=_lsUsageKB();
+  var rows=[];try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);rows.push([k,(localStorage.getItem(k)||'').length/1024]);}}catch(e){}
+  rows.sort(function(a,b){return b[1]-a[1];});
+  var top=rows.slice(0,5).map(function(r){return '&nbsp;&nbsp;'+escHtml(r[0])+': '+r[1].toFixed(0)+' KB';}).join('<br>');
+  var bc=0,bkb=(localStorage.getItem(BACKUP_KEY)||'').length/1024;try{bc=Object.keys(JSON.parse(localStorage.getItem(BACKUP_KEY)||'{}')).length;}catch(e){}
+  var pct=Math.round(total/5120*100);
+  var html='<b>💾 Device storage</b><br>&nbsp;&nbsp;Using ~'+total.toFixed(0)+' KB of ~5120 KB ('+pct+'% full)<br><br>';
+  html+='<b>Biggest items</b><br>'+top+'<br><br>';
+  html+='<b>Local trip backups:</b> '+bc+' trip'+(bc!==1?'s':'')+' · '+bkb.toFixed(0)+' KB<br>';
+  html+='<div class="small-note" style="margin-top:6px">Backups are a local safety net; Firebase already holds your trips. Freeing space keeps the current trip + the 3 most-recent backups.</div>';
+  html+='<button class="secondary" type="button" style="margin-top:10px;" onclick="freeDeviceStorage()">Free up space now</button>';
+  out.innerHTML=html;
+}
+function freeDeviceStorage(){
+  var before=_lsUsageKB();
+  try{
+    var b=JSON.parse(localStorage.getItem(BACKUP_KEY)||'{}');
+    var keep={},keepCode=(currentEvent&&currentEvent.code)||'';
+    if(keepCode&&b[keepCode])keep[keepCode]=b[keepCode];
+    Object.keys(b).filter(function(c){return c!==keepCode;})
+      .map(function(c){return [c,new Date((b[c]&&b[c].savedAt)||0).getTime()];})
+      .sort(function(x,y){return y[1]-x[1];})
+      .slice(0,3).forEach(function(r){keep[r[0]]=b[r[0]];});
+    localStorage.setItem(BACKUP_KEY,JSON.stringify(keep));
+  }catch(e){}
+  var freed=Math.max(0,Math.round(before-_lsUsageKB()));
+  showToast('Freed ~'+freed+' KB of device storage.','success');
+  showStorageReport();
 }
 
 function checkAndOfferRestore(ev){
@@ -5331,10 +5369,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v189';
+var APP_VERSION='v190';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v189';
+var APP_VERSION_TAG='Meal Planner v190';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

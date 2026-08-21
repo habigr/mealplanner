@@ -2466,6 +2466,22 @@ html,body{overflow-x:clip!important;overflow-y:visible!important;}
 #dishModal .ing-editor .ing-gname.has-name,#dishModal .ing-editor .ing-section.has-name{background:#EAF2FC!important;color:var(--mp-blue)!important;border-color:rgba(26,111,214,.25)!important;}
 #dishModal .ing-fr-rm{justify-content:flex-start;}
 #dishModal .ing-editor .remove-ingredient{position:static!important;grid-area:auto!important;width:auto!important;padding:4px 0!important;font-size:13.5px!important;font-weight:600!important;color:#FF3B30!important;background:transparent!important;border:none!important;box-shadow:none!important;}
+
+/* ===== v225: dish editor refinements — condense editor, reclaim left space, real drag, defined top fields ===== */
+/* collapsed row: pull content left (reclaim the gap before the blue amount) + real drag affordance */
+#dishModal .ing-summary{gap:9px!important;padding:11px 12px!important;}
+#dishModal .ingredient-row .drag-handle{font-size:12px!important;line-height:1;letter-spacing:-1px;color:#c4c5cb!important;touch-action:none;cursor:grab;padding:2px;margin:-2px -1px -2px -2px;}
+#dishModal .ingredient-row.dragging{cursor:grabbing;}
+#dishModal .ing-sum-amt{min-width:0!important;}
+#dishModal .ing-sum-sub{font-size:10.5px!important;}
+/* expanded editor: more condensed */
+#dishModal .ingredient-row.expanded .ing-editor{padding:0 12px 8px!important;}
+#dishModal .ing-fr{padding:7px 0!important;}
+#dishModal .ing-flabel{width:66px!important;}
+/* top detail fields — clearly-defined boxes so it's obvious where to type */
+#dishModal .detail-card .field-inline input,#dishModal .detail-card .field input,#dishModal .detail-card .field-inline textarea,#dishModal .detail-card .field textarea{background:#fff!important;border:1px solid rgba(60,60,67,.24)!important;border-radius:10px!important;padding:10px 12px!important;font-size:15px!important;box-shadow:inset 0 1px 1px rgba(0,0,0,.02)!important;color:#1C1C1E!important;}
+#dishModal .detail-card .field-inline input:focus,#dishModal .detail-card .field input:focus,#dishModal .detail-card .field-inline textarea:focus,#dishModal .detail-card .field textarea:focus{border-color:var(--mp-blue)!important;box-shadow:0 0 0 3px rgba(26,111,214,.13)!important;outline:none!important;}
+#dishModal .detail-card .field-inline label,#dishModal .detail-card .field label{color:#6E6E73!important;font-weight:600!important;}
 </style>
 </head>
 <body>
@@ -4717,18 +4733,20 @@ function addIngredientFromText(line){
   var p=parseIngLine(line);if(!p.quantity&&!p.unit&&!p.item)return;addIngredientRow(p.quantity,p.unit,p.item,'',p.packageNote);
 }
 function markIngredientOverride(inp,blur){var row=inp.closest('.ingredient-row');if(!row)return;var v=inp.value.trim();if(!v){if(blur){inp.value=scaleQty(row.dataset.baseQty||'',getCurrentModalScale());}row.dataset.override='';inp.classList.remove('is-override');return;}var auto=scaleQty(row.dataset.baseQty||'',getCurrentModalScale());if(v===auto){row.dataset.override='';inp.classList.remove('is-override');}else{row.dataset.override='1';inp.classList.add('is-override');}}
-function addIngredientRow(q,u,it,adjusted,packageNote,override,groceryName,component){var wrap=safeEl('ingredientRows');if(!wrap)return;var row=document.createElement('div');row.className='ingredient-row'+((q||u||it||groceryName||component)?'':' expanded');/* v224: new rows (empty) open expanded so you can type; existing rows load collapsed */row.draggable=true;u=abbrUnit(u||'');it=toTitleCaseIngredient(it||'');var hasOv=!!(override&&String(override).trim());var adj=hasOv?String(override):(adjusted||q||'');row.dataset.baseQty=q||'';row.dataset.packageNote=packageNote||'';row.dataset.override=hasOv?'1':'';row.dataset.groceryName=groceryName||'';row.dataset.component=component||'';row.dataset.origItem=it||'';/* v145: carry groceryName + component through the edit pipeline; v150: origItem snapshot for rename detection */row.innerHTML='<div class="ing-summary" onclick="toggleIngRow(this)"><span class="drag-handle">⋮⋮</span><span class="ing-sum-amt"></span><span class="ing-sum-name"><span class="ing-sum-title"></span><span class="ing-sum-sub"></span></span><span class="ing-sum-chev">›</span></div>'
+function addIngredientRow(q,u,it,adjusted,packageNote,override,groceryName,component){var wrap=safeEl('ingredientRows');if(!wrap)return;var row=document.createElement('div');row.className='ingredient-row'+((q||u||it||groceryName||component)?'':' expanded');/* v224: new rows (empty) open expanded so you can type; existing rows load collapsed */row.draggable=false;/* v225: pointer-based reorder instead of desktop-only HTML5 drag */u=abbrUnit(u||'');it=toTitleCaseIngredient(it||'');var hasOv=!!(override&&String(override).trim());var adj=hasOv?String(override):(adjusted||q||'');row.dataset.baseQty=q||'';row.dataset.packageNote=packageNote||'';row.dataset.override=hasOv?'1':'';row.dataset.groceryName=groceryName||'';row.dataset.component=component||'';row.dataset.origItem=it||'';/* v145: carry groceryName + component through the edit pipeline; v150: origItem snapshot for rename detection */row.innerHTML='<div class="ing-summary" onclick="toggleIngRow(this)"><span class="drag-handle" onpointerdown="ingHandleDown(event)" onclick="event.stopPropagation()">⋮⋮</span><span class="ing-sum-amt"></span><span class="ing-sum-name"><span class="ing-sum-title"></span><span class="ing-sum-sub"></span></span><span class="ing-sum-chev">›</span></div>'
 +'<div class="ing-editor">'
++'<div class="ing-fr"><span class="ing-flabel">Ingredient</span><span class="ing-fval"><input class="ing-item" list="ingredientSuggestions" placeholder="Ingredient" value="'+escAttr(it||'')+'" oninput="refreshIngSummary(this.closest(&quot;.ingredient-row&quot;))"></span></div>'
 +'<div class="ing-fr"><span class="ing-flabel">Amount</span><span class="ing-fval"><input class="ing-qty ing-original" placeholder="Amount" value="'+escAttr(q||'')+'" oninput="this.closest(&quot;.ingredient-row&quot;).dataset.baseQty=this.value;updateScaledIngredientDisplay()"><input class="ing-unit" placeholder="Unit" value="'+escAttr(u||'')+'" oninput="refreshIngSummary(this.closest(&quot;.ingredient-row&quot;))"></span></div>'
 +'<div class="ing-fr"><span class="ing-flabel">Scaled</span><span class="ing-fval"><input class="ing-adjusted'+(hasOv?' is-override':'')+'" placeholder="Scaled" value="'+escAttr(adj)+'" title="Adjusted amount. Auto-scales from servings — type your own to override (✎), clear the box to revert." oninput="markIngredientOverride(this);refreshIngSummary(this.closest(&quot;.ingredient-row&quot;))" onblur="markIngredientOverride(this,1)"></span></div>'
-+'<div class="ing-fr"><span class="ing-flabel">Ingredient</span><span class="ing-fval"><input class="ing-item" list="ingredientSuggestions" placeholder="Ingredient" value="'+escAttr(it||'')+'" oninput="refreshIngSummary(this.closest(&quot;.ingredient-row&quot;))"></span></div>'
 +'<div class="ing-fr"><span class="ing-flabel">Buys as</span><span class="ing-fval"><button type="button" class="ing-gname'+(groceryName?' has-name':'')+'" onclick="editRowGroceryName(this)" title="Set how this appears on the grocery list">🛒 <span class="ing-gname-txt">'+(groceryName?escHtml(groceryName):'Grocery name')+'</span></button></span></div>'
-+'<div class="ing-fr"><span class="ing-flabel">Aisle</span><span class="ing-fval"><button type="button" class="ing-section'+(component?' has-name':'')+'" onclick="editRowSection(this)" title="Group this ingredient under a recipe section (e.g. Sauce)">📂 <span class="ing-section-txt">'+(component?escHtml(component):'Section')+'</span></button></span></div>'
++'<div class="ing-fr"><span class="ing-flabel">Category</span><span class="ing-fval"><button type="button" class="ing-section'+(component?' has-name':'')+'" onclick="editRowSection(this)" title="Group this ingredient under a category (e.g. Produce, Sauce)">📂 <span class="ing-section-txt">'+(component?escHtml(component):'Category')+'</span></button></span></div>'
 +'<div class="ing-fr ing-fr-rm"><button type="button" class="remove-ingredient" onclick="this.closest(&quot;.ingredient-row&quot;).remove()">Remove ingredient</button></div>'
 +'</div>';wrap.appendChild(row);if(typeof refreshIngSummary==='function')refreshIngSummary(row);row.addEventListener('dragstart',function(){row.classList.add('dragging');});row.addEventListener('dragend',function(){row.classList.remove('dragging');});}
 // v224: A3 dish-editor — collapse a row to a calm recipe line; tap to reveal the labeled editor. Inputs are unchanged (save/scale/grocery logic reads the same fields).
 function toggleIngRow(sumEl){var row=sumEl&&sumEl.closest('.ingredient-row');if(!row)return;var open=row.classList.toggle('expanded');if(!open){refreshIngSummary(row);}else{var it=row.querySelector('.ing-item');if(it&&!String(it.value).trim())setTimeout(function(){try{it.focus();}catch(e){}},60);}}
 function refreshIngSummary(row){if(!row)return;var adj=row.querySelector('.ing-adjusted'),orig=row.querySelector('.ing-original')||row.querySelector('.ing-qty'),unit=row.querySelector('.ing-unit'),item=row.querySelector('.ing-item');var amt=((adj&&String(adj.value).trim())||(orig&&String(orig.value).trim())||'');var u=(unit&&String(unit.value).trim())||'';var name=(item&&String(item.value).trim())||'New ingredient';var amtEl=row.querySelector('.ing-sum-amt');if(amtEl)amtEl.textContent=(amt?amt:'')+(amt&&u?' '+u:(amt?'':u));var titleEl=row.querySelector('.ing-sum-title');if(titleEl)titleEl.textContent=name;var subEl=row.querySelector('.ing-sum-sub');if(subEl){var bits=[];var g=row.dataset.groceryName||'';var c=row.dataset.component||'';if(g)bits.push('🛒 '+g);if(c)bits.push('📂 '+c);subEl.textContent=bits.join('   ·   ');subEl.style.display=bits.length?'block':'none';}}
+// v225: pointer-based reorder for ingredient rows — works on touch AND mouse (HTML5 drag was desktop-only, so "Drag to reorder" did nothing on phones).
+function ingHandleDown(e){var handle=e.currentTarget||e.target;var row=handle&&handle.closest('.ingredient-row');if(!row)return;var wrap=row.parentElement;if(!wrap)return;e.preventDefault();e.stopPropagation();row.classList.add('dragging');var move=function(ev){var y=(ev.clientY!=null?ev.clientY:(ev.touches&&ev.touches[0]?ev.touches[0].clientY:0));var after=getDragAfter(wrap,y);if(after==null){wrap.appendChild(row);}else if(after!==row){wrap.insertBefore(row,after);}};var up=function(){row.classList.remove('dragging');document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);document.removeEventListener('pointercancel',up);if(typeof markDishModalDirty==='function')markDishModalDirty();};document.addEventListener('pointermove',move);document.addEventListener('pointerup',up);document.addEventListener('pointercancel',up);}
 // v145: edit an ingredient's grocery-list name from inside the dish edit modal — same prompt + trip-name suggestions as the view. Updates the row (saved with the dish via collectIngredients).
 async function editRowGroceryName(btn){
   var row=btn.closest('.ingredient-row');if(!row)return;
@@ -4750,7 +4768,7 @@ async function editRowSection(btn){
   var val=await promptAction({title:'Recipe section',message:'Group this ingredient under a part of the recipe — e.g. "Sauce", "Marinade", "For the topping". Leave blank for none.',defaultValue:cur,placeholder:'e.g. Sauce',confirmLabel:'Save',suggestions:getModalSectionNames(),allowEmpty:true});
   if(val==null)return;
   row.dataset.component=val.trim();
-  var txt=row.querySelector('.ing-section-txt');if(txt)txt.textContent=val.trim()||'Section';
+  var txt=row.querySelector('.ing-section-txt');if(txt)txt.textContent=val.trim()||'Category';
   btn.classList.toggle('has-name',!!val.trim());
   if(typeof refreshIngSummary==='function')refreshIngSummary(row);
   if(typeof markDishModalDirty==='function')markDishModalDirty();
@@ -5757,10 +5775,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v224';
+var APP_VERSION='v225';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v224';
+var APP_VERSION_TAG='Meal Planner v225';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

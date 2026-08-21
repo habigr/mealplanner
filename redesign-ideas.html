@@ -3,342 +3,220 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Meal Planner — Redesign Ideas v2</title>
+<title>Meal Planner — Ingredient Ideas v3</title>
 <style>
   :root{
-    --blue:#1A6FD6;
-    --blue-tint:#EAF2FC;
-    --bg:#F2F2F7;
-    --card:#FFFFFF;
-    --sep:rgba(60,60,67,.11);
-    --sep-strong:rgba(60,60,67,.18);
-    --ink:#1C1C1E;
-    --ink2:#3C3C43;
-    --muted:#8A8A8E;
-    --label:#6E6E73;
-    --red:#FF3B30;
+    --blue:#1A6FD6;--blue-tint:#EAF2FC;--bg:#F2F2F7;--card:#FFFFFF;
+    --sep:rgba(60,60,67,.11);--sep-strong:rgba(60,60,67,.18);
+    --ink:#1C1C1E;--ink2:#3C3C43;--muted:#8A8A8E;--label:#6E6E73;--red:#FF3B30;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
-    background:#dfe1e8;color:var(--ink);padding:26px 16px 80px;
-  }
+  body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;background:#dfe1e8;color:var(--ink);padding:26px 16px 80px;}
   h1.page{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px;text-align:center;}
-  p.sub{color:#5b5d66;text-align:center;margin:0 0 24px;font-size:13px;}
-
-  .tabs{display:flex;gap:8px;justify-content:center;margin:0 auto 26px;max-width:520px;}
-  .tabs button{flex:1;padding:11px 10px;border-radius:12px;border:none;cursor:pointer;font-size:14px;font-weight:700;background:#fff;color:var(--ink2);box-shadow:0 1px 3px rgba(0,0,0,.06);transition:.15s;}
-  .tabs button.active{background:var(--blue);color:#fff;box-shadow:0 4px 14px -4px var(--blue);}
-
-  .stage{display:none;}
-  .stage.active{display:block;}
-  .swipehint{text-align:center;color:#6b6d76;font-size:12px;margin:-6px 0 14px;}
+  p.sub{color:#5b5d66;text-align:center;margin:0 0 22px;font-size:13px;max-width:560px;margin-left:auto;margin-right:auto;line-height:1.5;}
+  .swipehint{text-align:center;color:#6b6d76;font-size:12px;margin:2px 0 16px;}
 
   .row{display:flex;gap:24px;justify-content:flex-start;align-items:flex-start;overflow-x:auto;padding:6px 4px 24px;scroll-snap-type:x mandatory;}
   .col{scroll-snap-align:center;flex:0 0 auto;}
   .ideaLabel{text-align:center;margin:0 0 12px;}
   .ideaLabel .n{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);}
   .ideaLabel .t{font-size:15px;font-weight:800;margin-top:2px;letter-spacing:-.01em;}
-  .ideaLabel .d{font-size:12px;color:#5b5d66;max-width:300px;margin:4px auto 0;line-height:1.4;}
+  .ideaLabel .d{font-size:12px;color:#5b5d66;max-width:300px;margin:4px auto 0;line-height:1.42;}
 
-  /* ---- phone ---- */
   .phone{width:326px;background:var(--bg);border-radius:40px;padding:11px;box-shadow:0 16px 44px -12px rgba(0,0,0,.3),0 0 0 9px #111,0 0 0 10px #2a2a2e;}
-  .screen{background:var(--bg);border-radius:31px;overflow:hidden;height:678px;display:flex;flex-direction:column;}
+  .screen{background:var(--bg);border-radius:31px;overflow:hidden;height:690px;display:flex;flex-direction:column;}
   .statusbar{display:flex;justify-content:space-between;align-items:center;padding:11px 20px 5px;font-size:12px;font-weight:700;}
-  .statusbar .dots{font-size:11px;}
   .navhdr{padding:3px 16px 11px;border-bottom:1px solid var(--sep);background:#fff;}
   .navhdr .big{font-size:19px;font-weight:800;letter-spacing:-.02em;}
   .navhdr .small{font-size:12px;color:var(--muted);margin-top:1px;}
   .scroll{flex:1;overflow-y:auto;padding:14px 14px 22px;}
   .scroll::-webkit-scrollbar{display:none;}
 
-  .grp-label{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--label);margin:18px 3px 7px;}
+  .grp-label{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--label);margin:16px 3px 7px;}
   .grp-label:first-child{margin-top:2px;}
   .grp-label.split{display:flex;justify-content:space-between;align-items:baseline;}
   .grp-label.split .r{font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted);}
 
   .list{background:var(--card);border-radius:13px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04);}
-  .li{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--sep);min-height:46px;}
+  .li{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--sep);min-height:44px;}
   .li:last-child{border-bottom:none;}
-  .li .ic{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;color:#fff;font-size:13px;}
   .li .lab{font-size:14.5px;font-weight:500;flex:1;}
-  .li .val{font-size:14px;color:var(--muted);text-align:right;}
-  .li .chev{color:#c4c4c9;font-size:17px;margin-left:1px;}
-  .li.stacked{flex-direction:column;align-items:stretch;gap:6px;}
-  .li .k{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label);}
-
-  input.fld,textarea.fld{width:100%;border:none;background:transparent;font-size:15px;font-family:inherit;color:var(--ink);padding:0;outline:none;resize:none;}
-  input.fld::placeholder,textarea.fld::placeholder{color:#b6b6bb;}
-
-  .hint{font-size:12px;color:var(--muted);padding:7px 4px 0;line-height:1.4;}
+  input.fld{width:100%;border:none;background:transparent;font-size:14.5px;font-family:inherit;color:var(--ink);padding:0;outline:none;text-align:right;max-width:80px;}
+  input.fld::placeholder{color:#b6b6bb;}
 
   .btn{border:none;border-radius:11px;font-size:14.5px;font-weight:700;font-family:inherit;padding:12px;width:100%;cursor:pointer;}
   .btn.blue{background:var(--blue);color:#fff;}
   .btn.tint{background:var(--blue-tint);color:var(--blue);}
   .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--sep-strong);}
   .btn.red{background:#fff;color:var(--red);border:1px solid rgba(255,59,48,.25);}
-
-  .tabbar{display:flex;background:#fff;border-top:1px solid var(--sep);padding:7px 6px 5px;}
-  .tabbar .t{flex:1;text-align:center;font-size:9.5px;font-weight:600;color:var(--muted);}
-  .tabbar .t.on{color:var(--blue);}
-  .tabbar .t .g{font-size:17px;display:block;margin-bottom:2px;}
-
-  .members{display:flex;}
-  .members .a{width:27px;height:27px;border-radius:50%;border:2px solid #fff;margin-left:-8px;background:linear-gradient(135deg,#7EA6E0,#1A6FD6);}
-  .members .a:first-child{margin-left:0;}
-
   .modal-actions{display:flex;gap:9px;padding:11px 14px;background:#fff;border-top:1px solid var(--sep);}
   .modal-actions .btn{flex:1;}
   .modal-actions .btn.rmv{flex:0 0 auto;padding:12px 15px;}
 
-  /* small shared pills */
-  .cart{display:inline-flex;align-items:center;gap:4px;background:var(--blue-tint);color:var(--blue);font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;}
-  .cat{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-size:12px;font-weight:600;}
+  .seg{display:flex;background:#E9E9EF;border-radius:9px;padding:3px;margin:0 0 10px;}
+  .seg .s{flex:1;text-align:center;font-size:12.5px;font-weight:600;padding:6px;border-radius:7px;color:var(--ink2);}
+  .seg .s.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+
+  .cartdot{color:var(--blue);font-size:11.5px;font-weight:600;}
+  .chev{color:#c8c8cd;font-size:16px;}
   .grip{color:#cdced3;font-size:13px;}
-  .del{color:#d0d1d6;font-size:17px;background:none;border:none;cursor:pointer;flex:0 0 auto;}
 
-  /* compact details block reused across dish phones */
-  .detailsMini .li{padding:10px 14px;min-height:42px;}
-
-  /* ===== Ingredient Style A: captioned inline ===== */
-  .ingA{background:#fff;border-radius:12px;padding:10px 11px;box-shadow:0 1px 2px rgba(0,0,0,.05);margin-bottom:9px;position:relative;}
-  .ingA .top{display:flex;align-items:center;gap:8px;}
-  .ingA .nm{flex:1;font-size:14px;font-weight:600;background:#F2F2F7;border:none;border-radius:8px;padding:9px 10px;font-family:inherit;outline:none;}
-  .ingA .line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:8px 2px 0;}
-  .chipR{background:#F2F2F7;color:var(--label);font-size:12px;font-weight:700;padding:3px 8px;border-radius:7px;}
-  .arrow{color:#c4c4c9;font-size:13px;}
-  .chipS{background:var(--blue-tint);color:var(--blue);font-size:12px;font-weight:800;padding:3px 8px;border-radius:7px;}
-  .unit{font-size:12.5px;color:var(--ink2);font-weight:600;}
-  .ingA .line .cart{margin-left:auto;}
-
-  /* ===== Ingredient Style B: aligned table ===== */
-  .tblhead{display:grid;grid-template-columns:1fr 46px 46px 52px;gap:6px;padding:0 12px 6px;font-size:10px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--label);}
-  .tblhead .c{text-align:center;}
-  .tblhead .c.s{color:var(--blue);}
-  .tblrow{display:grid;grid-template-columns:1fr 46px 46px 52px;gap:6px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--sep);}
-  .tblrow:last-child{border-bottom:none;}
-  .tblrow .nmwrap .nm{font-size:13.5px;font-weight:600;}
-  .tblrow .nmwrap .sub{font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;}
-  .tblrow .cell{text-align:center;font-size:14px;}
-  .tblrow .cell.r{color:var(--muted);}
-  .tblrow .cell.s{color:var(--blue);font-weight:800;}
-  .tblrow .cell.u{color:var(--ink2);font-size:12.5px;}
-
-  /* ===== Ingredient Style C: amount-forward ===== */
-  .ingC{display:flex;align-items:center;gap:11px;background:#fff;border-radius:12px;padding:9px 11px;box-shadow:0 1px 2px rgba(0,0,0,.05);margin-bottom:9px;}
-  .ingC .amt{flex:0 0 auto;width:52px;background:var(--blue-tint);border-radius:10px;padding:7px 4px;text-align:center;}
-  .ingC .amt .big{font-size:17px;font-weight:800;color:var(--blue);line-height:1;}
-  .ingC .amt .u{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.02em;margin-top:2px;}
-  .ingC .body{flex:1;min-width:0;}
-  .ingC .body .nm{font-size:14px;font-weight:600;}
-  .ingC .body .meta{display:flex;align-items:center;gap:7px;margin-top:3px;}
-  .ingC .body .was{font-size:11px;color:var(--muted);}
-
-  /* ===== Ingredient Style D: stepper ===== */
-  .ingD{background:#fff;border-radius:12px;padding:10px 11px;box-shadow:0 1px 2px rgba(0,0,0,.05);margin-bottom:9px;}
-  .ingD .nm{width:100%;font-size:14px;font-weight:600;background:#F2F2F7;border:none;border-radius:8px;padding:9px 10px;font-family:inherit;outline:none;}
-  .ingD .ctl{display:flex;align-items:center;gap:9px;margin:9px 2px 0;}
-  .stepper{display:inline-flex;align-items:center;background:var(--blue-tint);border-radius:9px;overflow:hidden;}
+  /* ===== A: recipe text, tap to expand ===== */
+  .recRow{padding:11px 14px;border-bottom:1px solid var(--sep);display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .recRow:last-child{border-bottom:none;}
+  .recRow .amt{font-size:14.5px;font-weight:800;color:var(--blue);min-width:52px;}
+  .recRow .amt .u{font-weight:600;color:var(--ink2);font-size:12.5px;}
+  .recRow .nm{flex:1;font-size:14.5px;font-weight:500;}
+  .recRow .nm .sub{display:block;font-size:11px;color:var(--muted);margin-top:1px;}
+  .expand{background:#F7F8FA;border-bottom:1px solid var(--sep);padding:13px 14px;}
+  .expand .fr{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+  .expand .fr:last-of-type{margin-bottom:0;}
+  .expand .flabel{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--label);width:66px;flex:0 0 auto;}
+  .stepper{display:inline-flex;align-items:center;background:#fff;border:1px solid var(--sep-strong);border-radius:9px;overflow:hidden;}
   .stepper button{border:none;background:none;color:var(--blue);font-size:16px;font-weight:700;width:30px;height:30px;cursor:pointer;}
-  .stepper .num{min-width:26px;text-align:center;font-size:14px;font-weight:800;color:var(--blue);}
-  .unitsel{font-size:13px;font-weight:600;color:var(--ink2);background:#F2F2F7;border-radius:9px;padding:6px 10px;}
-  .ingD .ctl .was{font-size:11px;color:var(--muted);margin-left:auto;}
-  .ingD .ctl2{display:flex;align-items:center;gap:7px;margin:8px 2px 0;}
+  .stepper .num{min-width:28px;text-align:center;font-size:14px;font-weight:800;}
+  .pillsel{font-size:13px;font-weight:600;color:var(--ink2);background:#fff;border:1px solid var(--sep-strong);border-radius:9px;padding:6px 11px;}
+  .autotext{font-size:12.5px;color:var(--muted);}
+  .autotext b{color:var(--blue);}
+  .miniremove{color:var(--red);font-size:12.5px;font-weight:600;margin-left:auto;}
 
-  .note{max-width:520px;margin:30px auto 0;background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.06);font-size:13px;color:#42444c;line-height:1.55;}
+  /* ===== B: two-column ledger ===== */
+  .ledger .lr{display:grid;grid-template-columns:70px 1fr auto;gap:10px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--sep);}
+  .ledger .lr:last-child{border-bottom:none;}
+  .ledger .q{font-size:14px;font-weight:800;color:var(--ink);}
+  .ledger .q .u{font-weight:600;color:var(--muted);font-size:12px;display:block;margin-top:-1px;}
+  .ledger .n{font-size:14.5px;font-weight:500;}
+  .ledger .n .sub{display:block;font-size:11px;color:var(--blue);font-weight:600;margin-top:1px;}
+
+  /* ===== D: notes checklist ===== */
+  .checkrow{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--sep);}
+  .checkrow:last-child{border-bottom:none;}
+  .bullet{width:8px;height:8px;border-radius:50%;background:var(--blue);flex:0 0 auto;opacity:.5;}
+  .checkrow .n{flex:1;font-size:14.5px;font-weight:500;}
+  .checkrow .n .sub{display:block;font-size:11px;color:var(--muted);margin-top:1px;}
+  .checkrow .tail{font-size:13.5px;font-weight:700;color:var(--blue);}
+
+  /* ===== C: full editor sheet ===== */
+  .sheetField{margin-bottom:14px;}
+  .sheetField .l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--label);margin:0 2px 6px;}
+  .sheetField .inp{background:#fff;border:1px solid var(--sep-strong);border-radius:11px;padding:12px 13px;font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+  .sheetField .inp .g{color:var(--muted);}
+  .two{display:flex;gap:10px;}
+  .two>div{flex:1;}
+
+  .note{max-width:560px;margin:30px auto 0;background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.06);font-size:13px;color:#42444c;line-height:1.6;}
   .note b{color:var(--ink);}
 </style>
 </head>
 <body>
 
-<h1 class="page">Redesign Ideas — v2</h1>
-<p class="sub">Smaller type throughout · 4 new ingredient styles · Settings locked to Option 3</p>
+<h1 class="page">Ingredient Editor — new approach</h1>
+<p class="sub">The fix for “clunky”: stop cramming 8 controls into every row. The list <b>reads like a recipe</b> and stays calm; the edit controls appear only when you <b>tap a row</b>. Four takes below.</p>
+<p class="swipehint">← swipe to compare all 4 →</p>
 
-<div class="tabs">
-  <button id="tabDish" class="active" onclick="show('dish')">🍽️ Ingredient Styles</button>
-  <button id="tabSet" onclick="show('set')">⚙️ Settings (Option 3)</button>
-</div>
+<div class="row">
 
-<!-- ============ DISH: 4 INGREDIENT STYLES ============ -->
-<div id="dish" class="stage active">
-  <p class="swipehint">← swipe to compare all 4 ingredient styles →</p>
-  <div class="row">
-
-    <!-- A: captioned inline -->
-    <div class="col">
-      <div class="ideaLabel"><span class="n">Style A</span><div class="t">Captioned line</div>
-        <div class="d">Keeps Recipe→Scaled you liked, but on <b>one slim line</b> instead of 3 big tiles. Half the height.</div></div>
-      <div class="phone"><div class="screen">
-        <div class="statusbar"><span>4:43</span><span class="dots">📶 🔋</span></div>
-        <div class="navhdr"><div class="big">Mimosas</div><div class="small">Brunch · Aug 21</div></div>
-        <div class="scroll">
-          <div class="grp-label">Details</div>
-          <div class="list detailsMini">
-            <div class="li"><span class="lab">Recipe serves</span><input class="fld" style="text-align:right;max-width:80px" placeholder="4"></div>
-            <div class="li"><span class="lab">Cooking for</span><input class="fld" style="text-align:right;max-width:80px" placeholder="8"></div>
+  <!-- A: recipe text + inline expand -->
+  <div class="col">
+    <div class="ideaLabel"><span class="n">Idea A</span><div class="t">Reads like a recipe · tap to edit</div>
+      <div class="d">Collapsed, each line is just “<b>2 bottles</b> champagne.” Tap one and it opens a clean inline editor (stepper, unit, where-it-buys). One row open at a time.</div></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>4:43</span><span>📶 🔋</span></div>
+      <div class="navhdr"><div class="big">Mimosas</div><div class="small">Brunch · Aug 21 · serves 8</div></div>
+      <div class="scroll">
+        <div class="grp-label split"><span>Ingredients</span><span class="r">Scaled for 8</span></div>
+        <div class="list">
+          <!-- expanded row -->
+          <div class="recRow" style="background:#F7F8FA"><span class="grip">≡</span><span class="amt">2<span class="u"> btl</span></span><span class="nm">champagne or prosecco</span><span class="chev">⌄</span></div>
+          <div class="expand">
+            <div class="fr"><span class="flabel">Amount</span><div class="stepper"><button>–</button><span class="num">2</span><button>+</button></div><span class="pillsel">bottle ⌄</span></div>
+            <div class="fr"><span class="flabel">Scaled</span><span class="autotext">auto → <b>2 bottles</b> for 8 people</span></div>
+            <div class="fr"><span class="flabel">Buys as</span><span class="pillsel" style="color:var(--blue)">🛒 champagne</span><span class="pillsel">📂 Beverages</span></div>
+            <div class="fr"><span class="flabel"></span><span class="miniremove">Remove ingredient</span></div>
           </div>
-          <div class="grp-label split"><span>Ingredients</span><span class="r">Drag to reorder</span></div>
-          <div class="ingA">
-            <div class="top"><span class="grip">≡</span><input class="nm" value="champagne or prosecco"><button class="del">×</button></div>
-            <div class="line"><span class="chipR">Recipe 2</span><span class="arrow">→</span><span class="chipS">2</span><span class="unit">bottle</span><span class="cart">🛒 champagne</span></div>
-          </div>
-          <div class="ingA">
-            <div class="top"><span class="grip">≡</span><input class="nm" value="fresh orange juice"><button class="del">×</button></div>
-            <div class="line"><span class="chipR">Recipe 4</span><span class="arrow">→</span><span class="chipS">4</span><span class="unit">cup</span><span class="cart">🛒 orange juice</span></div>
-          </div>
-          <div class="ingA">
-            <div class="top"><span class="grip">≡</span><input class="nm" value="triple sec"><button class="del">×</button></div>
-            <div class="line"><span class="chipR">Recipe 2</span><span class="arrow">→</span><span class="chipS">2</span><span class="unit">oz</span><span class="cart">🛒 triple sec</span></div>
-          </div>
-          <button class="btn tint" style="margin-top:3px">+ Add ingredient</button>
+          <!-- collapsed rows -->
+          <div class="recRow"><span class="grip">≡</span><span class="amt">4<span class="u"> cup</span></span><span class="nm">fresh orange juice<span class="sub">🛒 orange juice</span></span><span class="chev">›</span></div>
+          <div class="recRow"><span class="grip">≡</span><span class="amt">2<span class="u"> oz</span></span><span class="nm">triple sec<span class="sub">🛒 triple sec</span></span><span class="chev">›</span></div>
+          <div class="recRow"><span class="grip">≡</span><span class="amt">1<span class="u"> pt</span></span><span class="nm">fresh strawberries<span class="sub">🛒 strawberries</span></span><span class="chev">›</span></div>
         </div>
-        <div class="modal-actions"><button class="btn red rmv">Remove</button><button class="btn ghost">Cancel</button><button class="btn blue">Save</button></div>
-      </div></div>
-    </div>
-
-    <!-- B: aligned table -->
-    <div class="col">
-      <div class="ideaLabel"><span class="n">Style B</span><div class="t">Aligned table</div>
-        <div class="d">Labels appear <b>once</b> at the top, not on every card. Rows are tiny and perfectly scannable — see everything at a glance.</div></div>
-      <div class="phone"><div class="screen">
-        <div class="statusbar"><span>4:43</span><span class="dots">📶 🔋</span></div>
-        <div class="navhdr"><div class="big">Mimosas</div><div class="small">Brunch · Aug 21</div></div>
-        <div class="scroll">
-          <div class="grp-label">Details</div>
-          <div class="list detailsMini">
-            <div class="li"><span class="lab">Recipe serves</span><input class="fld" style="text-align:right;max-width:80px" placeholder="4"></div>
-            <div class="li"><span class="lab">Cooking for</span><input class="fld" style="text-align:right;max-width:80px" placeholder="8"></div>
-          </div>
-          <div class="grp-label">Ingredients</div>
-          <div class="tblhead"><span>Item</span><span class="c">Recipe</span><span class="c s">Scaled</span><span class="c">Unit</span></div>
-          <div class="list">
-            <div class="tblrow"><div class="nmwrap"><div class="nm">champagne or prosecco</div><div class="sub">🛒 champagne</div></div><span class="cell r">2</span><span class="cell s">2</span><span class="cell u">bottle</span></div>
-            <div class="tblrow"><div class="nmwrap"><div class="nm">fresh orange juice</div><div class="sub">🛒 orange juice</div></div><span class="cell r">4</span><span class="cell s">4</span><span class="cell u">cup</span></div>
-            <div class="tblrow"><div class="nmwrap"><div class="nm">triple sec</div><div class="sub">🛒 triple sec</div></div><span class="cell r">2</span><span class="cell s">2</span><span class="cell u">oz</span></div>
-            <div class="tblrow"><div class="nmwrap"><div class="nm">strawberries</div><div class="sub">🛒 strawberries</div></div><span class="cell r">1</span><span class="cell s">1</span><span class="cell u">pint</span></div>
-          </div>
-          <button class="btn tint" style="margin-top:12px">+ Add ingredient</button>
-        </div>
-        <div class="modal-actions"><button class="btn red rmv">Remove</button><button class="btn ghost">Cancel</button><button class="btn blue">Save</button></div>
-      </div></div>
-    </div>
-
-    <!-- C: amount-forward -->
-    <div class="col">
-      <div class="ideaLabel"><span class="n">Style C</span><div class="t">Amount-forward</div>
-        <div class="d">The number you actually shop by (Scaled) gets a bold blue chip on the left; the recipe amount is quiet subtext. Very grocery-like.</div></div>
-      <div class="phone"><div class="screen">
-        <div class="statusbar"><span>4:43</span><span class="dots">📶 🔋</span></div>
-        <div class="navhdr"><div class="big">Mimosas</div><div class="small">Brunch · Aug 21</div></div>
-        <div class="scroll">
-          <div class="grp-label">Details</div>
-          <div class="list detailsMini">
-            <div class="li"><span class="lab">Recipe serves</span><input class="fld" style="text-align:right;max-width:80px" placeholder="4"></div>
-            <div class="li"><span class="lab">Cooking for</span><input class="fld" style="text-align:right;max-width:80px" placeholder="8"></div>
-          </div>
-          <div class="grp-label split"><span>Ingredients</span><span class="r">Scaled for 8</span></div>
-          <div class="ingC"><div class="amt"><div class="big">2</div><div class="u">bottle</div></div><div class="body"><div class="nm">champagne or prosecco</div><div class="meta"><span class="cart">🛒 champagne</span><span class="was">recipe: 2</span></div></div><button class="del">×</button></div>
-          <div class="ingC"><div class="amt"><div class="big">4</div><div class="u">cup</div></div><div class="body"><div class="nm">fresh orange juice</div><div class="meta"><span class="cart">🛒 orange juice</span><span class="was">recipe: 4</span></div></div><button class="del">×</button></div>
-          <div class="ingC"><div class="amt"><div class="big">2</div><div class="u">oz</div></div><div class="body"><div class="nm">triple sec</div><div class="meta"><span class="cart">🛒 triple sec</span><span class="was">recipe: 2</span></div></div><button class="del">×</button></div>
-          <button class="btn tint" style="margin-top:3px">+ Add ingredient</button>
-        </div>
-        <div class="modal-actions"><button class="btn red rmv">Remove</button><button class="btn ghost">Cancel</button><button class="btn blue">Save</button></div>
-      </div></div>
-    </div>
-
-    <!-- D: stepper -->
-    <div class="col">
-      <div class="ideaLabel"><span class="n">Style D</span><div class="t">Tap-to-adjust</div>
-        <div class="d">Scaled amount is a real –/+ stepper (no keyboard needed), unit is a tap-chip, recipe amount sits quietly to the right. Most “app-like” to edit.</div></div>
-      <div class="phone"><div class="screen">
-        <div class="statusbar"><span>4:43</span><span class="dots">📶 🔋</span></div>
-        <div class="navhdr"><div class="big">Mimosas</div><div class="small">Brunch · Aug 21</div></div>
-        <div class="scroll">
-          <div class="grp-label">Details</div>
-          <div class="list detailsMini">
-            <div class="li"><span class="lab">Recipe serves</span><input class="fld" style="text-align:right;max-width:80px" placeholder="4"></div>
-            <div class="li"><span class="lab">Cooking for</span><input class="fld" style="text-align:right;max-width:80px" placeholder="8"></div>
-          </div>
-          <div class="grp-label">Ingredients</div>
-          <div class="ingD">
-            <input class="nm" value="champagne or prosecco">
-            <div class="ctl"><div class="stepper"><button>–</button><span class="num">2</span><button>+</button></div><span class="unitsel">bottle ⌄</span><span class="was">recipe: 2</span></div>
-            <div class="ctl2"><span class="cart">🛒 champagne</span><span class="cat">📂 Beverages</span></div>
-          </div>
-          <div class="ingD">
-            <input class="nm" value="fresh orange juice">
-            <div class="ctl"><div class="stepper"><button>–</button><span class="num">4</span><button>+</button></div><span class="unitsel">cup ⌄</span><span class="was">recipe: 4</span></div>
-            <div class="ctl2"><span class="cart">🛒 orange juice</span><span class="cat">📂 Produce</span></div>
-          </div>
-          <button class="btn tint" style="margin-top:3px">+ Add ingredient</button>
-        </div>
-        <div class="modal-actions"><button class="btn red rmv">Remove</button><button class="btn ghost">Cancel</button><button class="btn blue">Save</button></div>
-      </div></div>
-    </div>
-
+        <button class="btn tint" style="margin-top:12px">+ Add ingredient</button>
+      </div>
+      <div class="modal-actions"><button class="btn red rmv">Remove</button><button class="btn ghost">Cancel</button><button class="btn blue">Save</button></div>
+    </div></div>
   </div>
-</div>
 
-<!-- ============ SETTINGS: OPTION 3, SMALLER ============ -->
-<div id="set" class="stage">
-  <p class="swipehint">Option 3 — smaller type</p>
-  <div class="row" style="justify-content:center">
-    <div class="col">
-      <div class="ideaLabel"><span class="n">Chosen</span><div class="t">Trip hero + minimal list</div>
-        <div class="d">Same direction you picked, with every font size stepped down and spacing tightened.</div></div>
-      <div class="phone"><div class="screen">
-        <div class="statusbar"><span>4:43</span><span class="dots">📶 🔋</span></div>
-        <div class="navhdr"><div class="big">Trip Settings</div></div>
-        <div class="scroll">
-          <div style="background:linear-gradient(160deg,#3F86E8,#1A6FD6,#1560C4);border-radius:16px;padding:15px 16px;color:#fff;box-shadow:0 8px 20px -8px rgba(26,111,214,.55)">
-            <div style="font-size:19px;font-weight:800;letter-spacing:-.02em">Cape Cod</div>
-            <div style="opacity:.9;font-size:12.5px;margin-top:2px">Aug 20 – Aug 23 · 4 days</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:12px">
-              <div class="members"><span class="a" style="border-color:transparent;background:#fff3;width:24px;height:24px"></span><span class="a" style="border-color:transparent;background:#fff3;width:24px;height:24px"></span><span class="a" style="border-color:transparent;background:#fff3;width:24px;height:24px"></span></div>
-              <span style="font-size:12px;opacity:.92">You, Sarah, Mike +1</span>
-            </div>
-          </div>
-
-          <div class="grp-label">Trip</div>
-          <div class="list">
-            <div class="li"><span class="lab">Trip name</span><span class="val">Cape Cod · Aug 20</span><span class="chev">›</span></div>
-            <div class="li"><span class="lab">Dates</span><span class="val">Aug 20 – 23</span><span class="chev">›</span></div>
-            <div class="li"><span class="lab">Stores</span><span class="val">4 active</span><span class="chev">›</span></div>
-            <div class="li"><span class="lab">Refresh day layout</span><span class="chev">›</span></div>
-          </div>
-
-          <div class="grp-label">Share &amp; manage</div>
-          <div class="list">
-            <div class="li"><span class="lab">Share trip</span><span class="chev">›</span></div>
-            <div class="li"><span class="lab">Activity log</span><span class="chev">›</span></div>
-            <div class="li"><span class="lab">App admin</span><span class="chev">›</span></div>
-            <div class="li"><span class="lab" style="color:var(--blue)">Archive trip</span><span class="chev">›</span></div>
-          </div>
+  <!-- B: two-column ledger -->
+  <div class="col">
+    <div class="ideaLabel"><span class="n">Idea B</span><div class="t">Printed-recipe ledger</div>
+      <div class="d">Amount column, then ingredient — like a cookbook. No cards, just hairlines. A single toggle up top flips the whole list between recipe & scaled amounts.</div></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>4:43</span><span>📶 🔋</span></div>
+      <div class="navhdr"><div class="big">Mimosas</div><div class="small">Brunch · Aug 21 · serves 8</div></div>
+      <div class="scroll">
+        <div class="grp-label">Ingredients</div>
+        <div class="seg"><div class="s">Recipe (4)</div><div class="s on">Scaled for 8</div></div>
+        <div class="list ledger">
+          <div class="lr"><span class="q">2<span class="u">bottle</span></span><span class="n">champagne or prosecco<span class="sub">🛒 champagne</span></span><span class="chev">›</span></div>
+          <div class="lr"><span class="q">4<span class="u">cup</span></span><span class="n">fresh orange juice<span class="sub">🛒 orange juice</span></span><span class="chev">›</span></div>
+          <div class="lr"><span class="q">2<span class="u">oz</span></span><span class="n">triple sec<span class="sub">🛒 triple sec</span></span><span class="chev">›</span></div>
+          <div class="lr"><span class="q">1<span class="u">pint</span></span><span class="n">fresh strawberries<span class="sub">🛒 strawberries</span></span><span class="chev">›</span></div>
         </div>
-        <div class="tabbar">
-          <div class="t"><span class="g">⌂</span>All Trips</div>
-          <div class="t"><span class="g">📖</span>Meal Plan</div>
-          <div class="t"><span class="g">🛒</span>Groceries</div>
-          <div class="t on"><span class="g">⚙</span>Settings</div>
-        </div>
-      </div></div>
-    </div>
+        <button class="btn tint" style="margin-top:12px">+ Add ingredient</button>
+      </div>
+      <div class="modal-actions"><button class="btn red rmv">Remove</button><button class="btn ghost">Cancel</button><button class="btn blue">Save</button></div>
+    </div></div>
   </div>
+
+  <!-- C: minimal list + full editor sheet -->
+  <div class="col">
+    <div class="ideaLabel"><span class="n">Idea C</span><div class="t">Minimal list → full editor</div>
+      <div class="d">The list is as bare as it gets. Tap a row and a proper full-screen editor opens with big, roomy fields — nothing cramped because you edit <b>one</b> ingredient at a time.</div></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>4:43</span><span>📶 🔋</span></div>
+      <div class="navhdr"><div style="display:flex;align-items:center;gap:10px"><span style="color:var(--blue);font-size:15px;font-weight:600">‹ Mimosas</span></div><div class="big" style="margin-top:2px">Edit ingredient</div></div>
+      <div class="scroll">
+        <div class="sheetField"><div class="l">Ingredient</div><div class="inp">champagne or prosecco</div></div>
+        <div class="two">
+          <div class="sheetField"><div class="l">Amount</div><div class="inp">2 <span class="g">⌄</span></div></div>
+          <div class="sheetField"><div class="l">Unit</div><div class="inp">bottle <span class="g">⌄</span></div></div>
+        </div>
+        <div class="sheetField"><div class="l">Scaled for 8 people</div><div class="inp" style="color:var(--blue)">2 bottles <span class="g" style="color:var(--muted);font-weight:500">override</span></div></div>
+        <div class="sheetField"><div class="l">Buys as (grocery item)</div><div class="inp" style="color:var(--blue)">🛒 champagne <span class="g">›</span></div></div>
+        <div class="sheetField"><div class="l">Aisle / category</div><div class="inp">📂 Beverages <span class="g">›</span></div></div>
+        <button class="btn red" style="margin-top:6px">Remove ingredient</button>
+      </div>
+      <div class="modal-actions"><button class="btn ghost">Cancel</button><button class="btn blue">Done</button></div>
+    </div></div>
+  </div>
+
+  <!-- D: notes checklist -->
+  <div class="col">
+    <div class="ideaLabel"><span class="n">Idea D</span><div class="t">Notes-style list</div>
+      <div class="d">Feels like Apple Notes / Reminders — a soft bullet, the ingredient, amount quietly on the right. Calmest of all. Tap opens the same editor as C.</div></div>
+    <div class="phone"><div class="screen">
+      <div class="statusbar"><span>4:43</span><span>📶 🔋</span></div>
+      <div class="navhdr"><div class="big">Mimosas</div><div class="small">Brunch · Aug 21 · serves 8</div></div>
+      <div class="scroll">
+        <div class="grp-label split"><span>Ingredients</span><span class="r">Scaled for 8</span></div>
+        <div class="list">
+          <div class="checkrow"><span class="bullet"></span><span class="n">champagne or prosecco<span class="sub">🛒 champagne · Beverages</span></span><span class="tail">2 btl</span></div>
+          <div class="checkrow"><span class="bullet"></span><span class="n">fresh orange juice<span class="sub">🛒 orange juice · Produce</span></span><span class="tail">4 cup</span></div>
+          <div class="checkrow"><span class="bullet"></span><span class="n">triple sec<span class="sub">🛒 triple sec · Beverages</span></span><span class="tail">2 oz</span></div>
+          <div class="checkrow"><span class="bullet"></span><span class="n">fresh strawberries<span class="sub">🛒 strawberries · Produce</span></span><span class="tail">1 pt</span></div>
+        </div>
+        <button class="btn tint" style="margin-top:12px">+ Add ingredient</button>
+      </div>
+      <div class="modal-actions"><button class="btn red rmv">Remove</button><button class="btn ghost">Cancel</button><button class="btn blue">Save</button></div>
+    </div></div>
+  </div>
+
 </div>
 
 <div class="note">
-  <b>Ingredient styles — my read:</b> <b>Style B (table)</b> is the cleanest and smallest — labels once, tiny scannable rows. <b>Style A</b> is the safest evolution of what you already liked. <b>Style C</b> is best if the <i>scaled</i> number is the one that matters most day-to-day. <b>Style D</b> is nicest to actually edit on a phone (no keyboard). Tell me a letter and I'll build it + Settings Option 3 into the live app.
+  <b>The real change:</b> in all four, the list is <i>calm and readable</i> and editing is <i>on demand</i> — that's what kills the clunk, not the color of the boxes.<br><br>
+  <b>My pick: Idea A</b> — the list reads like an actual recipe, and tapping a row reveals a tidy inline editor with a –/+ stepper (no keyboard) and everything in plain language. <b>Idea C</b> is the move if you'd rather each ingredient get its own roomy full screen. Tell me a letter (or “A's list with C's editor”) and I'll build it live.
 </div>
 
-<script>
-  function show(id){
-    document.querySelectorAll('.stage').forEach(s=>s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.getElementById('tabDish').classList.toggle('active',id==='dish');
-    document.getElementById('tabSet').classList.toggle('active',id==='set');
-    window.scrollTo({top:0,behavior:'smooth'});
-  }
-</script>
 </body>
 </html>

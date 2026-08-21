@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Meal Planner — Redesign Options (Modern iOS)</title>
 <style>
   :root{
@@ -61,8 +64,12 @@
 
   .rail{display:flex;gap:26px;overflow-x:auto;padding:20px;scroll-snap-type:x mandatory;justify-content:center;flex-wrap:wrap;}
   .col{scroll-snap-align:center;}
-  .col .caption{text-align:center;font-size:13px;font-weight:700;margin:0 0 10px;color:var(--label);}
+  .col .caption{text-align:center;font-size:14px;font-weight:700;margin:0 0 10px;color:var(--label);}
   .col .caption span{display:block;font-weight:500;font-size:11.5px;color:var(--label2);margin-top:1px;}
+  .tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.03em;padding:2px 7px;border-radius:8px;vertical-align:middle;margin-left:6px;}
+  .tag.lock{background:#34C759;color:#fff;}
+  .tag.no{background:var(--fill2);color:var(--label2);}
+  .col.locked .phone{box-shadow:0 0 0 3px #34C759,0 30px 70px rgba(0,0,0,.28);}
 
   /* ---------- iPhone frame ---------- */
   .phone{
@@ -223,8 +230,12 @@
 <body>
 
 <div class="review-top">
-  <h1>Meal Planner — Redesign Options</h1>
-  <p>Modern, native-iOS direction · 2 options per screen · tap through on your phone</p>
+  <h1>Meal Planner — Redesign Options <span style="font-size:12px;font-weight:600;color:#34C759;background:rgba(52,199,89,.14);padding:2px 8px;border-radius:10px;vertical-align:middle">BUILD 6</span></h1>
+  <p>If you don't see “BUILD 6” above, your phone is showing a cached copy — add <b>?v=6</b> to the end of the URL and reload.</p>
+  <div style="margin-top:10px;background:rgba(10,132,255,.09);border:1px solid rgba(10,132,255,.25);border-radius:12px;padding:11px 14px;font-size:13px;">
+    <b style="color:var(--tint)">✅ We're building: “Crisp” + Blue accent.</b><br>
+    The other two styles below — <b>“Bold Cards”</b> and <b>“Soft Lift”</b> — are <b>not chosen</b>, shown only so you can compare. Scroll to the <b>Crisp</b> phones and the <b>More screens</b> section to see the real direction.
+  </div>
   <div class="jump">
     <a href="#mp">Meal Plan</a>
     <a href="#gl">Groceries · List</a>
@@ -265,13 +276,13 @@
 
 <!-- ============ OPTION A+ (MODERN) ============ -->
 <div class="section-label" id="modern">
-  <h2>Option A+ — more modern ✨</h2>
-  <p>Same clean grouped structure you liked, lifted: floating shadowed cards, SF Pro Rounded headings, color-coded category tiles, more air, a whisper of accent. Compare against the flatter Option A further down.</p>
+  <h2>“Soft Lift” <span style="font-size:14px;font-weight:600;color:var(--label2)">— not chosen (felt cluttered)</span></h2>
+  <p>Shown for reference only. This added shadows, rounded headings, and color tiles — you felt it was too busy. We're NOT using this. Scroll down to “Crisp” for the real direction.</p>
 </div>
 <div class="rail">
   <!-- Meal Plan A+ -->
   <div class="col">
-    <p class="caption">Meal Plan — A+ Modern<span>depth · rounded type · color tiles</span></p>
+    <p class="caption">Soft Lift <span class="tag no">NOT CHOSEN</span><span>Meal Plan · you felt this was cluttered</span></p>
     <div class="phone"><div class="screen mod">
       <div class="statusbar"><span>9:41</span><span class="r">
         <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1" fill="rgba(0,0,0,.3)"/></svg>
@@ -310,7 +321,7 @@
 
   <!-- Grocery A+ -->
   <div class="col">
-    <p class="caption">Groceries — A+ Modern<span>floating cards · category chips</span></p>
+    <p class="caption">Soft Lift <span class="tag no">NOT CHOSEN</span><span>Groceries · you felt this was cluttered</span></p>
     <div class="phone"><div class="screen mod">
       <div class="statusbar"><span>9:41</span><span class="r">
         <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1" fill="rgba(0,0,0,.3)"/></svg>
@@ -352,14 +363,14 @@
 
 <!-- ============ MEAL PLAN ============ -->
 <div class="section-label" id="mp">
-  <h2>Meal Plan <span style="font-size:14px;font-weight:500;color:var(--label2)">— original Option A (flatter)</span></h2>
+  <h2>“Crisp” <span class="tag lock" style="font-size:12px">LOCKED ✓</span> <span style="font-size:14px;font-weight:500;color:var(--label2)">— Meal Plan &amp; Groceries</span></h2>
   <p>Fixes: the giant empty meal bands → slim add rows · ragged dish cards → one consistent card, every dish shows the same info.</p>
 </div>
 
 <div class="rail">
   <!-- Meal Plan — Option A: iOS Grouped -->
-  <div class="col">
-    <p class="caption">Option A — “iOS Grouped”<span>calm, minimal, Apple Reminders style</span></p>
+  <div class="col locked">
+    <p class="caption">Crisp <span class="tag lock">LOCKED ✓</span><span>Meal Plan · the direction we're building</span></p>
     <div class="phone"><div class="screen">
       <div class="statusbar"><span>9:41</span><span class="r">
         <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1" fill="rgba(0,0,0,.3)"/></svg>
@@ -399,7 +410,7 @@
 
   <!-- Meal Plan — Option B: Modern Cards -->
   <div class="col">
-    <p class="caption">Option B — “Modern Cards”<span>photo-forward, warmer, more visual</span></p>
+    <p class="caption">Bold Cards <span class="tag no">NOT CHOSEN</span><span>Meal Plan · photo-forward alternative</span></p>
     <div class="phone"><div class="screen plain">
       <div class="statusbar"><span>9:41</span><span class="r">
         <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1" fill="rgba(0,0,0,.3)"/></svg>
@@ -448,8 +459,8 @@
 
 <div class="rail">
   <!-- Grocery — Option A: iOS Grouped -->
-  <div class="col">
-    <p class="caption">Option A — “iOS Grouped”<span>tight, scannable, Apple Reminders style</span></p>
+  <div class="col locked">
+    <p class="caption">Crisp <span class="tag lock">LOCKED ✓</span><span>Groceries · the direction we're building</span></p>
     <div class="phone"><div class="screen">
       <div class="statusbar"><span>9:41</span><span class="r">
         <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1" fill="rgba(0,0,0,.3)"/></svg>
@@ -492,7 +503,7 @@
 
   <!-- Grocery — Option B: Modern Cards -->
   <div class="col">
-    <p class="caption">Option B — “Modern Cards”<span>each department a soft card, more air</span></p>
+    <p class="caption">Bold Cards <span class="tag no">NOT CHOSEN</span><span>Groceries · department-card alternative</span></p>
     <div class="phone"><div class="screen">
       <div class="statusbar"><span>9:41</span><span class="r">
         <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="6" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="7" rx="1"/><rect x="10" y="2" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="11" rx="1" fill="rgba(0,0,0,.3)"/></svg>
@@ -531,8 +542,8 @@
 </div>
 
 <div class="section-label" id="extra">
-  <h2>Assign Stores &amp; Shop</h2>
-  <p>These will follow whichever direction you pick above — same type, spacing, and controls. Shown here in the “iOS Grouped” language as a preview.</p>
+  <h2>Assign Stores &amp; Shop <span class="tag lock" style="font-size:12px">CRISP ✓</span></h2>
+  <p>Shown in the locked “Crisp” style — same type, spacing, and controls as everything we're building.</p>
 </div>
 <div class="rail">
   <div class="col">
@@ -586,8 +597,8 @@
 
 <!-- ============ MORE SCREENS (Option A) ============ -->
 <div class="section-label" id="more">
-  <h2>More screens — Option A (clean)</h2>
-  <p>The rest of the app in the locked direction: home, a recipe detail, trip settings, and the grocery item sheet (the one piece never rebuilt).</p>
+  <h2>More screens <span class="tag lock" style="font-size:12px">CRISP ✓</span></h2>
+  <p>The rest of the app in the locked “Crisp” direction: home, a recipe detail, trip settings, and the grocery item sheet (the one piece never rebuilt).</p>
 </div>
 <div class="rail">
   <!-- All Trips -->
@@ -703,7 +714,11 @@
 </div>
 
 <div class="footer">
-  <p><b>How to use this:</b> scroll through both options for each screen. Tap the accent dots up top to try different tint colors live. Tell me: which direction for <b>Meal Plan</b> (A grouped / B cards), which for <b>Groceries</b> (A grouped / B cards), and which <b>accent color</b>. You can mix — e.g. “Meal Plan B, Groceries A, teal accent.” Then I build it into the real app, one screen per version.</p>
+  <p><b>The three directions, named:</b></p>
+  <p style="margin-top:6px">✅ <b>“Crisp”</b> — clean flat grouped lists, blue accent. <b>This is what we're building.</b> (green-ringed phones)<br>
+  ❌ <b>“Bold Cards”</b> — photo-forward card style. Not chosen.<br>
+  ❌ <b>“Soft Lift”</b> — Crisp + shadows/rounded/color-tiles. You felt it was cluttered. Not chosen.</p>
+  <p style="margin-top:10px">So the plan is locked: <b>Crisp + Blue</b>, across every screen. Just tell me “go” and I start building it into the real app — Meal Plan first (v186), tested on your phone before the next.</p>
   <p style="margin-top:10px">Everything here is a static mockup — no data, no Firebase, totally safe.</p>
 </div>
 

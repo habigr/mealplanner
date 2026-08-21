@@ -2219,6 +2219,27 @@ section#planner.page{padding-left:16px!important;padding-right:16px!important;}
 /* ===== v197: Edit Plan right-align (kill the mobile width:100%/column) ===== */
 /* Root cause: '.planner-actions{width:100%;flex-direction:column}' at line 1686 (mobile) forced Edit Plan full-width + left. Shrink-wrap + pin right. */
 #planner .planner-actions{width:auto!important;max-width:none!important;flex:0 0 auto!important;flex-direction:row!important;flex-wrap:nowrap!important;justify-content:flex-end!important;margin-left:auto!important;}
+
+/* ===== v198: Groceries — Crisp treatment (grouped gray, no blue bar, iOS blue, clean toolbar/segments/filter) ===== */
+section#grocery.page{background:#F2F2F7!important;padding:8px 16px 16px!important;}
+/* remove the medium-blue left-bar on every grocery/assign card */
+#groceryTableInner .gk-card,#grocery .shopping-section,#assignStoresGrid .assign-list.gk-card,#assignStoresGrid .assign-stores-table{border-left:none!important;}
+#grocery .gk-card{border-radius:14px!important;box-shadow:0 1px 2px rgba(16,24,40,.04),0 8px 22px rgba(16,24,40,.05)!important;}
+/* iOS-blue checkboxes */
+#grocery .grocery-check:checked,#grocery .shopping-item-check:checked{background:var(--mp-blue)!important;border-color:var(--mp-blue)!important;}
+/* segmented controls → iOS style: gray track, white selected pill, dark text */
+#grocery .segmented-control,#grocery .grocery-mode-toggle{background:rgba(120,120,128,.12)!important;border:none!important;padding:2px!important;border-radius:10px!important;}
+#grocery .segmented-control button,#grocery .grocery-mode-btn{border-radius:8px!important;color:var(--text-secondary)!important;font-weight:600!important;}
+#grocery .segmented-control button.active,#grocery .segmented-control button.on,#grocery .grocery-mode-btn.active{background:#fff!important;color:#1c1c1e!important;box-shadow:0 1px 3px rgba(0,0,0,.12)!important;}
+/* toolbar card + subtle icon actions (were cramped/cryptic) */
+#grocery .grocery-workspace-controls{background:#fff!important;border:none!important;border-radius:16px!important;box-shadow:0 1px 2px rgba(16,24,40,.05),0 8px 22px rgba(16,24,40,.05)!important;padding:12px!important;gap:10px!important;}
+#grocery .grocery-icon-actions{display:flex!important;gap:8px!important;justify-content:flex-end!important;}
+#grocery .grocery-icon-btn{width:36px!important;height:36px!important;border-radius:10px!important;background:rgba(120,120,128,.10)!important;border:none!important;color:var(--mp-blue)!important;font-size:16px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;}
+#grocery .grocery-progress-card{background:#fff!important;border:1px solid rgba(60,60,67,.10)!important;border-radius:12px!important;}
+/* mobile Filters handle → clean pill, above nav, not overlapping the chat button */
+#grocery .grocery-filter-handle{background:#fff!important;border:1px solid rgba(60,60,67,.12)!important;color:var(--mp-blue)!important;box-shadow:0 2px 12px rgba(16,24,40,.14)!important;border-radius:999px!important;font-weight:600!important;left:16px!important;right:auto!important;}
+/* align grocery sections to the page gutter */
+#grocery .gk-section{padding-left:0!important;padding-right:0!important;}
 </style>
 </head>
 <body>
@@ -5497,10 +5518,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v197';
+var APP_VERSION='v198';
 var APP_BUILD_TIME='2026-08-21';
 
-var APP_VERSION_TAG='Meal Planner v197';
+var APP_VERSION_TAG='Meal Planner v198';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

@@ -5081,7 +5081,10 @@ function getVisiblePlanDishIds(){
   var dayMap={};
   days.forEach(function(day){
     if(!day||!day.id)return;
-    var meals=Array.isArray(day.meals)?day.meals:[];
+    // v226 FIX: mirror the planner exactly — renderPlanner renders meals via (day.meals||getDefaultMealTypes()).
+    // Groceries previously used ONLY day.meals, so any day with a missing meals array showed its dishes on the
+    // plan but silently dropped every one of them from the grocery list. Fall back to the defaults just like the plan.
+    var meals=Array.isArray(day.meals)?day.meals:(typeof getDefaultMealTypes==='function'?getDefaultMealTypes():[]);
     dayMap[day.id]={};
     meals.forEach(function(meal){dayMap[day.id][meal]=true;});
   });
@@ -5354,7 +5357,7 @@ function buildGroceryList(){
   var hasDishes=currentEvent&&((currentEvent.dishes||[]).length>0||(currentEvent.manualGroceryItems||[]).length>0);
   if(currentEvent&&reconcileGroceryMeta({toast:false})&&hasDishes){saveGroceryStateNow('Could not sync grocery cleanup. It was fixed locally.');showToast('Grocery list was out of sync. Fixed stale items from deleted meals.','');}
   if(shoppingMode)tableOut.innerHTML='';else shopOut.innerHTML='';
-  populateGroceryFilters();if(assignStoresMode){var gp=safeEl('groceryProgress');if(gp)gp.innerHTML='';renderAssignStoresGrid();return;}
+  populateGroceryFilters();if(assignStoresMode){var gp=safeEl('groceryProgress');if(gp)gp.innerHTML='';renderAssignStoresGrid();updateSortButtons();return;}/* v226: keep the Store/Dept/A–Z active state in sync in Assign mode (the grid already sorts via getCurrentGroceryRows) */
   var rows=aggregateRows(),sf=getValue('groceryStoreFilter')||'All',df=getValue('groceryDepartmentFilter')||'All';
   // v152: any mixed-unit line without a fresh consolidation → run the cached AI pass once, then re-render (guarded so it can't loop)
   if(!shoppingMode&&!_consolRunning&&rows.some(function(r){return r.needsConsol;})){runGroceryConsolidation(rows).then(function(ok){if(ok)buildGroceryList();});}
@@ -5775,10 +5778,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v225';
-var APP_BUILD_TIME='2026-08-21';
+var APP_VERSION='v226';
+var APP_BUILD_TIME='2026-08-22';
 
-var APP_VERSION_TAG='Meal Planner v225';
+var APP_VERSION_TAG='Meal Planner v226';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

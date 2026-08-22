@@ -2498,6 +2498,25 @@ body.shopping-mode #grocery .grocery-sort-strip{display:none!important;}
 #grocery .shop-top{display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;gap:10px!important;padding:8px 2px 10px!important;position:static!important;background:transparent!important;border:none!important;box-shadow:none!important;flex-wrap:nowrap!important;}
 #grocery .shop-top .shop-sort-strip{align-self:flex-start!important;margin:0!important;}
 #grocery .shop-btn-group{display:flex!important;gap:8px!important;justify-content:flex-end!important;margin:0!important;flex-wrap:wrap!important;}
+
+/* ===== v228: Trip Settings (Option 3) — clean grouped canvas, trip hero, defined inputs ===== */
+#adminDrawer{background:#F2F2F7!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border-right:1px solid rgba(60,60,67,.1)!important;}
+@media(max-width:768px){#adminDrawer{border:none!important;}}
+#adminDrawer .admin-header{border-bottom:none!important;margin-bottom:6px!important;padding-bottom:2px!important;}
+#adminDrawer .admin-header h2{font-size:22px!important;font-weight:800!important;letter-spacing:-.02em!important;}
+#adminDrawer .admin-header p{color:#8A8A8E!important;font-size:13px!important;}
+.ts-hero{background:linear-gradient(160deg,#3F86E8,#1A6FD6,#1560C4)!important;color:#fff!important;border-radius:16px;padding:16px 18px;margin-bottom:18px;box-shadow:0 8px 20px -8px rgba(26,111,214,.5);}
+.ts-hero:empty{display:none!important;}
+.ts-hero-name{font-size:20px;font-weight:800;letter-spacing:-.02em;}
+.ts-hero-sub{opacity:.92;font-size:13px;margin-top:3px;}
+.ts-hero-who{opacity:.95;font-size:12px;font-weight:600;margin-top:10px;background:rgba(255,255,255,.18);display:inline-block;padding:3px 10px;border-radius:999px;}
+#adminDrawer .set-section{background:#fff!important;border:1px solid rgba(60,60,67,.1)!important;border-radius:14px!important;padding:15px 16px!important;margin-bottom:14px!important;box-shadow:0 1px 2px rgba(0,0,0,.04)!important;}
+#adminDrawer .set-section-title{font-size:12px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.05em!important;color:#6E6E73!important;margin:0 0 12px!important;}
+#adminDrawer .field label{color:#6E6E73!important;font-weight:600!important;font-size:12.5px!important;}
+#adminDrawer input:not([type=checkbox]):not([type=radio]),#adminDrawer select{background:#fff!important;border:1px solid rgba(60,60,67,.22)!important;border-radius:10px!important;padding:10px 12px!important;font-size:15px!important;color:#1C1C1E!important;box-shadow:inset 0 1px 1px rgba(0,0,0,.02)!important;}
+#adminDrawer input:not([type=checkbox]):not([type=radio]):focus,#adminDrawer select:focus{border-color:var(--mp-blue)!important;box-shadow:0 0 0 3px rgba(26,111,214,.13)!important;outline:none!important;}
+#adminDrawer .secondary{border-radius:11px!important;font-weight:700!important;}
+#adminDrawer .set-code{background:#F2F2F7!important;border:none!important;border-radius:10px!important;color:#3C3C43!important;}
 </style>
 </head>
 <body>
@@ -2777,6 +2796,9 @@ body.shopping-mode #grocery .grocery-sort-strip{display:none!important;}
 <div id="adminBackdrop" class="drawer-backdrop" onclick="toggleAdminPanel(false)"></div>
 <aside id="adminDrawer" class="admin-drawer">
   <div class="admin-header"><div><h2>Trip settings</h2><p>Settings for this trip.</p></div><button class="ghost" type="button" onclick="toggleAdminPanel(false)">Close</button></div>
+
+  <!-- v228: trip hero (Option 3) — name, dates, who's here -->
+  <div id="tripSettingsHero" class="ts-hero"></div>
 
   <div class="set-section">
     <div class="set-section-title">Details</div>
@@ -5795,10 +5817,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v227';
+var APP_VERSION='v228';
 var APP_BUILD_TIME='2026-08-22';
 
-var APP_VERSION_TAG='Meal Planner v227';
+var APP_VERSION_TAG='Meal Planner v228';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -6959,7 +6981,9 @@ function saveStoresDepartments(){var stores=getValue('adminStores').split('\n').
 function syncAdminInputs(){var ev=currentEvent||{};setValue('adminStores',(ev.stores||getDefaultStores()).join('\n'));setValue('adminDepartments',(ev.departments||getDefaultDepts()).join('\n'));setValue('adminMealTypes',(ev.mealTypes||['Breakfast','Lunch','Dinner']).join('\n'));var ik=safeEl('imageApiKeyInput');if(ik)ik.value=getImageApiKey();var pk=safeEl('pexelsKeyInput');if(pk)pk.value=getPexelsKey();renderDarkModeButton();}
 function switchAppAdminTab(tab){appAdminLastTab=tab;document.querySelectorAll('.app-admin-tab').forEach(function(b){b.classList.toggle('active',b.dataset.adminTab===tab);});document.querySelectorAll('.app-admin-tab-panel').forEach(function(p){p.classList.remove('active');});var panel=safeEl('adminTab'+tab.charAt(0).toUpperCase()+tab.slice(1));if(panel)panel.classList.add('active');if(tab==='ai'){renderApiKeyStatus();}if(tab==='data'){renderAdminTripDataList();}if(tab==='about'){var av=safeEl('aboutVersion');if(av)av.textContent=APP_VERSION;var at=safeEl('aboutBuildTime');if(at)at.textContent=APP_BUILD_TIME;}}
 function toggleAppAdmin(open){var panel=safeEl('appAdminPanel'),bd=safeEl('appAdminBackdrop');if(!panel||!bd)return;var s=typeof open==='undefined'?!panel.classList.contains('active'):open;if(s){syncAdminInputs();renderStoreRules();switchAppAdminTab(appAdminLastTab);}panel.classList.toggle('active',s);bd.classList.toggle('active',s);}
-function toggleAdminPanel(open){var drawer=safeEl('adminDrawer'),bd=safeEl('adminBackdrop');if(!drawer||!bd)return;var s=typeof open==='undefined'?!drawer.classList.contains('active'):open;if(s&&!currentEvent){showToast('Load a trip first.','error');return;}if(s)renderArchiveButton();drawer.classList.toggle('active',s);bd.classList.toggle('active',s&&!document.body.classList.contains('mobile-setup-mode'));if(!s)document.body.classList.remove('mobile-setup-mode');}
+function toggleAdminPanel(open){var drawer=safeEl('adminDrawer'),bd=safeEl('adminBackdrop');if(!drawer||!bd)return;var s=typeof open==='undefined'?!drawer.classList.contains('active'):open;if(s&&!currentEvent){showToast('Load a trip first.','error');return;}if(s){renderArchiveButton();if(typeof renderTripSettingsHero==='function')renderTripSettingsHero();}drawer.classList.toggle('active',s);bd.classList.toggle('active',s&&!document.body.classList.contains('mobile-setup-mode'));if(!s)document.body.classList.remove('mobile-setup-mode');}
+// v228: trip hero for Trip Settings (Option 3) — name, dates + day count, who's here.
+function renderTripSettingsHero(){var el=safeEl('tripSettingsHero');if(!el)return;if(!currentEvent){el.innerHTML='';return;}var name=currentEvent.name||getValue('eventName')||'This trip';var sub='';if(currentEvent.startDate&&currentEvent.endDate){try{var sd=new Date(currentEvent.startDate+'T12:00:00'),ed=new Date(currentEvent.endDate+'T12:00:00');if(!isNaN(sd)&&!isNaN(ed)){sub=sd.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' – '+ed.toLocaleDateString(undefined,{month:'short',day:'numeric'});var days=Math.round((ed-sd)/86400000)+1;if(days>0)sub+=' · '+days+' day'+(days!==1?'s':'');}}catch(e){}}var who=(typeof lastPresenceUsers!=='undefined'&&lastPresenceUsers&&lastPresenceUsers.length)?lastPresenceUsers.length:0;el.innerHTML='<div class="ts-hero-name">'+escHtml(name)+'</div>'+(sub?'<div class="ts-hero-sub">'+escHtml(sub)+'</div>':'')+(who?'<div class="ts-hero-who">'+who+' '+(who===1?'person':'people')+' here now</div>':'');}
 
 /* ===== DATA ADMIN ===== */
 function renderAdminTripDataList(){

@@ -2482,6 +2482,22 @@ html,body{overflow-x:clip!important;overflow-y:visible!important;}
 #dishModal .detail-card .field-inline input,#dishModal .detail-card .field input,#dishModal .detail-card .field-inline textarea,#dishModal .detail-card .field textarea{background:#fff!important;border:1px solid rgba(60,60,67,.24)!important;border-radius:10px!important;padding:10px 12px!important;font-size:15px!important;box-shadow:inset 0 1px 1px rgba(0,0,0,.02)!important;color:#1C1C1E!important;}
 #dishModal .detail-card .field-inline input:focus,#dishModal .detail-card .field input:focus,#dishModal .detail-card .field-inline textarea:focus,#dishModal .detail-card .field textarea:focus{border-color:var(--mp-blue)!important;box-shadow:0 0 0 3px rgba(26,111,214,.13)!important;outline:none!important;}
 #dishModal .detail-card .field-inline label,#dishModal .detail-card .field label{color:#6E6E73!important;font-weight:600!important;}
+
+/* ===== v227: grocery controls cleanup — persistent search everywhere, stable Shop toolbar, less clutter ===== */
+/* search moved out of the hidden filter sheet → always visible on every grocery tab */
+#grocery .grocery-search-persist{margin:0!important;width:100%!important;display:block!important;}
+#grocery .grocery-search-persist input{width:100%!important;max-width:none!important;}
+@media(min-width:769px){
+  .grocery-workspace-controls{grid-template-areas:"mode mode" "search search" "sort filter" "progress filter" "actions filter"!important;}
+  .grocery-search-persist{grid-area:search!important;}
+  body.shopping-mode .grocery-workspace-controls{grid-template-areas:"search search" "progress filter" "actions filter"!important;}
+}
+/* Shop already has its own By-dept / A–Z sort → hide the redundant List sort strip there */
+body.shopping-mode #grocery .grocery-sort-strip{display:none!important;}
+/* Stable Shop toolbar: sort on top, actions below — no more random floating / cut-off */
+#grocery .shop-top{display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;gap:10px!important;padding:8px 2px 10px!important;position:static!important;background:transparent!important;border:none!important;box-shadow:none!important;flex-wrap:nowrap!important;}
+#grocery .shop-top .shop-sort-strip{align-self:flex-start!important;margin:0!important;}
+#grocery .shop-btn-group{display:flex!important;gap:8px!important;justify-content:flex-end!important;margin:0!important;flex-wrap:wrap!important;}
 </style>
 </head>
 <body>
@@ -2637,6 +2653,8 @@ html,body{overflow-x:clip!important;overflow-y:visible!important;}
           </div>
         </div>
         <div class="grocery-workspace-controls">
+          <!-- v227: persistent search — always visible on List, Assign & Shop (no longer buried in the filter sheet) -->
+          <div class="grocery-search-row grocery-search-persist"><input id="grocerySearch" placeholder="Search ingredients or dishes…" oninput="clearTimeout(window._grocerySearchTimer);window._grocerySearchTimer=setTimeout(buildGroceryList,250)" /></div>
           <!-- Sort strip -->
           <div class="segmented-control grocery-sort-strip" id="grocerySortControl" aria-label="Sort groceries">
             <button type="button" data-sort="store" onclick="setGrocerySort('store')">Store</button>
@@ -2656,7 +2674,6 @@ html,body{overflow-x:clip!important;overflow-y:visible!important;}
           </div>
           <!-- 5. Filter panel (desktop: inline; mobile: controlled by handle below) -->
           <div class="grocery-filter-panel" id="groceryFilterPanel">
-            <div class="grocery-search-row"><input id="grocerySearch" placeholder="Search ingredients or dishes…" oninput="clearTimeout(window._grocerySearchTimer);window._grocerySearchTimer=setTimeout(buildGroceryList,250)" /></div>
             <div class="grocery-filter-grid">
               <div class="field"><label for="groceryDepartmentFilter">Department</label><select id="groceryDepartmentFilter" onchange="buildGroceryList()"></select></div>
               <div class="field"><label for="groceryStoreFilter">Store</label><select id="groceryStoreFilter" onchange="buildGroceryList()"></select></div>
@@ -5778,10 +5795,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v226';
+var APP_VERSION='v227';
 var APP_BUILD_TIME='2026-08-22';
 
-var APP_VERSION_TAG='Meal Planner v226';
+var APP_VERSION_TAG='Meal Planner v227';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

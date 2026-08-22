@@ -3395,6 +3395,31 @@ function _migrateStripBackupImages(){
     if(changed)localStorage.setItem(BACKUP_KEY,JSON.stringify(backups));
   }catch(e){console.warn('[Backup] migrate strip failed:',e);}
 }
+// v229 (Phase D): keep local backups BOUNDED so device storage never fills from them.
+// Keeps the current trip + the most-recent (maxKeep-1) others by savedAt. LOCAL redundant copies
+// only — Firebase + the live cache remain the source of truth; nothing live is touched.
+function _capBackups(backups,keepCode,maxKeep){
+  var codes=Object.keys(backups||{});
+  if(codes.length<=maxKeep)return backups;
+  var keep={};
+  if(keepCode&&backups[keepCode]){keep[keepCode]=backups[keepCode];}
+  var slots=Math.max(0,maxKeep-(keep[keepCode]?1:0));
+  codes.filter(function(c){return c!==keepCode;})
+    .map(function(c){return [c,new Date((backups[c]&&backups[c].savedAt)||0).getTime()];})
+    .sort(function(x,y){return y[1]-x[1];})
+    .slice(0,slots)
+    .forEach(function(r){keep[r[0]]=backups[r[0]];});
+  return keep;
+}
+// v229: silent aggressive prune used to self-heal a full-storage situation (keep current + 2 recent).
+function _autoPruneBackups(){
+  try{
+    var b=JSON.parse(localStorage.getItem(BACKUP_KEY)||'{}');
+    var keepCode=(currentEvent&&currentEvent.code)||'';
+    localStorage.setItem(BACKUP_KEY,JSON.stringify(_capBackups(b,keepCode,3)));
+    return true;
+  }catch(e){return false;}
+}
 function saveLocalBackup(ev){
   if(!ev||!ev.code)return;
   try{
@@ -3404,7 +3429,11 @@ function saveLocalBackup(ev){
       savedAt:new Date().toISOString(),
       dishCount:(ev.dishes||[]).length
     };
-    localStorage.setItem(BACKUP_KEY,JSON.stringify(backups));
+    backups=_capBackups(backups,ev.code,6); // v229: proactively bound so backups can't grow unbounded
+    try{localStorage.setItem(BACKUP_KEY,JSON.stringify(backups));}
+    catch(e){ // quota — prune harder (current + 2 recent) and retry once
+      try{localStorage.setItem(BACKUP_KEY,JSON.stringify(_capBackups(backups,ev.code,2)));}catch(e2){}
+    }
   }catch(e){console.warn('[Backup] Could not save local backup:',e);}
 }
 
@@ -3841,12 +3870,20 @@ function renderApiKeyStatus(){var key=getApiKey(),s=safeEl('apiKeyStatus'),f=saf
 // v123: a full localStorage (esp. iOS ~5MB) must NEVER throw out of a save — that would skip the
 // Firebase write that follows it (the real source of truth) and surface the scary error banner.
 // Swallow quota errors, warn, and notify once. NOTHING is deleted — the cloud keeps every edit.
-var _storageFullNotified=false;
+var _storageFullNotified=false,_autoFreeing=false;
 function _safeLSSet(key,value,label){
   try{localStorage.setItem(key,value);return true;}
   catch(e){
-    console.warn('[MealPlanner] localStorage write skipped ('+(label||key)+'):',e&&(e.name||e));
     var quota=e&&(e.name==='QuotaExceededError'||e.name==='NS_ERROR_DOM_QUOTA_REACHED'||e.code===22||e.code===1014);
+    // v229 (Phase D): self-heal — on a full device, silently prune redundant local backups and retry once,
+    // so the user never has to manually "free space." Firebase stays the source of truth; only local backups drop.
+    if(quota&&!_autoFreeing&&key!==BACKUP_KEY){
+      _autoFreeing=true;
+      var pruned=(typeof _autoPruneBackups==='function')?_autoPruneBackups():false;
+      _autoFreeing=false;
+      if(pruned){try{localStorage.setItem(key,value);return true;}catch(e2){/* still full — fall through to notice */}}
+    }
+    console.warn('[MealPlanner] localStorage write skipped ('+(label||key)+'):',e&&(e.name||e));
     if(quota&&!_storageFullNotified){
       _storageFullNotified=true;
       if(typeof showToast==='function')showToast('This device’s storage is full — your changes are still syncing to the cloud. Remove an old trip from this device to free space for offline use.','');
@@ -5817,10 +5854,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v228';
+var APP_VERSION='v229';
 var APP_BUILD_TIME='2026-08-22';
 
-var APP_VERSION_TAG='Meal Planner v228';
+var APP_VERSION_TAG='Meal Planner v229';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

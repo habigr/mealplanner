@@ -2517,6 +2517,15 @@ body.shopping-mode #grocery .grocery-sort-strip{display:none!important;}
 #adminDrawer input:not([type=checkbox]):not([type=radio]):focus,#adminDrawer select:focus{border-color:var(--mp-blue)!important;box-shadow:0 0 0 3px rgba(26,111,214,.13)!important;outline:none!important;}
 #adminDrawer .secondary{border-radius:11px!important;font-weight:700!important;}
 #adminDrawer .set-code{background:#F2F2F7!important;border:none!important;border-radius:10px!important;color:#3C3C43!important;}
+
+/* ===== v230: App Admin panel (Phase C) — Crisp: clean canvas, defined inputs, blue tabs ===== */
+#appAdminPanel{background:#F2F2F7!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border:none!important;}
+#appAdminPanel .app-admin-tabs{border-bottom:1px solid rgba(60,60,67,.12)!important;}
+#appAdminPanel .app-admin-tab.active{color:var(--mp-blue)!important;border-bottom-color:var(--mp-blue)!important;}
+#appAdminPanel .field label{color:#6E6E73!important;font-weight:600!important;font-size:12.5px!important;}
+#appAdminPanel input:not([type=checkbox]):not([type=radio]),#appAdminPanel textarea,#appAdminPanel select{background:#fff!important;border:1px solid rgba(60,60,67,.22)!important;border-radius:10px!important;padding:10px 12px!important;font-size:15px!important;color:#1C1C1E!important;box-shadow:inset 0 1px 1px rgba(0,0,0,.02)!important;}
+#appAdminPanel input:not([type=checkbox]):not([type=radio]):focus,#appAdminPanel textarea:focus,#appAdminPanel select:focus{border-color:var(--mp-blue)!important;box-shadow:0 0 0 3px rgba(26,111,214,.13)!important;outline:none!important;}
+#appAdminPanel .secondary{border-radius:11px!important;font-weight:700!important;}
 </style>
 </head>
 <body>
@@ -4876,7 +4885,7 @@ function saveDishFromModal(){
       var dishMeal=wasBankOnly?null:(getValue('dishMeal')||((currentEvent.days[0]&&currentEvent.days[0].meals&&currentEvent.days[0].meals[0])||'Dinner'));
       var vegCheck=safeEl('isVegetarianCheck');
         var pSel=getValue('dishOwner')||'';var pPhoto='',pInit='';if(pSel){var pu=getKnownUserByName(pSel);pPhoto=pu?pu.photo||'':'';pInit=pu?(pu.initials||pSel.slice(0,2)):pSel.slice(0,2);}var oldD=editingDishId?currentEvent.dishes.find(function(d){return String(d.id)===String(editingDishId);}):null;
-        dish=normalizeDish({id:editingDishId||makeId(),dayId:dishDayId,meal:dishMeal,name:name,url:getValue('dishUrl').trim(),servings:getValue('servings').trim(),peopleEating:getValue('peopleEating')||getValue('peopleEatingPlan')||'',notes:getValue('dishNotes').trim(),tags:[],isVegetarian:vegCheck?vegCheck.checked:!!(oldD&&oldD.isVegetarian),ingredients:collectIngredients(),steps:collectSteps(),isEvent:false,cookTime:(oldD&&oldD.cookTime)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.cookTime)||'',importMeta:(oldD&&oldD.importMeta)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.importMeta)||'',bankRecipeId:window._pendingBankRecipeId||'',owner:wasBankOnly?pSel:((oldD&&oldD.owner)||''),assignedTo:wasBankOnly?'':pSel,assignedToPhoto:wasBankOnly?'':pPhoto,assignedToInitials:wasBankOnly?'':pInit});if(window._pendingBankRecipeId&&!wasBankOnly)recordRecipeUsedInTrip(window._pendingBankRecipeId);window._pendingBankRecipeId=null;window._pendingLibraryRecipe=null;
+        dish=normalizeDish({id:editingDishId||makeId(),dayId:dishDayId,meal:dishMeal,name:name,url:getValue('dishUrl').trim(),servings:getValue('servings').trim(),peopleEating:getValue('peopleEating')||getValue('peopleEatingPlan')||'',notes:getValue('dishNotes').trim(),tags:[],isVegetarian:vegCheck?vegCheck.checked:!!(oldD&&oldD.isVegetarian),ingredients:collectIngredients(),steps:collectSteps(),isEvent:false,cookTime:(oldD&&oldD.cookTime)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.cookTime)||'',importMeta:(oldD&&oldD.importMeta)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.importMeta)||'',bankRecipeId:window._pendingBankRecipeId||'',/* v230 FIX (vanishing photos): editing a dish rebuilt it WITHOUT imageUrl (and other metadata), so normalizeDish reset them to '' — the photo vanished on every edit. Carry them through from the existing dish. */imageUrl:(oldD&&oldD.imageUrl)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.imageUrl)||'',source:(oldD&&oldD.source)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.source)||'',savedAt:(oldD&&oldD.savedAt)||'',personalNotes:(oldD&&oldD.personalNotes)||'',rating:(oldD&&oldD.rating)||0,dishStatus:(oldD&&oldD.dishStatus)||'',timesUsed:(oldD&&oldD.timesUsed)||0,lastUsed:(oldD&&oldD.lastUsed)||'',addedBy:(oldD&&oldD.addedBy)||'',addedAt:(oldD&&oldD.addedAt)||'',usedInTrips:(oldD&&oldD.usedInTrips)||{},owner:wasBankOnly?pSel:((oldD&&oldD.owner)||''),assignedTo:wasBankOnly?'':pSel,assignedToPhoto:wasBankOnly?'':pPhoto,assignedToInitials:wasBankOnly?'':pInit});if(window._pendingBankRecipeId&&!wasBankOnly)recordRecipeUsedInTrip(window._pendingBankRecipeId);window._pendingBankRecipeId=null;window._pendingLibraryRecipe=null;
     }
     savedDishName=dish.eventName||dish.name||'Dish';
     if(wasBankOnly){
@@ -5854,10 +5863,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v229';
+var APP_VERSION='v230';
 var APP_BUILD_TIME='2026-08-22';
 
-var APP_VERSION_TAG='Meal Planner v229';
+var APP_VERSION_TAG='Meal Planner v230';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){

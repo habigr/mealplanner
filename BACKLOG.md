@@ -122,6 +122,11 @@ The agent can create/edit recipes but **cannot add/edit the `steps` (method/inst
 
 ## NEW FEATURES / queued
 
+**BACK BURNER (Robbie, 2026-10-11) — ideas carried over from the newer apps, not scheduled:**
+- **Spending log** — record what each AI call costs (TripPlanner pattern: `usage/{id}` + monthly rollup, a Spending screen). Extend to **trip grocery spend from receipt photos** (snap a receipt → AI reads store + total + line items → per-trip spend, maybe split per person).
+- **Nutrition facts** — per-dish/per-serving nutrition estimate (calories, protein, carbs, fat) from the ingredient list; show facts only, no "healthy/unhealthy" verdicts.
+- **Today view** — live "tonight: what's cooking, who's cooking, what to pull out" (TripPlanner `liveDay` pattern). Robbie: not yet.
+
 16. **Group by toggle on recipe library** — DONE v86 (All / By chef / Recently added). Category grouping skipped (recipes have no category field). Could revisit if a category field is added.
 
 18. **App Admin vs Trip Settings restructure** — universal settings must be separated from trip-specific settings. Collapsible sections. Clean separation required before building permissions. First in the admin cluster (#18 → #19 → #20).

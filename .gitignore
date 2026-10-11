@@ -2,3 +2,5 @@ _backups/
 _check.js
 functions/node_modules/
 .firebase/
+tests/node_modules/
+tests/out/

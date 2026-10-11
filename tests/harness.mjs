@@ -16,6 +16,8 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
 let server, base, browser
 export async function start() {
   if (base) return base
+  // LIVE=1 runs the same suites against the deployed site (still hermetic: Firebase is blocked).
+  if (process.env.LIVE) { base = 'https://habigr.github.io/mealplanner'; browser = await chromium.launch(); return base }
   server = http.createServer((req, res) => {
     let p = decodeURIComponent(new URL(req.url, 'http://x').pathname)
     if (p === '/') p = '/index.html'

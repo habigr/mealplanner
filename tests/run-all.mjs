@@ -8,6 +8,8 @@ const dir = path.dirname(fileURLToPath(import.meta.url))
 const only = process.argv.slice(2)
 const files = fs.readdirSync(dir).filter(f => f.endsWith('.mjs') && !['harness.mjs', 'run-all.mjs'].includes(f))
   .filter(f => !only.length || only.includes(f.replace('.mjs', '')))
+  // Only import real suites — importing a module RUNS it, so never pick up a stray script.
+  .filter(f => /export default async function run\(/.test(fs.readFileSync(path.join(dir, f), 'utf8')))
 let total = 0, failed = 0
 for (const f of files) {
   console.log(`\n== ${f}`)

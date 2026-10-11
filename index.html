@@ -3760,6 +3760,8 @@ function subscribeToCurrentTrip(){
     if(safeEl('grocery')&&safeEl('grocery').classList.contains('active'))buildGroceryList();
     _isApplyingRemoteChange=false;
     setSyncStatus('synced');
+    // v235: after a FRESH server copy (never a stale local one), fold legacy per-item photo copies into trip avatars.
+    setTimeout(function(){if(currentEvent&&currentEvent.code===resolvedCode&&!_isApplyingRemoteChange)_maybeCompactTripPhotos(resolvedCode);},1500);
   },function(err){console.warn('[MealPlanner] trip listener:',err);setSyncStatus('error');});
 }
 function unsubscribeCurrentTrip(){
@@ -4933,7 +4935,7 @@ function saveDishFromModal(){
       var dishDayId=wasBankOnly?null:(getValue('dishDay')||(currentEvent.days[0]&&currentEvent.days[0].id)||'');
       var dishMeal=wasBankOnly?null:(getValue('dishMeal')||((currentEvent.days[0]&&currentEvent.days[0].meals&&currentEvent.days[0].meals[0])||'Dinner'));
       var vegCheck=safeEl('isVegetarianCheck');
-        var pSel=getValue('dishOwner')||'';var pPhoto='',pInit='';if(pSel){var pu=getKnownUserByName(pSel);pPhoto=pu?pu.photo||'':'';pInit=pu?(pu.initials||pSel.slice(0,2)):pSel.slice(0,2);}var oldD=editingDishId?currentEvent.dishes.find(function(d){return String(d.id)===String(editingDishId);}):null;
+        var pSel=getValue('dishOwner')||'';var pPhoto='',pInit='';if(pSel){var pu=getKnownUserByName(pSel);pPhoto=pu?pu.photo||'':'';pInit=pu?(pu.initials||pSel.slice(0,2)):pSel.slice(0,2);if(pPhoto&&currentEvent)_stampTripPersonSoon(pSel,pPhoto,pInit);pPhoto='';/* v235: avatar lives once on the trip */}var oldD=editingDishId?currentEvent.dishes.find(function(d){return String(d.id)===String(editingDishId);}):null;
         dish=normalizeDish({id:editingDishId||makeId(),dayId:dishDayId,meal:dishMeal,name:name,url:getValue('dishUrl').trim(),servings:getValue('servings').trim(),peopleEating:getValue('peopleEating')||getValue('peopleEatingPlan')||'',notes:getValue('dishNotes').trim(),tags:[],isVegetarian:vegCheck?vegCheck.checked:!!(oldD&&oldD.isVegetarian),ingredients:collectIngredients(),steps:collectSteps(),isEvent:false,cookTime:(oldD&&oldD.cookTime)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.cookTime)||'',importMeta:(oldD&&oldD.importMeta)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.importMeta)||'',bankRecipeId:window._pendingBankRecipeId||'',/* v230 FIX (vanishing photos): editing a dish rebuilt it WITHOUT imageUrl (and other metadata), so normalizeDish reset them to '' — the photo vanished on every edit. Carry them through from the existing dish. */imageUrl:(window._pendingDishImageUrlSet?window._pendingDishImageUrl:((oldD&&oldD.imageUrl)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.imageUrl)||'')),source:(oldD&&oldD.source)||(window._pendingLibraryRecipe&&window._pendingLibraryRecipe.source)||'',savedAt:(oldD&&oldD.savedAt)||'',personalNotes:(oldD&&oldD.personalNotes)||'',rating:(oldD&&oldD.rating)||0,dishStatus:(oldD&&oldD.dishStatus)||'',timesUsed:(oldD&&oldD.timesUsed)||0,lastUsed:(oldD&&oldD.lastUsed)||'',addedBy:(oldD&&oldD.addedBy)||'',addedAt:(oldD&&oldD.addedAt)||'',usedInTrips:(oldD&&oldD.usedInTrips)||{},owner:wasBankOnly?pSel:((oldD&&oldD.owner)||''),assignedTo:wasBankOnly?'':pSel,assignedToPhoto:wasBankOnly?'':pPhoto,assignedToInitials:wasBankOnly?'':pInit});if(window._pendingBankRecipeId&&!wasBankOnly)recordRecipeUsedInTrip(window._pendingBankRecipeId);window._pendingBankRecipeId=null;window._pendingLibraryRecipe=null;
     }
     savedDishName=dish.eventName||dish.name||'Dish';
@@ -5918,10 +5920,10 @@ var wakeLock=null;
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',function(){wakeLock=null;});}}catch(e){console.warn('Wake lock unavailable',e);}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){}}
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&shoppingMode)requestWakeLock();});
-var APP_VERSION='v234';
+var APP_VERSION='v235';
 var APP_BUILD_TIME='2026-10-11';
 
-var APP_VERSION_TAG='Meal Planner v234';
+var APP_VERSION_TAG='Meal Planner v235';
 function registerUpdateCheck(){
   // Unregister any stale service workers
   if('serviceWorker' in navigator){
@@ -6000,7 +6002,7 @@ function renderShoppingList(out,rows){
     if(!visible.length)return '';// when hiding done (or all bought), drop the section entirely
     return'<div class="shopping-section'+(allDone?' done collapsed':'')+'"><div class="shopping-section-header" onclick="this.parentElement.classList.toggle(\'collapsed\')"><h3>'+(allDone?'✓ ':'')+escHtml(store==='Unassigned'?'Needs a store':store)+'</h3><span class="shopping-section-count">'+sb+'/'+items.length+(allDone?' ✓':' done')+'</span></div><div class="shopping-section-body">'+visible.map(function(r){
       var iid='s-'+r.key.replace(/[^a-z0-9]/gi,'')+store.replace(/[^a-z0-9]/gi,''),isDup=storeCounts[r.key]>1,isBought=r.status==='Bought',isMe=isBought&&r.checkedBy===myInitials;
-      var checkerAvatar=isBought?renderAvatarFromProfile({name:r.checkedByName||r.checkedBy,initials:r.checkedBy,photo:r.checkedByPhoto||''},18,'vertical-align:middle;margin-right:4px;'):'';
+      var checkerAvatar=isBought?renderAvatarFromProfile({name:r.checkedByName||r.checkedBy,initials:r.checkedBy,photo:r.checkedByPhoto||_tripPersonPhoto(r.checkedByName||r.checkedBy)},18,'vertical-align:middle;margin-right:4px;'):'';
       var whoName=isMe?'You':(r.checkedByName||r.checkedBy||'');
       var whoHtml=isBought?'<div class="shopping-item-who '+(isMe?'me':'other')+'">'+checkerAvatar+escHtml(whoName)+' checked off</div>':'';
       var itemClass='shopping-item'+(isBought?' bought':'')+(isMe?' bought-by-me':'');
@@ -6043,7 +6045,8 @@ function updateGroceryMeta(key,field,value){
     if(value==='Bought'||value==='Have'){
       currentEvent.groceryMeta[key].checkedBy=u?u.initials:'?';
       currentEvent.groceryMeta[key].checkedByName=u?(u.name||u.fullName||u.firstName||''):'';
-      currentEvent.groceryMeta[key].checkedByPhoto=u?u.photo||'':'';
+      currentEvent.groceryMeta[key].checkedByPhoto='';/* v235: no per-line photo copy — one avatar on the trip */
+      if(u&&u.photo)_stampTripPersonSoon(u.name||u.fullName||u.firstName||'',u.photo,u.initials);
       currentEvent.groceryMeta[key].checkedAt=new Date().toISOString();
       addAuditEntry(value==='Have'?'already_have':'checked',(value==='Have'?'marked already have ':'checked off ')+'"'+label+'"');
     }else{
@@ -7835,7 +7838,7 @@ async function assignDish(id){
   drop.addEventListener('click',function(e){if(e.target===drop)drop.remove();});
 }
 
-function doAssignDish(id,name){var dish=currentEvent.dishes.find(function(d){return d.id===id;});if(!dish)return;if(name==='undefined'||name==='null')name='';dish.assignedTo=name||'';if(name){/* BRANCH (#6): resolve photo from self/presence/known (not just _knownUsers, which is often empty) and STAMP it onto the dish so the cook avatar travels to all devices */var prof=resolvePersonProfile(name);dish.assignedToPhoto=(prof&&prof.photo)||'';dish.assignedToInitials=(prof&&prof.initials)||name.slice(0,2);}else{dish.assignedToPhoto='';dish.assignedToInitials='';}commitAndSync();renderAll();}
+function doAssignDish(id,name){var dish=currentEvent.dishes.find(function(d){return d.id===id;});if(!dish)return;if(name==='undefined'||name==='null')name='';dish.assignedTo=name||'';if(name){/* BRANCH (#6): resolve photo from self/presence/known (not just _knownUsers, which is often empty) and STAMP it onto the dish so the cook avatar travels to all devices */var prof=resolvePersonProfile(name);dish.assignedToPhoto='';/* v235: avatar lives once on the trip */if(prof&&prof.photo)_stampTripPersonSoon(name,prof.photo,prof.initials);dish.assignedToInitials=(prof&&prof.initials)||name.slice(0,2);}else{dish.assignedToPhoto='';dish.assignedToInitials='';}commitAndSync();renderAll();}
 
 /* ===== RECIPE DUPLICATE ===== */
 function duplicateBankRecipe(id){
@@ -9438,9 +9441,58 @@ function getKnownUserByName(name){
 // v71: resolve a person's avatar profile from the best LIVE source (no Firebase reads/writes).
 // /users isn't listable so _knownUsers is usually empty; getUser() has the current user's photo,
 // and per-trip presence carries photos for anyone who's been online. Returns {name,photo,initials}.
+/* ===== v235: ONE small avatar per person per trip (currentEvent.people) =====
+   Profile photos used to be COPIED (full 400px, ~50 KB) onto every dish a person cooks and every grocery line
+   they check off — 100+ copies of the same face per trip filled iPhone storage ("storage is full"). Now the trip
+   keeps one ~4 KB avatar per person, and screens look it up by name. Faces still reach every device (the map
+   syncs with the trip). Existing per-item copies are folded into the map once, after a fresh server load. */
+function _personKey(name){return String(name||'').trim().toLowerCase().replace(/[.#$\[\]\/]/g,'_');}
+function _tripPersonPhoto(name){var p=currentEvent&&currentEvent.people&&currentEvent.people[_personKey(name)];return(p&&p.photo)||'';}
+function _shrinkAvatar(dataUrl,size){
+  return new Promise(function(res){
+    if(!dataUrl||String(dataUrl).indexOf('data:image')!==0||dataUrl.length<12000){res(dataUrl||'');return;}
+    var img=new Image();
+    img.onload=function(){try{var c=document.createElement('canvas');c.width=c.height=size;var s=Math.min(img.width,img.height);c.getContext('2d').drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,size,size);res(c.toDataURL('image/jpeg',0.82));}catch(e){res(dataUrl);}};
+    img.onerror=function(){res(dataUrl);};img.src=dataUrl;
+  });
+}
+// Record a person's avatar on the trip (once; refreshed if their profile photo changes). Returns true if it changed.
+async function _stampTripPerson(ev,name,photo,initials){
+  if(!ev||!name||!photo)return false;
+  var k=_personKey(name);if(!k)return false;
+  ev.people=ev.people||{};
+  var cur=ev.people[k];
+  if(cur&&cur.photo&&cur.srcLen===String(photo).length)return false;
+  var small=await _shrinkAvatar(photo,96);
+  ev.people[k]={name:String(name),photo:small,initials:initials||String(name).slice(0,2),srcLen:String(photo).length};
+  return true;
+}
+function _stampTripPersonSoon(name,photo,initials){
+  var ev=currentEvent;
+  _stampTripPerson(ev,name,photo,initials).then(function(changed){if(changed&&ev===currentEvent&&typeof commitAndSync==='function')commitAndSync();}).catch(function(){});
+}
+// One-time per trip per session: fold legacy per-item photo copies into ev.people and blank the copies.
+var _photoCompactDone={};
+async function _maybeCompactTripPhotos(code){
+  if(!code||_photoCompactDone[code]||!currentEvent||currentEvent.code!==code)return 0;
+  _photoCompactDone[code]=true;
+  var ev=currentEvent,found={};
+  (ev.dishes||[]).forEach(function(d){if(d&&d.assignedToPhoto&&d.assignedTo)found[d.assignedTo]=found[d.assignedTo]||{photo:d.assignedToPhoto,initials:d.assignedToInitials};});
+  var gm=ev.groceryMeta||{};
+  Object.keys(gm).forEach(function(k){var m=gm[k];var who=m&&(m.checkedByName||m.checkedBy);if(m&&m.checkedByPhoto&&who)found[who]=found[who]||{photo:m.checkedByPhoto,initials:m.checkedBy};});
+  var names=Object.keys(found);if(!names.length)return 0;
+  for(var i=0;i<names.length;i++){await _stampTripPerson(ev,names[i],found[names[i]].photo,found[names[i]].initials);}
+  if(ev!==currentEvent)return 0; // switched trips mid-way — try again next load
+  var n=0;
+  (ev.dishes||[]).forEach(function(d){if(d&&d.assignedToPhoto&&d.assignedTo&&ev.people[_personKey(d.assignedTo)]){d.assignedToPhoto='';n++;}});
+  Object.keys(ev.groceryMeta||{}).forEach(function(k){var m=ev.groceryMeta[k];var who=m&&(m.checkedByName||m.checkedBy);if(m&&m.checkedByPhoto&&who&&ev.people[_personKey(who)]){m.checkedByPhoto='';n++;}});
+  if(n){mpLog('STORAGE','compacted '+n+' photo copies into '+names.length+' trip avatars');if(typeof commitAndSync==='function')commitAndSync();}
+  return n;
+}
 function resolvePersonProfile(name){
   if(!name)return{name:'',photo:'',initials:''};
   var nl=String(name).toLowerCase();
+  var tp=_tripPersonPhoto(name);if(tp){var tpe=currentEvent.people[_personKey(name)];return{name:name,photo:tp,initials:tpe.initials||name.slice(0,2)};}
   var me=getUser();
   if(me&&me.name&&me.name.toLowerCase()===nl&&me.photo)return{name:name,photo:me.photo,initials:me.initials||name.slice(0,2)};
   var pres=(lastPresenceUsers||[]).find(function(p){return(p.name||'').toLowerCase()===nl&&p.photo;});
